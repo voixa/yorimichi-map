@@ -590,29 +590,29 @@
     <div class="modal shop-modal" role="dialog" aria-label="コインショップ" aria-modal="true">
       <button class="modal-close" id="shop-close" type="button" aria-label="閉じる">✕</button>
       <h2 class="modal-title">🪙 コインショップ</h2>
-      <p class="modal-sub">将来の課金プラン（プレビュー）</p>
+      <p class="modal-sub">街歩きガチャを楽しむためのコインを購入できます</p>
 
-      <div class="shop-coming-soon" style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 12px; padding: 16px; margin: 12px 0; text-align: center; font-weight: 700; color: #856404;">
-        🚧 コイン購入機能は<strong>準備中</strong>です<br>
-        <span style="font-weight: 400; font-size: 13px;">Stripe決済の実装後にご利用いただけます</span>
+      <div class="shop-test-banner" style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 12px; padding: 12px; margin: 12px 0; text-align: center; font-weight: 700; color: #856404; font-size: 13px;">
+        🧪 <strong>テストモード</strong>：実際の請求は発生しません<br>
+        <span style="font-weight: 400; font-size: 12px;">テストカード: <code style="background:#fff;padding:2px 6px;border-radius:4px;">4242 4242 4242 4242</code> / 任意の将来日 / CVC任意</span>
       </div>
 
       <div class="shop-grid">
-        <button class="shop-item" data-coins="10" data-yen="100" type="button" disabled style="opacity: 0.6; cursor: not-allowed;">
+        <button class="shop-item" data-pack="pack_10" data-coins="10" data-yen="100" type="button">
           <div class="shop-coins">🪙 10</div>
           <div class="shop-price">¥100</div>
         </button>
-        <button class="shop-item recommended" data-coins="80" data-yen="700" data-bonus="0" type="button" disabled style="opacity: 0.6; cursor: not-allowed;">
+        <button class="shop-item recommended" data-pack="pack_80" data-coins="80" data-yen="700" data-bonus="0" type="button">
           <div class="shop-tag">10連向け</div>
           <div class="shop-coins">🪙 80</div>
           <div class="shop-price">¥700</div>
         </button>
-        <button class="shop-item" data-coins="120" data-yen="1000" data-bonus="20" type="button" disabled style="opacity: 0.6; cursor: not-allowed;">
+        <button class="shop-item" data-pack="pack_120" data-coins="120" data-yen="1000" data-bonus="20" type="button">
           <div class="shop-tag bonus">+20 ボーナス</div>
           <div class="shop-coins">🪙 120</div>
           <div class="shop-price">¥1,000</div>
         </button>
-        <button class="shop-item best" data-coins="700" data-yen="5000" data-bonus="200" type="button" disabled style="opacity: 0.6; cursor: not-allowed;">
+        <button class="shop-item best" data-pack="pack_700" data-coins="700" data-yen="5000" data-bonus="200" type="button">
           <div class="shop-tag bonus">+200 ボーナス</div>
           <div class="shop-coins">🪙 700</div>
           <div class="shop-price">¥5,000</div>
@@ -620,7 +620,7 @@
       </div>
 
       <p class="shop-note">
-        ※ 現在は無料の毎日ガチャのみ提供しています。コイン購入は決済機能実装後に開放されます。
+        ※ 決済は Stripe を経由します。クレジットカード・PayPay・Apple Pay 等が利用可能です。
       </p>
     </div>
   </div>

@@ -2788,12 +2788,93 @@
     $('#shop-modal').hidden = true;
   }
 
-  function purchaseCoins(coins, yen, bonus = 0) {
-    // 決済機能は実装中。Stripe導入までコイン付与は行わない
-    // (景表法・特商法対策：実決済が走らない状態で「購入完了」を表示しない)
-    showToast(`🚧 コイン購入は準備中です（Stripe決済を導入予定）`, 'info', 4000);
-    // ガチャ画面に戻すだけ
-    setTimeout(() => { hideShop(); $('#gacha-modal').hidden = false; showStage('select'); gachaUpdateUI(); }, 300);
+  // ---------- Stripe Checkout integration ----------
+  const API_BASE = 'https://yorimichi-api-1028920472559.asia-northeast1.run.app';
+
+  function getOrCreateUserId() {
+    let userId = localStorage.getItem('yorimichi-user-id');
+    if (!userId) {
+      userId = (crypto && crypto.randomUUID) ? crypto.randomUUID() : ('u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10));
+      localStorage.setItem('yorimichi-user-id', userId);
+    }
+    return userId;
+  }
+
+  async function startStripeCheckout(packId) {
+    const userId = getOrCreateUserId();
+    showToast('🔄 決済画面に移動します…', 'info', 2000);
+    try {
+      const res = await fetch(`${API_BASE}/api/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pack: packId, user_id: userId }),
+      });
+      const data = await res.json();
+      if (data && data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error('checkout response:', data);
+        showToast('❌ 決済の準備に失敗しました', 'error', 3000);
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('❌ ネットワークエラーで決済を開始できませんでした', 'error', 3000);
+    }
+  }
+
+  async function verifyAndGrantCoinsFromUrl() {
+    const params = new URLSearchParams(location.search);
+    const status = params.get('coins');
+    if (!status) return;
+
+    // URL を即時クリーン化（リロードで二重発火防止）
+    const cleanUrl = location.pathname + location.hash;
+    history.replaceState(null, '', cleanUrl);
+
+    if (status === 'cancel') {
+      showToast('決済をキャンセルしました', 'info', 2500);
+      return;
+    }
+    if (status !== 'success') return;
+
+    const sessionId = params.get('session_id');
+    if (!sessionId) return;
+
+    // 冪等性: 既に消費済みのセッションは無視
+    const consumedKey = 'yorimichi-consumed-sessions';
+    let consumed = [];
+    try { consumed = JSON.parse(localStorage.getItem(consumedKey) || '[]'); } catch { consumed = []; }
+    if (consumed.includes(sessionId)) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/verify-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+      const data = await res.json();
+      if (data && data.paid && Number.isFinite(data.coins) && data.coins > 0) {
+        gacha.coins += data.coins;
+        gachaSave();
+        gachaUpdateUI();
+        showToast(`🪙 ${data.coins} コインを付与しました！`, 'success', 4000);
+        consumed.push(sessionId);
+        // 直近100件まで保持
+        if (consumed.length > 100) consumed = consumed.slice(-100);
+        localStorage.setItem(consumedKey, JSON.stringify(consumed));
+      } else {
+        showToast('決済が確認できませんでした', 'warning', 3000);
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('❌ 決済の確認に失敗しました', 'error', 3000);
+    }
+  }
+
+  // 互換性のため purchaseCoins は残すが、新フロー（startStripeCheckout）に誘導
+  function purchaseCoins(coins, yen, bonus = 0, packId) {
+    if (packId) return startStripeCheckout(packId);
+    showToast('🚧 決済プランIDが未指定です', 'warning', 3000);
   }
 
   // ---------- Collection ----------
@@ -3031,10 +3112,9 @@
     $('#shop-close').addEventListener('click', hideShop);
     $$('.shop-item').forEach(item => {
       item.addEventListener('click', () => {
-        const c = parseInt(item.dataset.coins, 10);
-        const y = parseInt(item.dataset.yen, 10);
-        const b = parseInt(item.dataset.bonus || '0', 10);
-        purchaseCoins(c, y, b);
+        const packId = item.dataset.pack;
+        if (!packId) return;
+        startStripeCheckout(packId);
       });
     });
     $('#collection-btn').addEventListener('click', showCollection);
@@ -4152,6 +4232,10 @@ ${route.themeIcon} ${route.themeName} ・ ${route.stops.length}スポット ・ 
         document.getElementById('update-dismiss').onclick = () => banner.remove();
       }
     }
+
+    // Stripe Checkout からのリダイレクトを検出してコインを付与
+    // （URL に ?coins=success&session_id=... が付いている場合）
+    verifyAndGrantCoinsFromUrl().catch(e => console.warn('verify coins failed', e));
 
     // Online/offline detection
     window.addEventListener('offline', () => {
