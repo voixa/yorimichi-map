@@ -2789,14 +2789,11 @@
   }
 
   function purchaseCoins(coins, yen, bonus = 0) {
-    const total = coins + bonus;
-    gacha.coins += total;
-    gachaSave();
-    gachaUpdateUI();
-    hideShop();
-    showToast(`🪙 ${total} コイン購入完了！(¥${yen})`, 'success', 3000);
-    // Re-open gacha
-    setTimeout(() => { $('#gacha-modal').hidden = false; showStage('select'); gachaUpdateUI(); }, 300);
+    // 決済機能は実装中。Stripe導入までコイン付与は行わない
+    // (景表法・特商法対策：実決済が走らない状態で「購入完了」を表示しない)
+    showToast(`🚧 コイン購入は準備中です（Stripe決済を導入予定）`, 'info', 4000);
+    // ガチャ画面に戻すだけ
+    setTimeout(() => { hideShop(); $('#gacha-modal').hidden = false; showStage('select'); gachaUpdateUI(); }, 300);
   }
 
   // ---------- Collection ----------
