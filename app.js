@@ -1521,7 +1521,11 @@
     }
     // Update gacha button label
     const gachaTitle = $('#gacha-title');
-    if (gachaTitle) gachaTitle.textContent = (mode === 'course') ? 'コースガチャを回す' : '寄り道ガチャを回す';
+    if (gachaTitle) {
+      gachaTitle.textContent = (mode === 'course')
+        ? 'コースガチャを回す'
+        : (mode === 'stroll' ? '散歩ガチャを回す（ランダム生成）' : '自由ルートガチャを回す（ランダム生成）');
+    }
     // Update collection button label
     const colBtn = $('#collection-btn span:last-child');
     if (colBtn) colBtn.textContent = (mode === 'course') ? 'コース図鑑' : 'コレクション';
@@ -1833,6 +1837,12 @@
     return `${a}${theme.name}：${top.name}と${last.name}`;
   }
 
+  // ===== Coin Economy =====
+  // 1ガチャのコスト（コイン）
+  const GACHA_COST = 3;
+  // コース完走ボーナス
+  const COMPLETION_BONUS = 3;
+
   // Gacha state (persisted in localStorage)
   const gacha = {
     coins: 0,
@@ -1955,8 +1965,8 @@
       if (freeRemain > 0) {
         turnCost.innerHTML = `残り <span id="free-remaining">${freeRemain}</span>回（無料）${pityHint}`;
         turnBtn.disabled = false;
-      } else if (gacha.coins >= 10) {
-        turnCost.textContent = `🪙 10コイン${pityHint}`;
+      } else if (gacha.coins >= GACHA_COST) {
+        turnCost.textContent = `🪙 ${GACHA_COST}コイン${pityHint}`;
         turnBtn.disabled = false;
       } else {
         turnCost.textContent = `コイン不足`;
@@ -2192,6 +2202,35 @@
     return courseToRoute(pool[Math.floor(Math.random() * pool.length)]);
   }
 
+  /**
+   * 自由ルート / 散歩モード用：state.candidates から手続き的にコースを生成。
+   * Pity（連続ハズレ救済）も適用。
+   */
+  function pickRandomGeneratedRoute() {
+    if (!state.candidates || state.candidates.length === 0) return null;
+
+    // Pity: 20連でLR確定、10連でSR以上確定
+    const wantLR = gacha.pullsSinceLR >= 19;
+    const wantSR = gacha.pullsSinceSR >= 9;
+    let targetRarity = null;
+    if (wantLR) targetRarity = 'legendary';
+    else if (wantSR) targetRarity = 'sr';
+
+    // generateRoute は targetRarity を受け取れる
+    let route = null;
+    let attempts = 0;
+    while (!route && attempts < 5) {
+      attempts++;
+      route = generateRoute(targetRarity);
+    }
+    if (!route) return null;
+
+    // 識別用フラグ（curated でないことを明示）
+    route.isCurated = false;
+    route.isGenerated = true;
+    return route;
+  }
+
   async function turnGachapon() {
     const turnBtn = $('#btn-turn');
     if (turnBtn.disabled) return;
@@ -2201,11 +2240,11 @@
     if (freeRemain > 0) {
       gacha.freeUsedToday += 1;
     } else {
-      if (gacha.coins < 10) {
+      if (gacha.coins < GACHA_COST) {
         showStage('empty');
         return;
       }
-      gacha.coins -= 10;
+      gacha.coins -= GACHA_COST;
     }
     gachaSave();
     gachaUpdateUI();
@@ -2213,9 +2252,21 @@
     state.sessionPullCount = (state.sessionPullCount || 0) + 1;
 
     // Pick the route up front
-    const route = pickOneCourse();
+    // - 既存コースモード（course）：キュレーション済み13コースから抽選
+    // - 自由ルート / 散歩モード：出発地〜目的地周辺の候補からランダム生成
+    let route = null;
+    if (state.mode === 'course') {
+      route = pickOneCourse();
+    } else {
+      route = pickRandomGeneratedRoute();
+    }
     if (!route) {
-      showToast('該当するコースがありません', 'error');
+      showToast('該当するコースがありません。出発地を変えるか候補を再取得してください', 'error', 4000);
+      // Refund the cost since we couldn't deliver
+      if (freeRemain > 0) gacha.freeUsedToday = Math.max(0, gacha.freeUsedToday - 1);
+      else gacha.coins += GACHA_COST;
+      gachaSave();
+      gachaUpdateUI();
       return;
     }
 
@@ -2306,7 +2357,7 @@
     }
   }
 
-  function showGachaModal() {
+  async function showGachaModal() {
     // Reset session counter when opening modal fresh
     if (!state.sessionPullCount) state.sessionPullCount = 0;
     if (state.mode === 'course') {
@@ -2324,11 +2375,37 @@
         showToast('まず出発地を設定してください', 'error');
         return;
       }
-      if (state.candidates.length === 0) {
-        showToast('まず「寄り道候補を探す」を押してください', 'error');
+      if (state.mode === 'route' && !state.dest) {
+        showToast('目的地を設定するか、散歩モードに切り替えてください', 'error');
         return;
       }
-      const ctx = `📍 ${state.origin.shortLabel || '出発地'}` + (state.dest ? ` → 🚩 ${state.dest.shortLabel || '目的地'}` : '（散歩モード）');
+      // 候補がまだ無ければ自動的に取得（ガチャを引くために事前準備不要にする）
+      if (state.candidates.length === 0) {
+        if (state.activeCategories.size === 0) {
+          // 全カテゴリ ON にして検索
+          state.activeCategories = new Set(CATEGORIES.map(c => c.id));
+        }
+        showLoader('🎰 ランダムコースを準備中…');
+        try {
+          const cats = [...state.activeCategories].map(categoryById).filter(Boolean);
+          const pois = await fetchPois(state.origin, state.dest, cats, state.budgetMin || 30);
+          state.candidates = rankPois(pois);
+        } catch (e) {
+          console.error(e);
+          hideLoader();
+          showToast('候補の取得に失敗しました。少し待ってから再試行してください', 'error', 4000);
+          return;
+        }
+        hideLoader();
+        if (state.candidates.length < 3) {
+          showToast('周辺にスポットが少なすぎます。バジェットを増やしてください', 'error', 4000);
+          return;
+        }
+      }
+      const modeLabel = state.mode === 'stroll' ? '🌿 散歩' : '🎯 自由ルート';
+      const ctx = `${modeLabel} ・ 📍 ${state.origin.shortLabel || '出発地'}` +
+        (state.dest ? ` → 🚩 ${state.dest.shortLabel || '目的地'}` : '') +
+        ` (${state.candidates.length}スポット候補)`;
       $('#gacha-context').textContent = ctx;
     }
 
@@ -2410,6 +2487,49 @@
   function renderPoolPreview() {
     const list = $('#pool-list');
     if (!list) return;
+
+    // 自由ルート / 散歩モードでは「周辺スポットからランダム生成」の説明を出す
+    if (state.mode !== 'course') {
+      const candCount = state.candidates ? state.candidates.length : 0;
+      $('#pool-count').textContent = `${candCount}スポット候補`;
+      list.innerHTML = '';
+      const turnBtn = $('#btn-turn');
+      if (candCount < 3) {
+        const help = document.createElement('div');
+        help.className = 'pool-empty';
+        help.innerHTML = `
+          🌐 周辺のスポット候補が少なすぎます<br>
+          <small>条件を変えて再度お試しください。</small>
+        `;
+        list.appendChild(help);
+        if (turnBtn) turnBtn.disabled = true;
+        return;
+      }
+      // 簡易プレビュー：ランダムに最大10件をシルエット表示
+      const sample = [...state.candidates]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, Math.min(10, candCount));
+      const intro = document.createElement('div');
+      intro.className = 'pool-empty';
+      intro.innerHTML = `
+        🎲 周辺の候補から<strong>ランダムに5〜7スポット</strong>を選んでコース化します<br>
+        <small>引くたびに違う街歩きコースが出ます。</small>
+      `;
+      list.appendChild(intro);
+      sample.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'pool-item';
+        item.innerHTML = `
+          <span class="pool-item-emoji">${(p.cat && categoryById(p.cat)?.emoji) || '📍'}</span>
+          <span class="pool-item-name">？？？</span>
+          <span class="pool-item-rarity">⭐</span>
+        `;
+        list.appendChild(item);
+      });
+      if (turnBtn && gacha.coins >= 0) gachaUpdateUI();
+      return;
+    }
+
     let pool = getCourseCandidates();
     let undiscoveredFilter = false;
     if ($('#pool-undiscovered-only')?.checked || quickMode === 'undiscovered') {
@@ -3087,11 +3207,11 @@
       }
       gacha.freeUsedToday += 1;
     } else {
-      if (gacha.coins < 10) {
+      if (gacha.coins < GACHA_COST) {
         showStage('empty');
         return;
       }
-      gacha.coins -= 10;
+      gacha.coins -= GACHA_COST;
     }
     gachaSave();
     gachaUpdateUI();
@@ -3430,13 +3550,14 @@
   // ============================================================
   // Daily login bonus
   // ============================================================
+  // 1ガチャ=3コイン に合わせて再設計（連数で報酬感を表示）
   const STREAK_REWARDS = [
-    { day: 2, coins: 10, msg: '2日目！🪙10ゲット' },
-    { day: 3, coins: 20, msg: '三日坊主突破！🪙20' },
-    { day: 5, coins: 30, msg: '5日連続！🪙30' },
-    { day: 7, coins: 50, msg: '一週間皆勤！🪙50＋限定LR解禁の可能性' },
-    { day: 14, coins: 100, msg: '半月達成！🪙100' },
-    { day: 30, coins: 300, msg: '1か月皆勤！🪙300の大盤振る舞い' },
+    { day: 2,  coins: 3,   msg: '2日目！🪙3（1連分）ゲット' },
+    { day: 3,  coins: 6,   msg: '三日坊主突破！🪙6（2連分）' },
+    { day: 5,  coins: 15,  msg: '5日連続！🪙15（5連分）' },
+    { day: 7,  coins: 30,  msg: '一週間皆勤！🪙30（10連分）＋限定LR解禁の可能性' },
+    { day: 14, coins: 60,  msg: '半月達成！🪙60（20連分）' },
+    { day: 30, coins: 180, msg: '1か月皆勤！🪙180（60連分）の大盤振る舞い' },
   ];
 
   function maybeShowDailyBonus() {
@@ -3449,7 +3570,7 @@
       if (state.loginStreak === r.day) { reward = r; break; }
     }
     // Default small reward for any return visit on 2+ day
-    if (!reward && state.loginStreak >= 2) reward = { day: state.loginStreak, coins: 5, msg: `連続${state.loginStreak}日目！🪙5` };
+    if (!reward && state.loginStreak >= 2) reward = { day: state.loginStreak, coins: 3, msg: `連続${state.loginStreak}日目！🪙3（1連分）` };
     if (!reward) {
       // Day 1 - just claim with no popup
       state.coinClaimedDate = today;
@@ -3771,9 +3892,9 @@
     fireConfetti(150, ['#ffd700', '#16a34a', '#ff7e3d', '#ec4899', '#3b82f6']);
     speak('コース完走、おめでとうございます！');
     // Bonus coins for completion
-    gacha.coins += 5;
+    gacha.coins += COMPLETION_BONUS;
     gachaSave();
-    showToast('🪙 完走ボーナス +5コイン！', 'success', 4000);
+    showToast(`🪙 完走ボーナス +${COMPLETION_BONUS}コイン！`, 'success', 4000);
 
     const course = (window.YORIMICHI_COURSES || []).find(c => c.id === courseId);
     setTimeout(() => {

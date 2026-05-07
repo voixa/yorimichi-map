@@ -43,11 +43,12 @@ if not stripe.api_key:
     logger.warning("STRIPE_SECRET_KEY is not set; Stripe calls will fail")
 
 # 単一の Source of Truth
+# 1ガチャ = 3コイン
 PACKS = {
-    "pack_10":  {"coins": 10,  "bonus": 0,   "price": 100,  "name": "10コイン"},
-    "pack_80":  {"coins": 80,  "bonus": 0,   "price": 700,  "name": "80コイン（10連向け）"},
-    "pack_120": {"coins": 120, "bonus": 20,  "price": 1000, "name": "120コイン（+20ボーナス）"},
-    "pack_700": {"coins": 700, "bonus": 200, "price": 5000, "name": "700コイン（+200ボーナス）"},
+    "pack_starter": {"coins": 15,  "bonus": 0,   "price": 120,  "name": "お試し5連パック (15コイン)"},
+    "pack_25":      {"coins": 75,  "bonus": 0,   "price": 500,  "name": "25連パック (75コイン)"},
+    "pack_60":      {"coins": 150, "bonus": 30,  "price": 1000, "name": "⭐おすすめ60連パック (150+30ボーナス)"},
+    "pack_big":     {"coins": 500, "bonus": 100, "price": 3000, "name": "大盤振る舞い200連パック (500+100ボーナス)"},
 }
 
 PRIMARY_ORIGIN = allowed_origins[0] if allowed_origins else "https://yorimichi.in-dx.jp"
