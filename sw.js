@@ -1,5 +1,5 @@
 /* Service Worker for Yorimichi Map (basic offline cache) */
-const CACHE = 'yorimichi-v30';
+const CACHE = 'yorimichi-v31';
 const OFFLINE_URL = './offline.html';
 const ASSETS = [
   './',

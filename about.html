@@ -6,6 +6,20 @@
   <title>運営者情報 — 寄り道マップ</title>
   <meta name="description" content="寄り道マップの運営者情報・特定商取引法に基づく表記" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👣</text></svg>" />
+
+  <!-- Google Analytics 4 (anonymized, no ad personalization) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-N5P47CJ16P"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-N5P47CJ16P', {
+      'anonymize_ip': true,
+      'allow_ad_personalization_signals': false,
+      'allow_google_signals': false
+    });
+  </script>
+
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -65,7 +79,12 @@
       <li>住所検索：Nominatim</li>
       <li>ルート計算：OSRM</li>
       <li>ホスティング：Google Cloud Run（asia-northeast1）</li>
+      <li>アクセス解析：Google Analytics 4（IP匿名化・広告機能オフ）</li>
     </ul>
+
+    <h2>アクセス解析・Cookieについて</h2>
+    <p>本サービスでは、サービス改善のために <strong>Google Analytics 4</strong> による匿名のアクセス解析を行っています。取得する情報はページビュー・参照元・デバイス種別・国地域などで、ユーザー個人を特定するものではありません。IPアドレスは匿名化処理を行い、Google の広告機能はすべて無効化しています。</p>
+    <p>アクセス解析の利用を希望されない場合は、<a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener">Google Analytics オプトアウトアドオン</a>をご利用いただくか、ブラウザの設定で Cookie を無効化してください。</p>
 
     <h2>免責事項</h2>
     <p>掲載コース情報・店舗情報は予告なく変更・閉店する場合があります。最新情報は各店舗・施設に直接ご確認ください。本サービス利用中に発生した事故・損害について運営は責任を負いかねます。</p>
