@@ -1,17 +1,18 @@
 """
 街歩きガチャ API server
-Stripe Checkout → コイン付与のためのバックエンド
 
 ENV:
   STRIPE_SECRET_KEY       - 必須（テスト: sk_test_..., 本番: sk_live_...）
   STRIPE_WEBHOOK_SECRET   - 任意（webhook検証用、後日設定）
-  ALLOWED_ORIGINS         - 任意（カンマ区切り、デフォルトは寄り道マップ本番URL）
+  ANTHROPIC_API_KEY       - 任意（AIコース生成用、未設定時はテンプレ生成）
+  ALLOWED_ORIGINS         - 任意（カンマ区切り、デフォルトは街歩きガチャ本番URL）
 
 Endpoints:
   GET  /health                     - ヘルスチェック
   POST /api/checkout               - Stripe Checkout Session を作成
   POST /api/verify-session         - 完了したセッションを検証してコイン額を返す
   POST /api/webhook                - Stripe webhook（決済完了通知）
+  POST /api/generate-narrative     - AIによるコース名・物語生成
 """
 import os
 import json
@@ -20,6 +21,13 @@ import logging
 import stripe
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+
+try:
+    from anthropic import Anthropic
+    _anthropic_available = True
+except ImportError:
+    Anthropic = None
+    _anthropic_available = False
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -42,6 +50,15 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 if not stripe.api_key:
     logger.warning("STRIPE_SECRET_KEY is not set; Stripe calls will fail")
 
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+anthropic_client = None
+if _anthropic_available and ANTHROPIC_API_KEY:
+    try:
+        anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
+        logger.info("Anthropic client initialized")
+    except Exception as e:
+        logger.warning(f"Anthropic init failed: {e}")
+
 # 単一の Source of Truth
 # 1ガチャ = 3コイン
 PACKS = {
@@ -61,7 +78,102 @@ def health():
         "service": "machiaruki-api",
         "stripe_mode": "test" if (stripe.api_key or "").startswith("sk_test_") else "live",
         "packs": list(PACKS.keys()),
+        "ai_enabled": anthropic_client is not None,
     })
+
+
+# ----- AI コース生成 -----
+
+NARRATIVE_SYSTEM_PROMPT = """あなたは「街歩きガチャ」というアプリのコース命名・物語生成エンジンです。
+ユーザーが選んだ出発地・目的地・経由スポットから、心が踊る街歩きコースの名前と短い物語を作ってください。
+
+ルール:
+- コース名は10〜18文字、句読点は最小限。「・」を1〜2個使ってOK
+- 物語は60〜100文字。読み手の足取りを誘うトーン
+- 商標・著名人・ブランド名は使わない（例: ジブリ・宮崎駿・ポケモン等は禁止）
+- スポット名はそのまま使ってOK（一般名詞・地名・公開POI名）
+- 提供されたJSONフォーマット通りに返す
+- 余計な前置きや解釈は書かない"""
+
+
+def _generate_narrative_with_ai(theme: str, area: str, stop_names: list, rarity: str) -> dict:
+    """Claude Haiku でコース名と物語を生成。失敗時は None。"""
+    if not anthropic_client:
+        return None
+    rarity_hint = {
+        "legendary": "レア度LR（伝説級）：印象的で詩的に",
+        "sr":        "レア度SR：少し凝った言葉選びで",
+        "r":         "レア度R：シンプルに魅力を伝えて",
+        "n":         "レア度N：気軽に・親しみやすく",
+    }.get(rarity, "")
+
+    user_prompt = f"""【お題】
+- エリア: {area}
+- テーマ: {theme}
+- 経由スポット: {', '.join(stop_names)}
+- {rarity_hint}
+
+JSONで返答:
+{{"name": "コース名", "story": "60-100字の物語"}}"""
+
+    try:
+        msg = anthropic_client.messages.create(
+            model="claude-haiku-4-5",
+            max_tokens=400,
+            system=[{"type": "text", "text": NARRATIVE_SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
+            messages=[{"role": "user", "content": user_prompt}],
+        )
+        text = "".join(b.text for b in msg.content if hasattr(b, "text"))
+        # 最初の { から最後の } までを抽出
+        start = text.find("{")
+        end = text.rfind("}")
+        if start == -1 or end == -1:
+            return None
+        data = json.loads(text[start:end + 1])
+        if not isinstance(data, dict) or "name" not in data or "story" not in data:
+            return None
+        # 安全のため長さ制限
+        return {
+            "name": str(data["name"])[:60],
+            "story": str(data["story"])[:300],
+        }
+    except Exception as e:
+        logger.exception(f"narrative generation failed: {e}")
+        return None
+
+
+def _fallback_narrative(theme: str, area: str, stop_names: list, rarity: str) -> dict:
+    """AI 不在時のテンプレ生成"""
+    rarity_emoji = {"legendary": "✨", "sr": "🌟", "r": "⭐", "n": ""}
+    head = stop_names[0] if stop_names else "街角"
+    last = stop_names[-1] if len(stop_names) > 1 else ""
+    nm = f"{rarity_emoji.get(rarity, '')}{area}・{theme}{('〜' + last) if last else ''}".strip()
+    story = f"{area}を{theme}で巡る街歩き。{head}から始まり、気の向くままに歩く{len(stop_names)}スポットの小さな旅。"
+    return {"name": nm[:40], "story": story[:200]}
+
+
+@app.route("/api/generate-narrative", methods=["POST"])
+def generate_narrative():
+    """ランダム生成コースに名前と物語を付与する。"""
+    data = request.get_json(silent=True) or {}
+    theme = (data.get("theme") or "街歩き").strip()[:40]
+    area = (data.get("area") or "").strip()[:40]
+    rarity = (data.get("rarity") or "n").strip()[:20]
+    stops = data.get("stops") or []
+    if not isinstance(stops, list):
+        stops = []
+    stop_names = [str(s)[:60] for s in stops if s][:8]
+
+    if len(stop_names) == 0:
+        return jsonify({"error": "no_stops"}), 400
+
+    narrative = _generate_narrative_with_ai(theme, area, stop_names, rarity)
+    source = "ai"
+    if narrative is None:
+        narrative = _fallback_narrative(theme, area, stop_names, rarity)
+        source = "fallback"
+
+    return jsonify({**narrative, "source": source})
 
 
 @app.route("/api/checkout", methods=["POST"])

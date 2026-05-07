@@ -3643,8 +3643,61 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
   font-size: 14px;
   color: var(--text-muted);
   line-height: 1.7;
-  margin: 0 0 20px;
+  margin: 0 0 12px;
 }
+.onboard-sub {
+  font-size: 13px;
+  color: var(--brand);
+  font-weight: 600;
+  margin: 0 0 20px;
+  text-align: center;
+}
+.onboard-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px;
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.onboard-list li {
+  background: var(--surface-2);
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.onboard-list strong { color: var(--brand); }
+
+/* ----- Invite section in profile ----- */
+.invite-section {
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+.invite-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0 0 10px;
+  line-height: 1.6;
+}
+.invite-desc strong { color: var(--brand); }
+.invite-link-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.invite-link-row input {
+  flex: 1;
+  font-size: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: monospace;
+}
+.invite-link-row .btn-secondary { white-space: nowrap; padding: 8px 14px; }
 .onboard-progress {
   display: flex;
   justify-content: center;

@@ -2203,6 +2203,38 @@
   }
 
   /**
+   * AI（Claude Haiku）でランダム生成コースに名前と物語を付与
+   */
+  async function fetchAINarrative(route) {
+    if (!route || !route.stops) return null;
+    const areaLabel = state.origin?.shortLabel || '街';
+    const themeLabel = route.themeName || route.theme || '街歩き';
+    const stopNames = route.stops.map(s => s.name).filter(Boolean).slice(0, 8);
+    if (stopNames.length === 0) return null;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000); // 8秒で諦める
+    try {
+      const res = await fetch(`${API_BASE}/api/generate-narrative`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          theme: themeLabel,
+          area: areaLabel,
+          rarity: route.rarity || 'n',
+          stops: stopNames,
+        }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) {
+      clearTimeout(timer);
+      return null;
+    }
+  }
+
+  /**
    * 自由ルート / 散歩モード用：state.candidates から手続き的にコースを生成。
    * Pity（連続ハズレ救済）も適用。
    */
@@ -2254,11 +2286,32 @@
     // Pick the route up front
     // - 既存コースモード（course）：キュレーション済み13コースから抽選
     // - 自由ルート / 散歩モード：出発地〜目的地周辺の候補からランダム生成
+    // 初回特典：通算 0pull 時は SR 以上確定
+    const isFirstEverPull = (gacha.pulls === 0);
+    if (isFirstEverPull) {
+      gacha.pullsSinceLR = Math.max(gacha.pullsSinceLR, 9); // 次の SR 保証ロジックを発動
+      gacha.pullsSinceSR = Math.max(gacha.pullsSinceSR, 9);
+    }
     let route = null;
     if (state.mode === 'course') {
       route = pickOneCourse();
     } else {
       route = pickRandomGeneratedRoute();
+      // AI で名前と物語を上書き（失敗してもフォールバックで継続）
+      if (route) {
+        try {
+          const narrative = await fetchAINarrative(route);
+          if (narrative && narrative.name) {
+            route.aiName = narrative.name;
+            route.aiStory = narrative.story;
+            route.aiSource = narrative.source;
+            // 表示用 title を AI 名で上書き
+            route.title = narrative.name;
+          }
+        } catch (e) {
+          console.warn('AI narrative failed', e);
+        }
+      }
     }
     if (!route) {
       showToast('該当するコースがありません。出発地を変えるか候補を再取得してください', 'error', 4000);
@@ -2341,6 +2394,8 @@
     revealRoute(route);
     turnBtn.disabled = false;
     setTimeout(checkNewBadges, 1500);
+    // 招待ボーナス（初ガチャ時のみ）
+    setTimeout(maybeGrantInviteeBonus, 2000);
   }
 
   function updateSessionStreak() {
@@ -2749,9 +2804,13 @@
       ? `🚶 ${route.travelMode === 'walk' ? '徒歩' : route.travelMode === 'bike' ? '自転車' : '車'}`
       : `📏 ${route.totalKm.toFixed(1)}km`;
 
-    // Description (only for curated courses)
+    // Description (curated courses or AI story)
     const descEl = $('#route-description');
-    if (route.description) {
+    if (route.aiStory) {
+      const sourceTag = route.aiSource === 'ai' ? ' <small style="opacity:0.6">(✨ AI生成)</small>' : '';
+      descEl.innerHTML = escapeHtml(route.aiStory) + sourceTag;
+      descEl.hidden = false;
+    } else if (route.description) {
       descEl.textContent = route.description;
       descEl.hidden = false;
     } else {
@@ -2940,6 +2999,87 @@
       console.error(e);
       showToast('❌ ネットワークエラーで決済を開始できませんでした', 'error', 3000);
     }
+  }
+
+  // ---------- Invite system ----------
+  const INVITE_BONUS = 15;
+
+  function getInviteUrl() {
+    const userId = getOrCreateUserId();
+    return `${location.origin}/?ref=${encodeURIComponent(userId)}`;
+  }
+
+  function setupInviteLink() {
+    const linkEl = $('#invite-link');
+    const copyBtn = $('#invite-copy');
+    const shareBtn = $('#invite-share');
+    if (!linkEl) return;
+    const url = getInviteUrl();
+    linkEl.value = url;
+
+    if (copyBtn) {
+      copyBtn.onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(url);
+          showToast('📋 招待リンクをコピーしました', 'success', 2500);
+        } catch {
+          linkEl.select();
+          document.execCommand('copy');
+          showToast('📋 コピーしました', 'success', 2500);
+        }
+      };
+    }
+    if (shareBtn) {
+      shareBtn.onclick = async () => {
+        const shareText = `街歩きガチャを一緒に遊ぼう！\nお互いに +${INVITE_BONUS}🪙 もらえます 🎰\n${url}`;
+        if (navigator.share) {
+          try { await navigator.share({ title: '街歩きガチャ', text: shareText, url }); return; } catch {}
+        }
+        // Fallback: X intent
+        const x = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+        window.open(x, '_blank', 'noopener');
+      };
+    }
+  }
+
+  /**
+   * 初回訪問で ?ref=uuid が付いていたら被招待者として記録。
+   * その後、被招待者が初めてガチャを回した瞬間に
+   * 自分・招待者ともに +INVITE_BONUS コイン付与（招待者側はサーバ管理が無いので
+   * MVP ではローカルで「自分が招待された記録」だけ残し、本人にだけ即時ボーナス）。
+   */
+  function processInviteParam() {
+    const params = new URLSearchParams(location.search);
+    const ref = params.get('ref');
+    if (!ref) return;
+    // URL クリーン化（後続の coins=success 等を維持）
+    params.delete('ref');
+    const newSearch = params.toString();
+    const cleanUrl = location.pathname + (newSearch ? '?' + newSearch : '') + location.hash;
+    history.replaceState(null, '', cleanUrl);
+
+    const myId = getOrCreateUserId();
+    if (ref === myId) return; // 自己招待は無効
+
+    let inviteData = {};
+    try { inviteData = JSON.parse(localStorage.getItem('yorimichi-invite') || '{}'); } catch {}
+    if (inviteData.invitedBy) return; // 既に招待済み
+    inviteData.invitedBy = ref;
+    inviteData.bonusGranted = false;
+    try { localStorage.setItem('yorimichi-invite', JSON.stringify(inviteData)); } catch {}
+    showToast(`🎁 招待リンクから来てくれてありがとう！初ガチャで +${INVITE_BONUS}🪙`, 'info', 5000);
+  }
+
+  function maybeGrantInviteeBonus() {
+    let inviteData = {};
+    try { inviteData = JSON.parse(localStorage.getItem('yorimichi-invite') || '{}'); } catch {}
+    if (!inviteData.invitedBy || inviteData.bonusGranted) return;
+    gacha.coins += INVITE_BONUS;
+    gachaSave();
+    gachaUpdateUI();
+    showToast(`🎁 招待ボーナス +${INVITE_BONUS}🪙！`, 'success', 4000);
+    inviteData.bonusGranted = true;
+    try { localStorage.setItem('yorimichi-invite', JSON.stringify(inviteData)); } catch {}
   }
 
   async function verifyAndGrantCoinsFromUrl() {
@@ -3714,7 +3854,7 @@
     setOnboardStep(1);
   }
   function setOnboardStep(n) {
-    [1, 2, 3].forEach(i => {
+    [1, 2, 3, 4].forEach(i => {
       const s = $(`#onboard-step-${i}`);
       if (s) s.hidden = (i !== n);
     });
@@ -4176,8 +4316,20 @@ ${route.themeIcon} ${route.themeName} ・ ${route.stops.length}スポット ・ 
     const today = new Date();
     $('#cert-date').textContent = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
 
-    const shareText = `${course.name} を完走しました！🏅\n${course.areaIcon} ${course.areaName}\n👣 街歩きガチャ`;
-    const shareUrl = location.href.split('#')[0];
+    // 完走シェア用テキスト：エリア・スポット数・所要時間・招待リンクを盛り込む
+    const stops = course.stops || [];
+    const stopList = stops.slice(0, 3).map(s => s.name).filter(Boolean).join('・');
+    const more = stops.length > 3 ? `…他${stops.length - 3}` : '';
+    const minutes = course.estimatedMin ? `約${course.estimatedMin}分・` : '';
+    const inviteUrl = getInviteUrl();
+    const hashtag = '#街歩きガチャ';
+    const shareText = `🏅 ${course.name} を完走！
+${course.areaIcon || '📍'} ${course.areaName} ・ ${minutes}${stops.length}スポット
+${stopList}${more}
+
+街歩きガチャで散歩コースを引いて、GPSスタンプラリーで遊べます🎰
+${hashtag}`;
+    const shareUrl = inviteUrl;
 
     $('#share-x').onclick = () => {
       const url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareText) + '&url=' + encodeURIComponent(shareUrl);
@@ -4357,6 +4509,9 @@ ${route.themeIcon} ${route.themeName} ・ ${route.stops.length}スポット ・ 
     // Stripe Checkout からのリダイレクトを検出してコインを付与
     // （URL に ?coins=success&session_id=... が付いている場合）
     verifyAndGrantCoinsFromUrl().catch(e => console.warn('verify coins failed', e));
+
+    // 招待リンク（?ref=uuid）の処理
+    try { processInviteParam(); } catch (e) { console.warn('invite param failed', e); }
 
     // Online/offline detection
     window.addEventListener('offline', () => {
@@ -4565,6 +4720,16 @@ ${route.themeIcon} ${route.themeName} ・ ${route.stops.length}スポット ・ 
     $('#data-export').addEventListener('click', exportData);
     $('#data-import').addEventListener('click', importData);
     $('#data-reset').addEventListener('click', resetData);
+    // Tutorial replay
+    const tutBtn = $('#show-tutorial');
+    if (tutBtn) tutBtn.addEventListener('click', () => {
+      $('#profile-modal').hidden = true;
+      try { localStorage.removeItem('yorimichi-onboarded'); } catch (e) {}
+      $('#onboard-modal').hidden = false;
+      setOnboardStep(1);
+    });
+    // Invite link
+    setupInviteLink();
 
     // Pool undiscovered toggle
     const poolToggle = $('#pool-undiscovered-only');

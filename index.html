@@ -151,8 +151,19 @@
         <!-- populated by JS -->
       </div>
 
+      <div class="profile-section-title">🎁 友達を招待</div>
+      <div class="invite-section">
+        <p class="invite-desc">招待した友達がガチャを引くと <strong>あなた・友達ともに +15コイン</strong>。</p>
+        <div class="invite-link-row">
+          <input type="text" id="invite-link" readonly />
+          <button class="btn-secondary" id="invite-copy" type="button">📋 コピー</button>
+        </div>
+        <button class="btn-primary" id="invite-share" type="button">📤 X / LINE で共有</button>
+      </div>
+
       <div class="profile-section-title">⚙️ データ管理</div>
       <div class="data-actions">
+        <button class="btn-secondary" id="show-tutorial" type="button">📚 チュートリアル再表示</button>
         <button class="btn-secondary" id="data-export" type="button">📤 エクスポート</button>
         <button class="btn-secondary" id="data-import" type="button">📥 インポート</button>
         <button class="btn-secondary danger" id="data-reset" type="button">🗑 全リセット</button>
@@ -674,29 +685,46 @@
       <div class="onboard-stage" id="onboard-step-1">
         <div class="onboard-icon">👋</div>
         <h2 class="modal-title">街歩きガチャへようこそ</h2>
-        <p class="onboard-text">あなたの街にある、まだ知らない散歩コースをガチャで引いて発見できる地図サービスです。</p>
+        <p class="onboard-text">あなたの街の散歩コースを <strong>ガチャで引いて</strong>、GPSスタンプラリーで遊べる地図サービスです。</p>
+        <p class="onboard-sub">「あと◯分あったら、どこ寄る？」</p>
         <div class="onboard-progress">
-          <span class="dot active"></span><span class="dot"></span><span class="dot"></span>
+          <span class="dot active"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
         </div>
         <button class="btn-primary onboard-next" data-next="2" type="button">次へ →</button>
       </div>
 
       <div class="onboard-stage" id="onboard-step-2" hidden>
         <div class="onboard-icon">🎰</div>
-        <h2 class="modal-title">3つのカプセルから1つ引く</h2>
-        <p class="onboard-text">ガチャを回すと3本のコースが出現。1つカプセルを選ぶと、お気に入りの寄り道ルートが手に入ります。</p>
+        <h2 class="modal-title">巨大ガチャで1本ゲット</h2>
+        <p class="onboard-text">ハンドルを回すとカプセルが1つコトン。中には <strong>レアリティ付きの散歩コース</strong> が入ってます。</p>
+        <p class="onboard-sub">N → R → SR → ✨LR の4段階。LRには「早朝5:30限定」のような隠しコースも。</p>
         <div class="onboard-progress">
-          <span class="dot"></span><span class="dot active"></span><span class="dot"></span>
+          <span class="dot"></span><span class="dot active"></span><span class="dot"></span><span class="dot"></span>
         </div>
         <button class="btn-primary onboard-next" data-next="3" type="button">次へ →</button>
       </div>
 
       <div class="onboard-stage" id="onboard-step-3" hidden>
-        <div class="onboard-icon">🚶</div>
-        <h2 class="modal-title">スタンプラリーで遊ぼう</h2>
-        <p class="onboard-text">「歩き始める」ボタンで散歩スタート。各スポットに着くと自動でスタンプGET。コース図鑑にコレクション！</p>
+        <div class="onboard-icon">🗺️</div>
+        <h2 class="modal-title">3つの遊び方</h2>
+        <ul class="onboard-list">
+          <li>📖 <strong>既存コース</strong>：吉祥寺・谷根千・神保町・浅草の<strong>キュレーション済み</strong>コース</li>
+          <li>🎯 <strong>自由ルート</strong>：出発地→目的地を入れるとAIがランダムに街歩きコースを生成</li>
+          <li>🌿 <strong>散歩</strong>：出発地のみ入れて気の向くまま</li>
+        </ul>
         <div class="onboard-progress">
-          <span class="dot"></span><span class="dot"></span><span class="dot active"></span>
+          <span class="dot"></span><span class="dot"></span><span class="dot active"></span><span class="dot"></span>
+        </div>
+        <button class="btn-primary onboard-next" data-next="4" type="button">次へ →</button>
+      </div>
+
+      <div class="onboard-stage" id="onboard-step-4" hidden>
+        <div class="onboard-icon">🎁</div>
+        <h2 class="modal-title">初回特典：SR以上確定</h2>
+        <p class="onboard-text">最初の1引きは <strong>SR以上が出るまでハズレなし</strong>。さらに、毎日ガチャ無料3回 + 連続ログインボーナス！</p>
+        <p class="onboard-sub">「歩き始める」を押すと GPS で自動スタンプ。完走すると証明書ゲット 🏅</p>
+        <div class="onboard-progress">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot active"></span>
         </div>
         <button class="btn-primary onboard-finish" type="button">🎰 さっそくガチャを引く</button>
       </div>
