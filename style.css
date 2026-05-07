@@ -3698,6 +3698,181 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
   font-family: monospace;
 }
 .invite-link-row .btn-secondary { white-space: nowrap; padding: 8px 14px; }
+
+/* ===== Subscription Card ===== */
+.subscription-card {
+  margin-top: 24px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%);
+  color: white;
+  border-radius: 16px;
+  padding: 24px 20px;
+  position: relative;
+  box-shadow: 0 12px 32px rgba(45, 27, 105, 0.3);
+}
+.sub-badge {
+  display: inline-block;
+  background: linear-gradient(90deg, #ffd700, #ff9800);
+  color: #5a3a00;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 100px;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+.sub-title { font-size: 18px; font-weight: 800; margin: 0 0 8px; }
+.sub-price { display: flex; align-items: baseline; gap: 4px; margin: 0 0 14px; }
+.sub-amount { font-size: 32px; font-weight: 900; color: #ffd700; }
+.sub-period { font-size: 14px; color: #cbd5e1; }
+.sub-benefits {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 18px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: #e2e8f0;
+}
+.sub-benefits li { padding: 2px 0; }
+.sub-benefits strong { color: #ffd700; }
+.sub-cta {
+  width: 100%;
+  background: linear-gradient(90deg, #ffd700, #ff9800) !important;
+  color: #5a3a00 !important;
+  font-weight: 800;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px !important;
+}
+.sub-fine { font-size: 11px; color: #94a3b8; text-align: center; margin: 10px 0 0; }
+
+.subscription-active {
+  margin-top: 16px;
+  background: linear-gradient(135deg, #fff8e1, #ffecb3);
+  border: 2px solid #d4af37;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+.sub-active-badge {
+  font-weight: 800;
+  color: #5a3a00;
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+.sub-active-msg { font-size: 13px; color: #856404; margin: 0 0 12px; }
+
+/* ===== Walk Mode HUD (mobile-first overlay) ===== */
+.walk-hud {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  background: rgba(20, 20, 22, 0.94);
+  color: white;
+  border-radius: 18px;
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+  z-index: 8000;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: hudSlideUp 0.3s ease-out;
+}
+@keyframes hudSlideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.walk-hud-arrow {
+  font-size: 36px;
+  line-height: 1;
+  color: #ff7e3d;
+  font-weight: 900;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255, 126, 61, 0.18);
+  display: grid;
+  place-items: center;
+  transition: transform 0.4s ease-out;
+}
+.walk-hud-info { min-width: 0; }
+.walk-hud-label {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+.walk-hud-name {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+.walk-hud-meta {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  color: #cbd5e1;
+}
+.walk-hud-dist { color: #ffd54f; font-weight: 700; }
+.walk-hud-progress { color: #94a3b8; }
+
+.walk-hud-actions {
+  display: flex;
+  gap: 6px;
+}
+.walk-hud-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  border: 0;
+  background: rgba(255,255,255,0.10);
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.walk-hud-btn:hover { background: rgba(255,255,255,0.18); }
+.walk-hud-btn:active { transform: scale(0.92); }
+.walk-hud-btn.walk-hud-end { background: rgba(239, 68, 68, 0.25); }
+.walk-hud-btn.walk-hud-end:hover { background: rgba(239, 68, 68, 0.40); }
+
+@media (max-width: 480px) {
+  .walk-hud { padding: 12px; gap: 10px; }
+  .walk-hud-arrow { width: 44px; height: 44px; font-size: 28px; }
+  .walk-hud-name { font-size: 15px; }
+  .walk-hud-btn { width: 44px; height: 44px; font-size: 18px; }
+}
+
+/* ===== Mobile tap target enforcement ===== */
+@media (max-width: 768px) {
+  button, .btn-primary, .btn-secondary, .add-btn, .pool-item-action, .filter-tag {
+    min-height: 44px;
+  }
+  /* Make panel handle more obvious */
+  .panel-handle {
+    min-height: 24px;
+    cursor: pointer;
+  }
+  .panel-handle .handle-bar {
+    width: 48px;
+    height: 4px;
+    background: var(--text-muted);
+    opacity: 0.6;
+  }
+}
 .onboard-progress {
   display: flex;
   justify-content: center;

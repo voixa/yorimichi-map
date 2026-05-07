@@ -1962,7 +1962,10 @@
       if (gacha.pullsSinceLR >= 15) pityHint = ` ✨LRまで${20 - gacha.pullsSinceLR}`;
       else if (gacha.pullsSinceSR >= 7) pityHint = ` 🌟SR以上まで${10 - gacha.pullsSinceSR}`;
 
-      if (freeRemain > 0) {
+      if (isPremiumSync()) {
+        turnCost.textContent = `★ プレミアム（使い放題）${pityHint}`;
+        turnBtn.disabled = false;
+      } else if (freeRemain > 0) {
         turnCost.innerHTML = `残り <span id="free-remaining">${freeRemain}</span>回（無料）${pityHint}`;
         turnBtn.disabled = false;
       } else if (gacha.coins >= GACHA_COST) {
@@ -2268,8 +2271,11 @@
     if (turnBtn.disabled) return;
 
     // Cost check / deduct
+    const isPremium = isPremiumSync();
     const freeRemain = Math.max(0, 3 - gacha.freeUsedToday);
-    if (freeRemain > 0) {
+    if (isPremium) {
+      // プレミアム: 無制限・コスト無し
+    } else if (freeRemain > 0) {
       gacha.freeUsedToday += 1;
     } else {
       if (gacha.coins < GACHA_COST) {
@@ -3001,6 +3007,141 @@
     }
   }
 
+  // ---------- Subscription (Premium) ----------
+  // localStorage cache のキー
+  const PREMIUM_CACHE_KEY = 'yorimichi-premium';
+
+  function getPremiumCache() {
+    try {
+      const raw = localStorage.getItem(PREMIUM_CACHE_KEY);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      // 有効期限：1時間
+      if (Date.now() - (data.checkedAt || 0) > 60 * 60 * 1000) return null;
+      return data;
+    } catch { return null; }
+  }
+
+  function setPremiumCache(premium, subId) {
+    try {
+      localStorage.setItem(PREMIUM_CACHE_KEY, JSON.stringify({
+        premium: !!premium,
+        subscription_id: subId || null,
+        checkedAt: Date.now(),
+      }));
+    } catch {}
+  }
+
+  function isPremiumSync() {
+    const c = getPremiumCache();
+    return c?.premium === true;
+  }
+
+  async function refreshPremiumStatus() {
+    const userId = getOrCreateUserId();
+    try {
+      const res = await fetch(`${API_BASE}/api/subscription-status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      setPremiumCache(data.premium, data.subscription_id);
+      updateSubscriptionUI();
+      return data;
+    } catch (e) {
+      console.warn('refreshPremiumStatus failed', e);
+      return null;
+    }
+  }
+
+  function updateSubscriptionUI() {
+    const card = $('#sub-card');
+    const active = $('#sub-active');
+    if (!card || !active) return;
+    if (isPremiumSync()) {
+      card.hidden = true;
+      active.hidden = false;
+    } else {
+      card.hidden = false;
+      active.hidden = true;
+    }
+  }
+
+  async function startSubscriptionCheckout() {
+    const userId = getOrCreateUserId();
+    showToast('🔄 決済画面に移動します…', 'info', 2000);
+    try {
+      const res = await fetch(`${API_BASE}/api/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      const data = await res.json();
+      if (data && data.url) {
+        window.location.href = data.url;
+      } else {
+        showToast('❌ 決済の準備に失敗しました', 'error', 3000);
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('❌ ネットワークエラー', 'error', 3000);
+    }
+  }
+
+  async function cancelSubscription() {
+    const cache = getPremiumCache();
+    const subId = cache?.subscription_id;
+    if (!subId) {
+      showToast('購読情報が見つかりません', 'error', 3000);
+      return;
+    }
+    if (!confirm('期間末でプランを解約します。よろしいですか？')) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/cancel-subscription`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription_id: subId }),
+      });
+      const data = await res.json();
+      if (data && data.ok) {
+        showToast('解約予約を承りました。期間末まで利用可能です', 'success', 4000);
+      } else {
+        showToast('解約の処理に失敗しました', 'error', 3000);
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('❌ ネットワークエラー', 'error', 3000);
+    }
+  }
+
+  async function verifySubscriptionFromUrl() {
+    const params = new URLSearchParams(location.search);
+    const sub = params.get('sub');
+    if (!sub) return;
+    params.delete('sub');
+    params.delete('session_id');
+    const cleanUrl = location.pathname + (params.toString() ? '?' + params.toString() : '') + location.hash;
+    history.replaceState(null, '', cleanUrl);
+    if (sub === 'cancel') {
+      showToast('購読をキャンセルしました', 'info', 2500);
+      return;
+    }
+    if (sub === 'success') {
+      // サーバー側で反映を待つために少し時間を置く
+      showToast('🎉 プレミアム購読を確認中…', 'info', 2500);
+      setTimeout(async () => {
+        const data = await refreshPremiumStatus();
+        if (data?.premium) {
+          showToast('✨ プレミアム購読が有効になりました！', 'success', 4500);
+        } else {
+          showToast('購読が反映され次第、自動で更新されます', 'info', 4000);
+        }
+      }, 2500);
+    }
+  }
+
   // ---------- Invite system ----------
   const INVITE_BONUS = 15;
 
@@ -3377,6 +3518,14 @@
         startStripeCheckout(packId);
       });
     });
+    // サブスクボタン
+    const subCta = $('#sub-cta');
+    if (subCta) subCta.addEventListener('click', startSubscriptionCheckout);
+    const subCancel = $('#sub-cancel');
+    if (subCancel) subCancel.addEventListener('click', cancelSubscription);
+    // ショップを開いたとき毎回最新状態取得
+    const shopBtnA = $('#shop-btn');
+    if (shopBtnA) shopBtnA.addEventListener('click', () => refreshPremiumStatus().catch(() => {}));
     $('#collection-btn').addEventListener('click', showCollection);
     $('#collection-close').addEventListener('click', () => $('#collection-modal').hidden = true);
     $$('.col-tab').forEach(tab => {
@@ -3936,6 +4085,9 @@
     } else {
       showToast('🚶 手動モードでウォーク開始！各スポットの ✓ ボタンでチェックイン', 'info', 5000);
     }
+
+    // モバイル用 Walk HUD を表示
+    showWalkHud();
     // Welcome voice
     const first = state.selected[0];
     if (first) speak(`ウォーク開始！最初のスポット、${first.name}を目指しましょう`);
@@ -3950,8 +4102,146 @@
     $('#walk-session').hidden = true;
     $('#walk-start').hidden = false;
     $('#walk-stop').hidden = true;
+    hideWalkHud();
     renderSelectedMarkers();
     showToast('ウォーク終了', 'info');
+  }
+
+  // ===== Photo capture during walks =====
+  // 写真は localStorage（容量制限のため最大解像度640px・JPEG quality 0.7）に保存
+  // キー: yorimichi-photos-<courseId> = { stopIdx: dataUrl, ... }
+  const PHOTO_MAX_SIZE = 640;
+  const PHOTO_QUALITY = 0.72;
+
+  function getCoursePhotos(courseId) {
+    if (!courseId) return {};
+    try { return JSON.parse(localStorage.getItem('yorimichi-photos-' + courseId) || '{}'); } catch { return {}; }
+  }
+  function saveCoursePhoto(courseId, stopIdx, dataUrl) {
+    const all = getCoursePhotos(courseId);
+    all[stopIdx] = dataUrl;
+    try {
+      localStorage.setItem('yorimichi-photos-' + courseId, JSON.stringify(all));
+    } catch (e) {
+      // QuotaExceeded → 最古の写真を削除して再試行
+      const keys = Object.keys(all);
+      if (keys.length > 1) {
+        delete all[keys[0]];
+        try { localStorage.setItem('yorimichi-photos-' + courseId, JSON.stringify(all)); } catch {}
+      }
+      console.warn('photo save failed', e);
+    }
+  }
+
+  function compressImageToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          if (w > h && w > PHOTO_MAX_SIZE) { h = h * PHOTO_MAX_SIZE / w; w = PHOTO_MAX_SIZE; }
+          else if (h > PHOTO_MAX_SIZE) { w = w * PHOTO_MAX_SIZE / h; h = PHOTO_MAX_SIZE; }
+          canvas.width = Math.round(w);
+          canvas.height = Math.round(h);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          try { resolve(canvas.toDataURL('image/jpeg', PHOTO_QUALITY)); } catch (e) { reject(e); }
+        };
+        img.onerror = reject;
+        img.src = ev.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function capturePhotoForCurrentStop() {
+    if (!state.activeWalk) {
+      showToast('ウォーク中に写真を撮ることができます', 'info', 2500);
+      return;
+    }
+    const courseId = state.activeWalk.courseId;
+    const visited = state.completedStops[courseId] || new Set();
+    // 直近に訪問したスポット（または未訪問の最初）を対象に
+    let targetIdx = -1;
+    const visitedArr = [...visited];
+    if (visitedArr.length > 0) targetIdx = visitedArr[visitedArr.length - 1];
+    else for (let i = 0; i < state.selected.length; i++) {
+      if (!visited.has(i)) { targetIdx = i; break; }
+    }
+    if (targetIdx < 0) {
+      showToast('対象スポットが見つかりません', 'info', 2500);
+      return;
+    }
+
+    const input = $('#walk-photo-input');
+    if (!input) return;
+    input.value = '';
+    input.onchange = async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      try {
+        showToast('📸 写真を保存中…', 'info', 1500);
+        const dataUrl = await compressImageToDataUrl(file);
+        saveCoursePhoto(courseId, targetIdx, dataUrl);
+        const stopName = state.selected[targetIdx]?.name || 'スポット';
+        showToast(`✅ ${stopName} で1枚保存しました`, 'success', 3000);
+      } catch (err) {
+        console.error(err);
+        showToast('写真の保存に失敗しました', 'error', 3000);
+      }
+    };
+    input.click();
+  }
+
+  // ===== Walk Mode HUD =====
+  function showWalkHud() {
+    const hud = $('#walk-hud');
+    if (!hud) return;
+    hud.hidden = false;
+    updateWalkHud(null);
+  }
+  function hideWalkHud() {
+    const hud = $('#walk-hud');
+    if (hud) hud.hidden = true;
+  }
+  function updateWalkHud(userLoc) {
+    const hud = $('#walk-hud');
+    if (!hud || hud.hidden) return;
+    if (!state.activeWalk) return;
+    const courseId = state.activeWalk.courseId;
+    const visited = state.completedStops[courseId] || new Set();
+    const totalStops = state.selected.length;
+    const visitedCount = visited.size;
+    // 次に未訪問のスポットを探す
+    let nextIdx = -1;
+    for (let i = 0; i < state.selected.length; i++) {
+      if (!visited.has(i)) { nextIdx = i; break; }
+    }
+    if (nextIdx === -1) {
+      $('#walk-hud-name').textContent = '🎉 全スポット完走！';
+      $('#walk-hud-dist').textContent = '完走おめでとう';
+      $('#walk-hud-progress').textContent = `${totalStops}/${totalStops}`;
+      $('#walk-hud-arrow').style.opacity = '0.3';
+      return;
+    }
+    const next = state.selected[nextIdx];
+    $('#walk-hud-name').textContent = (next.emoji || '📍') + ' ' + (next.name || '次のスポット');
+    $('#walk-hud-progress').textContent = `${visitedCount}/${totalStops}`;
+    if (userLoc && next.lat != null && next.lng != null) {
+      const dKm = haversineKm(userLoc, next);
+      const dM = Math.round(dKm * 1000);
+      $('#walk-hud-dist').textContent = dM >= 1000 ? `${(dM/1000).toFixed(1)} km` : `${dM} m`;
+      // 矢印を北基準で次スポット方位へ回転
+      const brg = bearing([userLoc.lat, userLoc.lng], [next.lat, next.lng]);
+      $('#walk-hud-arrow').style.transform = `rotate(${brg}deg)`;
+      $('#walk-hud-arrow').style.opacity = '1';
+    } else {
+      $('#walk-hud-dist').textContent = 'GPS取得中…';
+      $('#walk-hud-arrow').style.opacity = '0.5';
+    }
   }
 
   function onGpsUpdate(pos) {
@@ -3979,6 +4269,9 @@
         checkInStop(idx);
       }
     });
+
+    // モバイルHUD更新
+    updateWalkHud(loc);
   }
 
   function checkInStop(idx, manual = false) {
@@ -4064,12 +4357,30 @@
     setTimeout(() => { if (burst.parentElement) burst.remove(); }, 6000);
   }
 
-  // Generate certificate as PNG using Canvas
-  function downloadCertPng(course) {
+  // 写真を Image にロード
+  function loadImage(src) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
+  }
+
+  // Generate certificate as PNG using Canvas (async = 写真ロード対応)
+  async function downloadCertPng(course) {
     const canvas = document.createElement('canvas');
     canvas.width = 1080;
     canvas.height = 1920;
     const ctx = canvas.getContext('2d');
+
+    // 撮影写真を事前ロード
+    const photos = getCoursePhotos(course.id);
+    const photoEntries = Object.entries(photos)
+      .map(([idx, url]) => ({ idx: parseInt(idx, 10), url }))
+      .sort((a, b) => a.idx - b.idx);
+    const loadedPhotos = await Promise.all(photoEntries.map(p => loadImage(p.url)));
+    const validPhotos = loadedPhotos.map((img, i) => img ? { img, idx: photoEntries[i].idx } : null).filter(Boolean);
 
     // Background gradient
     const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
@@ -4167,21 +4478,51 @@
     ctx.fillStyle = '#6b6b72';
     ctx.fillText(`📍 ${stamps.length}スポット ・ 約${course.estimatedMin}分 ・ ${course.travelMode === 'walk' ? '徒歩' : course.travelMode}`, canvas.width / 2, 1320);
 
+    // 撮影写真コラージュ（あれば）
+    if (validPhotos.length > 0) {
+      const photoMaxCount = Math.min(validPhotos.length, 4);
+      const padding = 16;
+      const totalW = canvas.width - 200;
+      const photoSize = (totalW - padding * (photoMaxCount - 1)) / photoMaxCount;
+      const photoY = 1390;
+      const photoStartX = (canvas.width - (photoSize * photoMaxCount + padding * (photoMaxCount - 1))) / 2;
+      validPhotos.slice(0, photoMaxCount).forEach((p, i) => {
+        const x = photoStartX + i * (photoSize + padding);
+        // クリッピング（角丸）
+        ctx.save();
+        roundRect(ctx, x, photoY, photoSize, photoSize, 16);
+        ctx.clip();
+        // カバーフィット
+        const ratio = Math.max(photoSize / p.img.width, photoSize / p.img.height);
+        const dw = p.img.width * ratio;
+        const dh = p.img.height * ratio;
+        const dx = x + (photoSize - dw) / 2;
+        const dy = photoY + (photoSize - dh) / 2;
+        ctx.drawImage(p.img, dx, dy, dw, dh);
+        ctx.restore();
+        // ボーダー
+        ctx.strokeStyle = '#d4af37';
+        ctx.lineWidth = 4;
+        roundRect(ctx, x, photoY, photoSize, photoSize, 16);
+        ctx.stroke();
+      });
+    }
+
     // Date
     const today = new Date();
     const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
     ctx.font = '32px sans-serif';
     ctx.fillStyle = '#6b6b72';
-    ctx.fillText(dateStr, canvas.width / 2, 1480);
+    ctx.fillText(dateStr, canvas.width / 2, 1640);
 
     // Footer brand
     ctx.font = 'bold 56px sans-serif';
     ctx.fillStyle = '#ff7e3d';
-    ctx.fillText('👣 街歩きガチャ', canvas.width / 2, 1700);
+    ctx.fillText('👣 街歩きガチャ', canvas.width / 2, 1740);
 
     ctx.font = '28px sans-serif';
     ctx.fillStyle = '#6b6b72';
-    ctx.fillText('あと◯分あったら、どこ寄る？', canvas.width / 2, 1760);
+    ctx.fillText('あと◯分あったら、どこ寄る？', canvas.width / 2, 1790);
 
     // Download
     canvas.toBlob((blob) => {
@@ -4349,7 +4690,15 @@ ${hashtag}`;
     };
 
     // Download as PNG
-    $('#cert-download').onclick = () => downloadCertPng(course);
+    $('#cert-download').onclick = async () => {
+      try {
+        showToast('🎨 証明書を生成中...', 'info', 1500);
+        await downloadCertPng(course);
+      } catch (e) {
+        console.error(e);
+        showToast('証明書の生成に失敗しました', 'error', 3000);
+      }
+    };
 
     // Suggest next course (smart pick: prefer same area > undiscovered > others)
     const next = pickNextSuggestion(course);
@@ -4510,6 +4859,12 @@ ${hashtag}`;
     // （URL に ?coins=success&session_id=... が付いている場合）
     verifyAndGrantCoinsFromUrl().catch(e => console.warn('verify coins failed', e));
 
+    // サブスク購読の戻り処理
+    verifySubscriptionFromUrl().catch(e => console.warn('verify sub failed', e));
+
+    // 起動時にプレミアム状態を更新
+    refreshPremiumStatus().catch(() => {});
+
     // 招待リンク（?ref=uuid）の処理
     try { processInviteParam(); } catch (e) { console.warn('invite param failed', e); }
 
@@ -4643,6 +4998,29 @@ ${hashtag}`;
     loadVoicePref();
     $('#walk-start').addEventListener('click', startWalk);
     $('#walk-stop').addEventListener('click', stopWalk);
+
+    // Walk HUD ボタン
+    const hudEnd = $('#walk-hud-end');
+    if (hudEnd) hudEnd.addEventListener('click', () => {
+      if (confirm('ウォークを終了しますか？')) stopWalk();
+    });
+    const hudCheckin = $('#walk-hud-checkin');
+    if (hudCheckin) hudCheckin.addEventListener('click', () => {
+      if (!state.activeWalk) return;
+      const courseId = state.activeWalk.courseId;
+      const visited = state.completedStops[courseId] || new Set();
+      let nextIdx = -1;
+      for (let i = 0; i < state.selected.length; i++) {
+        if (!visited.has(i)) { nextIdx = i; break; }
+      }
+      if (nextIdx >= 0) checkInStop(nextIdx, true);
+      else showToast('全スポット訪問済みです', 'info', 2500);
+    });
+    const hudPhoto = $('#walk-hud-photo');
+    if (hudPhoto) hudPhoto.addEventListener('click', () => {
+      // Phase 2 で実装。今はファイル選択にフォールバック
+      capturePhotoForCurrentStop();
+    });
     const voiceBtn = $('#walk-voice-toggle');
     if (voiceBtn) {
       voiceBtn.textContent = voice.enabled ? '🔊' : '🔇';

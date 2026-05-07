@@ -638,6 +638,28 @@
         ※ 1ガチャ = 3コイン / 毎日無料3回付与<br>
         ※ 決済は Stripe を経由します。クレジットカード・PayPay・Apple Pay 等が利用可能です。
       </p>
+
+      <div class="subscription-card" id="sub-card">
+        <div class="sub-badge">★ プレミアム</div>
+        <h3 class="sub-title">街歩きガチャ プレミアム</h3>
+        <div class="sub-price"><span class="sub-amount">¥480</span><span class="sub-period">/月</span></div>
+        <ul class="sub-benefits">
+          <li>🎰 ガチャ <strong>使い放題</strong>（コイン消費なし）</li>
+          <li>👑 限定LRコース 月3本</li>
+          <li>🌅 早朝・深夜限定コース全解放</li>
+          <li>🏅 プレミアムデザイン完走証明書</li>
+        </ul>
+        <button class="btn-primary sub-cta" id="sub-cta" type="button">
+          <span>★</span><span>7日間無料で始める</span>
+        </button>
+        <p class="sub-fine">いつでも解約可能・解約後は期間末まで利用可能</p>
+      </div>
+
+      <div class="subscription-active" id="sub-active" hidden>
+        <div class="sub-active-badge">✨ プレミアム会員</div>
+        <p class="sub-active-msg">ガチャ使い放題・限定コース解放中</p>
+        <button class="btn-secondary" id="sub-cancel" type="button">プランを解約</button>
+      </div>
     </div>
   </div>
 
@@ -674,6 +696,28 @@
       <div class="collection-grid" id="collection-grid">
         <!-- populated by JS -->
       </div>
+    </div>
+  </div>
+
+  <!-- 散歩中の写真撮影用（モバイルカメラ起動） -->
+  <input type="file" id="walk-photo-input" accept="image/*" capture="environment" style="display:none" />
+
+  <!-- ============ Walk Mode HUD ============ -->
+  <!-- 散歩中に画面下に表示される大きな情報パネル（モバイル最適化） -->
+  <div class="walk-hud" id="walk-hud" hidden>
+    <div class="walk-hud-arrow" id="walk-hud-arrow" aria-hidden="true">↑</div>
+    <div class="walk-hud-info">
+      <div class="walk-hud-label">次のスポット</div>
+      <div class="walk-hud-name" id="walk-hud-name">—</div>
+      <div class="walk-hud-meta">
+        <span class="walk-hud-dist" id="walk-hud-dist">— m</span>
+        <span class="walk-hud-progress" id="walk-hud-progress">0/0</span>
+      </div>
+    </div>
+    <div class="walk-hud-actions">
+      <button class="walk-hud-btn" id="walk-hud-photo" type="button" aria-label="写真を撮る">📸</button>
+      <button class="walk-hud-btn" id="walk-hud-checkin" type="button" aria-label="手動チェックイン">✓</button>
+      <button class="walk-hud-btn walk-hud-end" id="walk-hud-end" type="button" aria-label="ウォーク終了">⏹</button>
     </div>
   </div>
 
