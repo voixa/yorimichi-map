@@ -61,7 +61,7 @@ if _gemini_available and GEMINI_API_KEY:
         logger.info("Gemini client initialized")
     except Exception as e:
         logger.warning(f"Gemini init failed: {e}")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-lite")
 
 # 単一の Source of Truth
 # 1ガチャ = 3コイン
@@ -97,19 +97,23 @@ def health():
 # ----- AI コース生成 -----
 
 NARRATIVE_SYSTEM_PROMPT = """あなたは「街歩きガチャ」というアプリのコース命名・物語生成エンジンです。
-ユーザーが選んだ出発地・目的地・経由スポットから、心が踊る街歩きコースの名前と短い物語を作ってください。
+入力された **エリア名** と **経由スポット** を使って、心が踊る散歩コースの名前と短い物語を生成します。
 
-ルール:
-- コース名は10〜18文字、句読点は最小限。「・」を1〜2個使ってOK
-- 物語は60〜100文字。読み手の足取りを誘うトーン
-- 商標・著名人・ブランド名は使わない（例: ジブリ・宮崎駿・ポケモン等は禁止）
-- スポット名はそのまま使ってOK（一般名詞・地名・公開POI名）
-- 提供されたJSONフォーマット通りに返す
-- 余計な前置きや解釈は書かない"""
+【厳守ルール】
+1. 出力は JSON のみ（前置き・後書き禁止）
+2. **コース名(name)** : 10〜22文字
+   - 与えられたエリア名 または スポット名を1つは含めること
+   - 「・」「〜」を1〜2個使ってOK、句読点最小限
+3. **物語(story)** : 60〜120文字
+   - 与えられたスポット名のうち 2件以上 を必ず本文に登場させること
+   - 読み手の足取りを誘うトーン（過度な比喩や抽象は避ける）
+   - 「お城」「冒険」「秘密の泉」など実在しない要素は禁止
+4. 商標・著名人・アニメ作品名は使わない（例: ジブリ・宮崎駿・ポケモン等は禁止）
+5. 与えられた情報以外の固有名詞を勝手に追加しない"""
 
 
 def _generate_narrative_with_ai(theme: str, area: str, stop_names: list, rarity: str) -> dict:
-    """Gemini でコース名と物語を生成。失敗時は None。"""
+    """Gemini でコース名と物語を生成。503/UNAVAILABLE は最大2回までリトライ。"""
     if not gemini_client:
         return None
     rarity_hint = {
@@ -128,10 +132,12 @@ def _generate_narrative_with_ai(theme: str, area: str, stop_names: list, rarity:
 上記から、街歩きコースの名前(name)と物語(story)を JSON で返してください。"""
 
     try:
-        config = genai_types.GenerateContentConfig(
+        # gemini-2.5-flash-lite は thinking 無し・短い構造化出力に最適
+        # gemini-2.5-flash を使う場合は thinking_budget=0 でも余裕を持たせる
+        config_kwargs = dict(
             system_instruction=NARRATIVE_SYSTEM_PROMPT,
             temperature=0.95,
-            max_output_tokens=400,
+            max_output_tokens=2048,
             response_mime_type="application/json",
             response_schema=genai_types.Schema(
                 type=genai_types.Type.OBJECT,
@@ -142,12 +148,44 @@ def _generate_narrative_with_ai(theme: str, area: str, stop_names: list, rarity:
                 },
             ),
         )
-        response = gemini_client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=user_prompt,
-            config=config,
-        )
+        # thinking 機構があるモデル向けに budget=0 を試す
+        try:
+            config_kwargs["thinking_config"] = genai_types.ThinkingConfig(thinking_budget=0)
+        except Exception:
+            pass
+        config = genai_types.GenerateContentConfig(**config_kwargs)
+        # 503 / UNAVAILABLE は短時間で復旧することが多いのでリトライ
+        import time
+        last_err = None
+        response = None
+        for attempt in range(3):
+            try:
+                response = gemini_client.models.generate_content(
+                    model=GEMINI_MODEL,
+                    contents=user_prompt,
+                    config=config,
+                )
+                break
+            except Exception as e:
+                last_err = e
+                msg = str(e)
+                if "503" in msg or "UNAVAILABLE" in msg or "overloaded" in msg.lower():
+                    time.sleep(0.8 * (attempt + 1))
+                    continue
+                raise
+        if response is None:
+            raise last_err if last_err else RuntimeError("no response")
         text = (response.text or "").strip()
+        # 詳細ログ（debugging用）
+        finish_reason = None
+        usage = None
+        try:
+            if response.candidates and len(response.candidates) > 0:
+                finish_reason = response.candidates[0].finish_reason
+            usage = response.usage_metadata
+        except Exception:
+            pass
+        logger.info(f"Gemini response: len={len(text)} finish={finish_reason} usage={usage} preview={text[:160]!r}")
         if not text:
             return None
         data = json.loads(text)
