@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /sw.js
+
+Sitemap: https://yorimichi.in-dx.jp/sitemap.xml

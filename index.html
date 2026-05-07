@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#ff7e3d" />
+  <title>寄り道マップ — あと◯分あったら、どこ寄る？</title>
+  <meta name="description" content="目的地までの道すがら、時間バジェットで「ちょっと寄り道」を提案する地図サービス。" />
+
+  <!-- Leaflet CSS (BSD-2-Clause) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin="" />
+
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Favicon: footprint emoji as inline SVG -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👣</text></svg>" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="寄り道マップ" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 192 192%22><rect width=%22192%22 height=%22192%22 rx=%2240%22 fill=%22%23ff7e3d%22/><text x=%2250%25%22 y=%2252%25%22 font-size=%22130%22 text-anchor=%22middle%22 dominant-baseline=%22central%22>👣</text></svg>" />
+
+  <!-- OGP for social sharing -->
+  <meta property="og:title" content="寄り道マップ — あと◯分あったら、どこ寄る？" />
+  <meta property="og:description" content="街の散歩コースをガチャで引いて、スタンプラリーで遊べる地図サービス。吉祥寺・谷根千エリアのキュレーション済みコースから運命の一本を引こう。" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://yorimichi.in-dx.jp/" />
+  <meta property="og:image" content="https://yorimichi.in-dx.jp/og.svg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="寄り道マップ — あと◯分あったら、どこ寄る？" />
+  <meta name="twitter:description" content="街の散歩コースをガチャで引いて、スタンプラリーで遊べる。" />
+  <meta name="twitter:image" content="https://yorimichi.in-dx.jp/og.svg" />
+</head>
+<body>
+  <!-- Header / Brand -->
+  <header class="app-header" role="banner">
+    <div class="brand">
+      <span class="brand-icon" aria-hidden="true">👣</span>
+      <h1 class="brand-name">寄り道マップ</h1>
+    </div>
+    <p class="brand-tagline" aria-label="サブタイトル">あと◯分あったら、どこ寄る？</p>
+    <button class="profile-btn" id="profile-btn" type="button" aria-label="プロフィール">
+      <span class="profile-emoji" id="profile-level-emoji">🥚</span>
+      <span class="profile-lv" id="profile-lv">Lv.1</span>
+    </button>
+    <button class="lang-btn" id="lang-btn" type="button" aria-label="Language">
+      <span id="lang-label">JP</span>
+    </button>
+    <button class="map-style-btn" id="map-style-btn" type="button" aria-label="マップスタイル切替">
+      <span aria-hidden="true">🗺</span>
+    </button>
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="ダークモード切替">
+      <span class="theme-icon">🌓</span>
+    </button>
+  </header>
+
+  <!-- ============ Map Style Picker ============ -->
+  <div class="modal-backdrop" id="mapstyle-modal" hidden>
+    <div class="modal mapstyle-modal" role="dialog" aria-label="マップスタイル選択" aria-modal="true">
+      <button class="modal-close" id="mapstyle-close" type="button" aria-label="閉じる">✕</button>
+      <h2 class="modal-title">🗺 マップスタイル</h2>
+      <div class="mapstyle-grid">
+        <button class="mapstyle-card" data-style="osm" type="button">
+          <div class="mapstyle-preview" style="background:linear-gradient(135deg,#f0e8d8,#e8dcc4)"></div>
+          <div class="mapstyle-name">📜 標準</div>
+          <div class="mapstyle-desc">OSM 通常タイル</div>
+        </button>
+        <button class="mapstyle-card" data-style="dark" type="button">
+          <div class="mapstyle-preview" style="background:linear-gradient(135deg,#1a1a2e,#0f0f1a)"></div>
+          <div class="mapstyle-name">🌃 ダーク</div>
+          <div class="mapstyle-desc">夜の散歩に</div>
+        </button>
+        <button class="mapstyle-card" data-style="watercolor" type="button">
+          <div class="mapstyle-preview" style="background:linear-gradient(135deg,#fef5e7,#fad7a0)"></div>
+          <div class="mapstyle-name">🎨 水彩</div>
+          <div class="mapstyle-desc">アート風</div>
+        </button>
+        <button class="mapstyle-card" data-style="terrain" type="button">
+          <div class="mapstyle-preview" style="background:linear-gradient(135deg,#a8e6cf,#7fb069)"></div>
+          <div class="mapstyle-name">🏞 地形</div>
+          <div class="mapstyle-desc">起伏が見える</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Profile Modal ============ -->
+  <div class="modal-backdrop" id="profile-modal" hidden>
+    <div class="modal profile-modal" role="dialog" aria-label="プロフィール" aria-modal="true">
+      <button class="modal-close" id="profile-close" type="button" aria-label="閉じる">✕</button>
+
+      <div class="profile-header">
+        <div class="profile-avatar" id="profile-avatar">🥚</div>
+        <div class="profile-info">
+          <div class="profile-title" id="profile-title">散歩はじめ</div>
+          <div class="profile-level-bar">
+            <span class="lv-label" id="profile-lv-label">Lv.1</span>
+            <div class="lv-bar"><div class="lv-bar-fill" id="profile-lv-fill"></div></div>
+            <span class="lv-xp" id="profile-lv-xp">0/10 XP</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-stats">
+        <div class="profile-stat">
+          <div class="ps-val" id="ps-courses">0</div>
+          <div class="ps-label">完走コース</div>
+        </div>
+        <div class="profile-stat">
+          <div class="ps-val" id="ps-stamps">0</div>
+          <div class="ps-label">スタンプ</div>
+        </div>
+        <div class="profile-stat">
+          <div class="ps-val" id="ps-pulls">0</div>
+          <div class="ps-label">ガチャ回数</div>
+        </div>
+        <div class="profile-stat">
+          <div class="ps-val" id="ps-streak">0</div>
+          <div class="ps-label">連続日数</div>
+        </div>
+      </div>
+
+      <div class="profile-cum" id="profile-cum"></div>
+
+      <div class="profile-section-title">📊 直近4週間の散歩</div>
+      <div class="profile-graph" id="profile-graph"></div>
+
+      <div class="profile-section-title">🏆 称号バッジ</div>
+      <div class="profile-badges" id="profile-badges">
+        <!-- populated by JS -->
+      </div>
+
+      <div class="profile-section-title">⚙️ データ管理</div>
+      <div class="data-actions">
+        <button class="btn-secondary" id="data-export" type="button">📤 エクスポート</button>
+        <button class="btn-secondary" id="data-import" type="button">📥 インポート</button>
+        <button class="btn-secondary danger" id="data-reset" type="button">🗑 全リセット</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main layout -->
+  <main class="layout">
+    <!-- Side panel (becomes bottom-sheet on mobile) -->
+    <aside class="panel" id="panel" aria-label="操作パネル">
+      <button class="panel-handle" id="panel-handle" type="button" aria-label="パネルを開閉" aria-expanded="true">
+        <span class="handle-bar" aria-hidden="true"></span>
+      </button>
+
+      <div class="panel-inner">
+
+        <!-- Active walk resume banner (shown if previous walk was unfinished) -->
+        <section class="resume-banner" id="resume-banner" hidden>
+          <div class="resume-icon">🚶</div>
+          <div class="resume-body">
+            <div class="resume-title">前回のウォークが進行中</div>
+            <div class="resume-meta" id="resume-meta">—</div>
+          </div>
+          <button class="resume-btn" id="resume-btn" type="button">続きから</button>
+          <button class="resume-dismiss" id="resume-dismiss" type="button" aria-label="閉じる">✕</button>
+        </section>
+
+        <!-- Personal stats strip (course mode + has progress) -->
+        <section class="home-stats" id="home-stats" hidden>
+          <div class="hs-item">
+            <span class="hs-num" id="hs-completed">0</span>
+            <span class="hs-label">完走</span>
+          </div>
+          <div class="hs-item">
+            <span class="hs-num" id="hs-stamps">0</span>
+            <span class="hs-label">スタンプ</span>
+          </div>
+          <div class="hs-item">
+            <span class="hs-num" id="hs-discovered">0</span>
+            <span class="hs-label">発見</span>
+          </div>
+          <div class="hs-item">
+            <span class="hs-num" id="hs-streak">0</span>
+            <span class="hs-label">🔥連続</span>
+          </div>
+        </section>
+
+        <!-- Today's recommended course (course mode only) -->
+        <section class="today-pick" id="today-pick" hidden>
+          <div class="today-label">
+            <span>✨ 今日のおすすめ</span>
+            <span class="today-streak" id="today-streak"></span>
+          </div>
+          <button class="today-card" id="today-card" type="button">
+            <span class="today-emoji" id="today-emoji">🌳</span>
+            <div class="today-body">
+              <div class="today-title" id="today-title">—</div>
+              <div class="today-meta" id="today-meta">—</div>
+            </div>
+            <span class="today-cta">引く</span>
+          </button>
+        </section>
+
+        <!-- Mode tabs -->
+        <div class="mode-tabs three" role="tablist" aria-label="モード">
+          <button class="mode-tab active" id="tab-course" role="tab" aria-selected="true" type="button">📖 既存コース</button>
+          <button class="mode-tab" id="tab-route" role="tab" aria-selected="false" type="button">🎯 自由ルート</button>
+          <button class="mode-tab" id="tab-stroll" role="tab" aria-selected="false" type="button">🌿 散歩</button>
+        </div>
+
+        <!-- Course mode: collapsible filters (area + tags) -->
+        <details class="filters-section" id="filters-section" open>
+          <summary class="filters-summary">
+            <span class="filters-summary-label">
+              <span>🔍 絞り込み</span>
+              <span class="filters-active-badge" id="filters-active-badge" hidden>0</span>
+            </span>
+            <span class="filters-stat" id="filter-stat">対象：—コース</span>
+          </summary>
+
+          <div class="filter-block">
+            <div class="filter-block-label">エリア</div>
+            <div class="area-grid" id="area-grid" role="group" aria-label="エリアフィルタ"></div>
+          </div>
+
+          <div class="filter-block">
+            <div class="filter-block-label">
+              <span>気分タグ</span>
+              <button class="tag-clear" id="tag-clear" type="button">クリア</button>
+            </div>
+            <div class="tag-grid" id="tag-grid" role="group" aria-label="タグフィルタ"></div>
+          </div>
+
+          <div class="filter-block">
+            <div class="filter-block-label">こだわり</div>
+            <div class="visual-filters">
+              <label class="vf-chip">
+                <input type="checkbox" id="filter-has-photo" />
+                <span>📷 写真あり</span>
+              </label>
+              <label class="vf-chip">
+                <input type="checkbox" id="filter-has-perk" />
+                <span>🎫 特典あり</span>
+              </label>
+            </div>
+          </div>
+        </details>
+
+        <!-- Free mode wrapper (hidden in course mode) -->
+        <div class="free-mode-block" id="free-mode-block">
+
+        <!-- Address inputs -->
+        <section class="addr-section" aria-label="出発地と目的地">
+          <div class="addr-row">
+            <label for="origin-input" class="addr-label">
+              <span class="addr-marker origin" aria-hidden="true">●</span>
+              <span>出発地</span>
+            </label>
+            <div class="input-wrap">
+              <input id="origin-input" type="text" placeholder="現在地を取得中..." autocomplete="off" aria-label="出発地" />
+              <button class="locate-btn" id="locate-btn" type="button" aria-label="現在地を取得">📍</button>
+            </div>
+            <ul class="suggestions" id="origin-suggestions" role="listbox" aria-label="出発地候補"></ul>
+          </div>
+
+          <div class="addr-row" id="dest-row">
+            <label for="dest-input" class="addr-label">
+              <span class="addr-marker dest" aria-hidden="true">▲</span>
+              <span>目的地</span>
+            </label>
+            <div class="input-wrap">
+              <input id="dest-input" type="text" placeholder="例：渋谷駅、東京タワー…" autocomplete="off" aria-label="目的地" />
+              <button class="clear-btn" id="dest-clear" type="button" aria-label="目的地クリア" hidden>✕</button>
+            </div>
+            <ul class="suggestions" id="dest-suggestions" role="listbox" aria-label="目的地候補"></ul>
+          </div>
+        </section>
+
+        <!-- Travel mode -->
+        <section class="travel-section" aria-label="移動手段">
+          <div class="section-label">移動手段</div>
+          <div class="travel-mode" role="radiogroup" aria-label="移動手段">
+            <label class="travel-opt">
+              <input type="radio" name="travel" value="walk" checked />
+              <span class="travel-card">🚶 徒歩</span>
+            </label>
+            <label class="travel-opt">
+              <input type="radio" name="travel" value="bike" />
+              <span class="travel-card">🚲 自転車</span>
+            </label>
+            <label class="travel-opt">
+              <input type="radio" name="travel" value="car" />
+              <span class="travel-card">🚗 車</span>
+            </label>
+          </div>
+        </section>
+
+        <!-- Time budget -->
+        <section class="budget-section" aria-label="寄り道時間バジェット">
+          <div class="section-label">
+            寄り道できる追加時間
+            <span class="budget-value" id="budget-value">+15 分</span>
+          </div>
+          <input type="range" id="budget-slider" min="5" max="60" step="5" value="15"
+            aria-label="寄り道時間（分）" />
+          <div class="budget-marks" aria-hidden="true">
+            <span>5</span><span>15</span><span>30</span><span>45</span><span>60</span>
+          </div>
+        </section>
+
+        <!-- Categories -->
+        <section class="cat-section" aria-label="興味のあるスポット">
+          <div class="section-label">興味のあるスポット</div>
+          <div class="cat-grid" id="cat-grid" role="group" aria-label="カテゴリフィルタ">
+            <!-- populated by JS -->
+          </div>
+        </section>
+
+        <!-- Free-mode-only: search button -->
+        <section class="free-search-section">
+          <button class="btn-primary" id="search-btn" type="button">
+            <span class="btn-icon">🔍</span>
+            <span>寄り道候補を探す</span>
+          </button>
+        </section>
+
+        </div><!-- /.free-mode-block -->
+
+        <!-- Gacha banner (always visible, both modes) -->
+        <section class="gacha-banner" aria-label="ガチャ">
+          <button class="gacha-btn" id="gacha-btn" type="button">
+            <span class="gacha-machine" aria-hidden="true">
+              <span class="gacha-globe"></span>
+              <span class="gacha-base"></span>
+              <span class="gacha-handle"></span>
+            </span>
+            <span class="gacha-label">
+              <span class="gacha-title" id="gacha-title">コースガチャを回す</span>
+              <span class="gacha-meta">
+                <span class="gacha-counter" id="gacha-counter">本日 0/3 回</span>
+                <span class="gacha-coins" id="gacha-coins">🪙 0</span>
+              </span>
+            </span>
+            <span class="gacha-shine" aria-hidden="true"></span>
+          </button>
+        </section>
+
+        <!-- Secondary action buttons -->
+        <section class="action-secondary">
+          <button class="btn-secondary" id="collection-btn" type="button">
+            <span class="btn-icon">📖</span>
+            <span>コース図鑑</span>
+          </button>
+          <button class="btn-secondary" id="share-btn" type="button">
+            <span class="btn-icon">🔗</span>
+            <span>共有</span>
+          </button>
+        </section>
+
+        <!-- Result list -->
+        <section class="results-section" aria-label="寄り道候補リスト">
+          <div class="results-header">
+            <span id="results-count">候補：0 件</span>
+            <button class="sort-btn" id="sort-btn" type="button" aria-label="並び替え">並び替え：近い順 ▾</button>
+          </div>
+          <ul class="results-list" id="results-list" aria-live="polite"></ul>
+          <div class="empty-state" id="empty-state">
+            <p>👈 設定して「寄り道候補を探す」を押してください</p>
+          </div>
+        </section>
+
+        <!-- Selected route summary -->
+        <section class="summary-section" id="summary-section" hidden aria-label="選んだコース">
+          <div class="summary-header" id="summary-header">選んだコース</div>
+
+          <!-- Walking session (visible while walking) -->
+          <div class="walk-session" id="walk-session" hidden>
+            <div class="walk-progress-row">
+              <span class="walk-status" id="walk-status">🚶 ウォーク中</span>
+              <button class="walk-voice-toggle" id="walk-voice-toggle" type="button" aria-label="音声ガイド切替">🔊</button>
+              <span class="walk-percent" id="walk-percent">0%</span>
+            </div>
+            <div class="walk-bar"><div class="walk-bar-fill" id="walk-bar-fill"></div></div>
+            <div class="walk-next" id="walk-next">次：—</div>
+          </div>
+
+          <ul class="summary-list" id="summary-list"></ul>
+          <div class="summary-totals" id="summary-totals"></div>
+
+          <div class="summary-actions">
+            <button class="btn-walk-start" id="walk-start" type="button">
+              <span>🚶</span><span>このコースを歩き始める</span>
+            </button>
+            <button class="btn-walk-stop" id="walk-stop" type="button" hidden>
+              <span>⏹</span><span>ウォーク終了</span>
+            </button>
+            <button class="btn-clear-summary" id="clear-summary" type="button">クリア</button>
+          </div>
+        </section>
+
+        <!-- Footer attribution -->
+        <footer class="panel-footer">
+          <p class="attribution">
+            地図データ © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a> ・ <a href="#" id="open-privacy">🔒 プライバシー</a><br>
+            ⌨ <kbd>G</kbd>:ガチャ <kbd>C</kbd>:図鑑 <kbd>P</kbd>:プロフィール <kbd>Esc</kbd>:閉じる
+          </p>
+        </footer>
+      </div>
+    </aside>
+
+    <!-- Map area -->
+    <div class="map-wrap">
+      <div id="map" role="application" aria-label="地図"></div>
+
+      <!-- Loading overlay -->
+      <div class="loader" id="loader" hidden>
+        <div class="loader-spinner" aria-hidden="true"></div>
+        <p id="loader-text">読み込み中...</p>
+      </div>
+
+      <!-- Toast -->
+      <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+
+      <!-- Live region for screen readers (announcements during walks) -->
+      <div class="sr-only" id="sr-live" aria-live="assertive" aria-atomic="true"></div>
+
+      <!-- POI detail card -->
+      <div class="detail-card" id="detail-card" hidden role="dialog" aria-label="スポット詳細">
+        <button class="detail-close" id="detail-close" type="button" aria-label="閉じる">✕</button>
+        <div class="detail-content" id="detail-content"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ============ Gacha Modal ============ -->
+  <div class="modal-backdrop" id="gacha-modal" hidden>
+    <div class="modal gacha-modal" role="dialog" aria-label="寄り道ガチャ" aria-modal="true">
+      <button class="modal-close" id="gacha-close" type="button" aria-label="閉じる">✕</button>
+
+      <!-- Stage 1: 3 capsule selection -->
+      <div class="gacha-stage" id="gacha-stage-select">
+        <h2 class="modal-title">🎰 寄り道ガチャ</h2>
+        <p class="modal-sub" id="gacha-context">出発と目的地を設定してください</p>
+
+        <div class="gacha-stats compact">
+          <div class="stat-inline">
+            <span class="stat-inline-label">本日の無料</span>
+            <span class="stat-inline-val" id="modal-free-counter">0/3</span>
+          </div>
+          <div class="stat-inline">
+            <span class="stat-inline-label">コイン</span>
+            <span class="stat-inline-val">🪙 <span id="modal-coins">0</span></span>
+          </div>
+        </div>
+
+        <!-- Big gachapon machine -->
+        <div class="gachapon" id="gachapon">
+          <div class="gp-globe">
+            <div class="gp-globe-inside">
+              <span class="gp-ball" style="--bx:20%; --by:30%; --c1:#81c784; --c2:#388e3c"></span>
+              <span class="gp-ball" style="--bx:60%; --by:25%; --c1:#ffb74d; --c2:#f57c00"></span>
+              <span class="gp-ball" style="--bx:40%; --by:55%; --c1:#f06292; --c2:#c2185b"></span>
+              <span class="gp-ball" style="--bx:75%; --by:50%; --c1:#ba68c8; --c2:#7b1fa2"></span>
+              <span class="gp-ball" style="--bx:30%; --by:75%; --c1:#4fc3f7; --c2:#0288d1"></span>
+              <span class="gp-ball" style="--bx:65%; --by:75%; --c1:#ff8a65; --c2:#d84315"></span>
+            </div>
+            <div class="gp-globe-shine"></div>
+          </div>
+          <div class="gp-body">
+            <div class="gp-coin-slot">¥100</div>
+            <div class="gp-handle" id="gp-handle">
+              <div class="gp-handle-knob"></div>
+            </div>
+          </div>
+          <div class="gp-tray">
+            <div class="gp-tray-slot"></div>
+            <div class="gp-output" id="gp-output" hidden>
+              <div class="gp-output-capsule" id="gp-output-capsule">
+                <div class="gp-cap-top"></div>
+                <div class="gp-cap-bot"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick gacha modes -->
+        <div class="quick-modes">
+          <button class="quick-mode active" data-quickmode="all" type="button">🌍 全部</button>
+          <button class="quick-mode" data-quickmode="undiscovered" type="button">🔍 未発見</button>
+          <button class="quick-mode" data-quickmode="rare-up" type="button">✨ レアUP</button>
+        </div>
+
+        <p class="capsule-hint" id="capsule-hint">ハンドルを回してコースを引こう</p>
+
+        <!-- Action: turn the handle -->
+        <button class="btn-turn" id="btn-turn" type="button">
+          <span class="turn-icon">🎰</span>
+          <span class="turn-label">ガチャを回す</span>
+          <span class="turn-cost" id="turn-cost">残り <span id="free-remaining">3</span>回（無料）</span>
+        </button>
+
+        <!-- Pool preview -->
+        <details class="pool-preview" id="pool-preview">
+          <summary class="pool-summary">
+            <span>🎯 抽選プール</span>
+            <span class="pool-count" id="pool-count">—コース</span>
+          </summary>
+          <label class="pool-undiscovered">
+            <input type="checkbox" id="pool-undiscovered-only" />
+            <span>未発見コースのみ</span>
+          </label>
+          <div class="pool-list" id="pool-list"></div>
+        </details>
+
+        <button class="btn-shop" id="shop-btn" type="button">
+          🪙 コインを購入する
+        </button>
+      </div>
+
+      <!-- Stage 3: Result reveal (route) -->
+      <div class="gacha-stage" id="gacha-stage-result" hidden>
+        <div class="result-rays" id="result-rays"></div>
+        <div class="result-card route-card" id="result-card">
+          <div class="result-rarity-band" id="result-rarity-band">
+            <span id="result-rarity-stars"></span>
+            <span id="result-rarity-name"></span>
+          </div>
+
+          <div class="route-theme">
+            <span class="route-theme-icon" id="route-theme-icon">🎲</span>
+            <span class="route-theme-name" id="route-theme-name">—</span>
+          </div>
+          <h3 class="route-title" id="route-title">—</h3>
+
+          <div class="route-stats">
+            <span class="meta-pill" id="route-stops">📍 —</span>
+            <span class="meta-pill" id="route-time">⏱ —</span>
+            <span class="meta-pill" id="route-dist">📏 —</span>
+          </div>
+
+          <p class="route-description" id="route-description" hidden></p>
+
+          <ol class="route-stops-list" id="route-stops-list"></ol>
+
+          <div class="result-actions">
+            <button class="btn-primary" id="result-add" type="button">
+              <span>🚶 このルートで行く</span>
+            </button>
+            <button class="btn-share" id="result-again" type="button">
+              <span>もう一回</span>
+            </button>
+          </div>
+          <button class="btn-result-share" id="result-share" type="button">
+            <span>📤</span><span>このコースをシェア</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Stage 4: Out of pulls -->
+      <div class="gacha-stage" id="gacha-stage-empty" hidden>
+        <div class="empty-icon">🪙</div>
+        <h3>コインが足りません</h3>
+        <p>コインを購入するか、明日の無料ガチャをお待ちください。</p>
+        <button class="btn-shop big" id="shop-btn-2" type="button">
+          🪙 コインを購入する
+        </button>
+        <button class="btn-clear-summary" id="back-to-select" type="button">戻る</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Shop Modal ============ -->
+  <div class="modal-backdrop" id="shop-modal" hidden>
+    <div class="modal shop-modal" role="dialog" aria-label="コインショップ" aria-modal="true">
+      <button class="modal-close" id="shop-close" type="button" aria-label="閉じる">✕</button>
+      <h2 class="modal-title">🪙 コインショップ</h2>
+      <p class="modal-sub">寄り道ガチャを楽しむためのコインを購入できます</p>
+
+      <div class="shop-grid">
+        <button class="shop-item" data-coins="10" data-yen="100" type="button">
+          <div class="shop-coins">🪙 10</div>
+          <div class="shop-price">¥100</div>
+        </button>
+        <button class="shop-item recommended" data-coins="80" data-yen="700" data-bonus="0" type="button">
+          <div class="shop-tag">10連向け</div>
+          <div class="shop-coins">🪙 80</div>
+          <div class="shop-price">¥700</div>
+        </button>
+        <button class="shop-item" data-coins="120" data-yen="1000" data-bonus="20" type="button">
+          <div class="shop-tag bonus">+20 ボーナス</div>
+          <div class="shop-coins">🪙 120</div>
+          <div class="shop-price">¥1,000</div>
+        </button>
+        <button class="shop-item best" data-coins="700" data-yen="5000" data-bonus="200" type="button">
+          <div class="shop-tag bonus">+200 ボーナス</div>
+          <div class="shop-coins">🪙 700</div>
+          <div class="shop-price">¥5,000</div>
+        </button>
+      </div>
+
+      <p class="shop-note">
+        ※ これはデモ版です。「購入」を押すとコインが付与されます（実際の決済は発生しません）。
+      </p>
+    </div>
+  </div>
+
+  <!-- ============ Collection Modal ============ -->
+  <div class="modal-backdrop" id="collection-modal" hidden>
+    <div class="modal collection-modal" role="dialog" aria-label="コレクション" aria-modal="true">
+      <button class="modal-close" id="collection-close" type="button" aria-label="閉じる">✕</button>
+      <h2 class="modal-title">📖 コース図鑑</h2>
+      <p class="modal-sub">ガチャで引いたコースが図鑑に追加されていきます</p>
+
+      <div class="col-search-row">
+        <input type="search" id="col-search" class="col-search" placeholder="🔍 コース名・スポット名で検索..." aria-label="検索" />
+        <select id="col-sort" class="col-sort" aria-label="並び替え">
+          <option value="rarity">レア度順</option>
+          <option value="recent">発見順</option>
+          <option value="completion">完走回数順</option>
+          <option value="duration">所要時間順</option>
+          <option value="stops">スポット数順</option>
+        </select>
+      </div>
+
+      <div class="collection-stats" id="collection-stats">
+        <!-- populated by JS -->
+      </div>
+
+      <div class="collection-tabs" role="tablist">
+        <button class="col-tab active" data-rarity="all" type="button">すべて</button>
+        <button class="col-tab" data-rarity="legendary" type="button">✨ LR</button>
+        <button class="col-tab" data-rarity="sr" type="button">🌟 SR</button>
+        <button class="col-tab" data-rarity="r" type="button">⭐ R</button>
+        <button class="col-tab" data-rarity="n" type="button">◎ N</button>
+      </div>
+
+      <div class="collection-grid" id="collection-grid">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Onboarding Modal ============ -->
+  <div class="modal-backdrop" id="onboard-modal" hidden>
+    <div class="modal onboard-modal" role="dialog" aria-label="チュートリアル" aria-modal="true">
+      <button class="modal-close" id="onboard-close" type="button" aria-label="閉じる">✕</button>
+
+      <div class="onboard-stage" id="onboard-step-1">
+        <div class="onboard-icon">👋</div>
+        <h2 class="modal-title">寄り道マップへようこそ</h2>
+        <p class="onboard-text">あなたの街にある、まだ知らない散歩コースをガチャで引いて発見できる地図サービスです。</p>
+        <div class="onboard-progress">
+          <span class="dot active"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+        <button class="btn-primary onboard-next" data-next="2" type="button">次へ →</button>
+      </div>
+
+      <div class="onboard-stage" id="onboard-step-2" hidden>
+        <div class="onboard-icon">🎰</div>
+        <h2 class="modal-title">3つのカプセルから1つ引く</h2>
+        <p class="onboard-text">ガチャを回すと3本のコースが出現。1つカプセルを選ぶと、お気に入りの寄り道ルートが手に入ります。</p>
+        <div class="onboard-progress">
+          <span class="dot"></span><span class="dot active"></span><span class="dot"></span>
+        </div>
+        <button class="btn-primary onboard-next" data-next="3" type="button">次へ →</button>
+      </div>
+
+      <div class="onboard-stage" id="onboard-step-3" hidden>
+        <div class="onboard-icon">🚶</div>
+        <h2 class="modal-title">スタンプラリーで遊ぼう</h2>
+        <p class="onboard-text">「歩き始める」ボタンで散歩スタート。各スポットに着くと自動でスタンプGET。コース図鑑にコレクション！</p>
+        <div class="onboard-progress">
+          <span class="dot"></span><span class="dot"></span><span class="dot active"></span>
+        </div>
+        <button class="btn-primary onboard-finish" type="button">🎰 さっそくガチャを引く</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Completion Certificate Modal ============ -->
+  <div class="modal-backdrop" id="cert-modal" hidden>
+    <div class="modal cert-modal" role="dialog" aria-label="完走証明書" aria-modal="true">
+      <button class="modal-close" id="cert-close" type="button" aria-label="閉じる">✕</button>
+
+      <div class="certificate" id="certificate">
+        <div class="cert-medal">🏅</div>
+        <div class="cert-title">完走証明書</div>
+        <div class="cert-walk-count" id="cert-walk-count" hidden></div>
+        <div class="cert-course-name" id="cert-course">—</div>
+        <div class="cert-area" id="cert-area">—</div>
+        <div class="cert-stamps" id="cert-stamps"></div>
+        <div class="cert-footer">
+          <span id="cert-date">—</span>
+          <span class="cert-brand">👣 寄り道マップ</span>
+        </div>
+      </div>
+
+      <div class="cert-actions">
+        <button class="btn-share-x" id="share-x" type="button">𝕏 で共有</button>
+        <button class="btn-share-line" id="share-line" type="button">LINE で送る</button>
+        <button class="btn-share-copy" id="share-copy" type="button">🔗 URL</button>
+      </div>
+      <button class="btn-cert-download" id="cert-download" type="button">📥 画像でダウンロード</button>
+
+      <div class="next-suggestion" id="next-suggestion" hidden>
+        <div class="next-label">🎰 次に歩くなら？</div>
+        <button class="next-card" id="next-course-card" type="button">
+          <span class="next-emoji" id="next-emoji">🌳</span>
+          <div class="next-body">
+            <div class="next-title" id="next-title">—</div>
+            <div class="next-meta" id="next-meta">—</div>
+          </div>
+          <span class="next-cta">これで行く</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ GPS Permission Explainer ============ -->
+  <div class="modal-backdrop" id="gps-explain" hidden>
+    <div class="modal gps-explain-modal" role="dialog" aria-label="GPS利用について" aria-modal="true">
+      <button class="modal-close" id="gps-explain-close" type="button" aria-label="閉じる">✕</button>
+      <div class="onboard-icon">📍</div>
+      <h2 class="modal-title">位置情報の利用について</h2>
+      <ul class="gps-bullets">
+        <li>✅ <strong>用途</strong>：スポット到着の自動チェックインのみ</li>
+        <li>✅ <strong>送信先</strong>：どこにも送らず、端末内だけで処理</li>
+        <li>✅ <strong>保存先</strong>：このブラウザの localStorage のみ</li>
+        <li>⚠ 拒否しても手動チェックインボタンで遊べます</li>
+      </ul>
+      <p class="gps-note">「許可」を押すとブラウザの確認ダイアログが出ます。</p>
+      <div class="gps-actions">
+        <button class="btn-primary" id="gps-allow" type="button">📍 GPSを許可して開始</button>
+        <button class="btn-secondary" id="gps-manual" type="button">手動チェックインで遊ぶ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Privacy Policy ============ -->
+  <div class="modal-backdrop" id="privacy-modal" hidden>
+    <div class="modal privacy-modal" role="dialog" aria-label="プライバシーポリシー" aria-modal="true">
+      <button class="modal-close" id="privacy-close" type="button" aria-label="閉じる">✕</button>
+      <h2 class="modal-title">🔒 プライバシーポリシー</h2>
+      <div class="privacy-body">
+        <h3>収集する情報</h3>
+        <p>本サービスはアカウント登録不要で、以下のデータのみを<strong>あなたの端末内</strong>で扱います：</p>
+        <ul>
+          <li>位置情報（GPS）：自動チェックインのみで利用、送信なし</li>
+          <li>発見コース・完走コース・連続ログイン日数：localStorage に保存</li>
+          <li>ガチャ回数・コイン残高：localStorage に保存</li>
+        </ul>
+        <h3>第三者送信</h3>
+        <p>地図表示・経路計算のため、以下に位置座標を送ります：</p>
+        <ul>
+          <li>OpenStreetMap（タイル画像）</li>
+          <li>OSRM（ルート計算）</li>
+          <li>Nominatim（住所検索）</li>
+        </ul>
+        <h3>外部リンク</h3>
+        <p>「Googleマップで開く」「𝕏で共有」「LINEで送る」を押すと外部サイトが開きます。各サービスのポリシーに従います。</p>
+        <h3>クッキー</h3>
+        <p>使用していません。localStorage と Service Worker キャッシュのみ。</p>
+        <h3>データ削除</h3>
+        <p>ブラウザの「サイトデータをクリア」で全削除できます。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Course Detail Preview ============ -->
+  <div class="modal-backdrop" id="course-detail-modal" hidden>
+    <div class="modal course-detail-modal" role="dialog" aria-label="コース詳細" aria-modal="true">
+      <button class="modal-close" id="course-detail-close" type="button" aria-label="閉じる">✕</button>
+      <div class="course-detail-content" id="course-detail-content">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Daily Login Bonus ============ -->
+  <div class="modal-backdrop" id="daily-bonus-modal" hidden>
+    <div class="modal daily-bonus-modal" role="dialog" aria-label="連続ログイン" aria-modal="true">
+      <button class="modal-close" id="daily-bonus-close" type="button" aria-label="閉じる">✕</button>
+      <div class="onboard-icon">🔥</div>
+      <h2 class="modal-title" id="daily-bonus-title">連続◯日目！</h2>
+      <p class="onboard-text" id="daily-bonus-text">—</p>
+      <div class="streak-calendar" id="streak-calendar"></div>
+      <button class="btn-primary" id="daily-bonus-claim" type="button">🪙 受け取る</button>
+    </div>
+  </div>
+
+  <!-- ============ Trophy Earned ============ -->
+  <div class="trophy-burst" id="trophy-burst" hidden>
+    <div class="trophy-content">
+      <div class="trophy-icon" id="trophy-icon">🏆</div>
+      <div class="trophy-label">称号を獲得</div>
+      <div class="trophy-name" id="trophy-name">—</div>
+      <div class="trophy-desc" id="trophy-desc">—</div>
+    </div>
+  </div>
+
+  <!-- ============ Stamp Got! Toast ============ -->
+  <div class="stamp-burst" id="stamp-burst" hidden>
+    <div class="stamp-content">
+      <div class="stamp-emoji" id="stamp-emoji">🍡</div>
+      <div class="stamp-label">スタンプGET！</div>
+      <div class="stamp-name" id="stamp-name">—</div>
+    </div>
+  </div>
+
+  <!-- Confetti container -->
+  <div class="confetti-container" id="confetti" hidden></div>
+
+  <!-- Leaflet JS (BSD-2-Clause) -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+  <script src="photos.js" defer></script>
+  <script src="courses.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>

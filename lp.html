@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ff7e3d" />
+  <title>寄り道マップ — あと◯分あったら、どこ寄る？</title>
+  <meta name="description" content="街の散歩コースをガチャで引いて、スタンプラリーで遊べる地図サービス。吉祥寺・谷根千エリアのキュレーション済みコースから運命の一本を引こう。" />
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👣</text></svg>" />
+
+  <!-- OGP -->
+  <meta property="og:title" content="寄り道マップ — あと◯分あったら、どこ寄る？" />
+  <meta property="og:description" content="街の散歩コースをガチャで引いてスタンプラリーで遊べる地図サービス。" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://yorimichi.in-dx.jp/lp.html" />
+  <meta property="og:image" content="https://yorimichi.in-dx.jp/og.svg" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN",
+        "Yu Gothic", "Meiryo", "Helvetica Neue", Arial, sans-serif;
+      color: #1c1c1f;
+      background: #fafaf7;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: #e55a17; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Hero */
+    .hero {
+      background: linear-gradient(135deg, #ff7e3d 0%, #ff4081 50%, #9c27b0 100%);
+      color: white;
+      padding: 80px 24px 100px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 20% 30%, rgba(255,255,255,0.15), transparent 40%),
+        radial-gradient(circle at 80% 70%, rgba(255,255,255,0.12), transparent 40%);
+      pointer-events: none;
+    }
+    .hero-inner { max-width: 720px; margin: 0 auto; position: relative; z-index: 1; }
+    .hero-emoji { font-size: 72px; line-height: 1; margin-bottom: 16px; display: block; }
+    .hero h1 {
+      font-size: clamp(32px, 6vw, 56px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+      line-height: 1.2;
+    }
+    .hero-sub {
+      font-size: clamp(16px, 2.5vw, 22px);
+      opacity: 0.95;
+      margin-bottom: 32px;
+      font-weight: 500;
+    }
+    .cta-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: white;
+      color: #e55a17;
+      padding: 18px 36px;
+      border-radius: 100px;
+      font-weight: 800;
+      font-size: 18px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s ease;
+    }
+    .cta-primary:hover { transform: translateY(-3px); text-decoration: none; }
+    .cta-primary .arrow { transition: transform 0.2s ease; }
+    .cta-primary:hover .arrow { transform: translateX(4px); }
+    .cta-note { margin-top: 12px; font-size: 13px; opacity: 0.85; }
+
+    /* Sections */
+    section { padding: 64px 24px; }
+    .container { max-width: 960px; margin: 0 auto; }
+    h2 { font-size: clamp(24px, 4vw, 36px); font-weight: 800; margin-bottom: 8px; text-align: center; }
+    .section-sub { text-align: center; color: #6b6b72; font-size: 15px; margin-bottom: 40px; }
+
+    /* Steps */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+      margin-top: 32px;
+    }
+    .step {
+      background: white;
+      border-radius: 16px;
+      padding: 28px 24px;
+      text-align: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+      border: 1px solid #e5e2db;
+    }
+    .step-num {
+      display: inline-block;
+      background: linear-gradient(135deg, #ff7e3d, #ff4081);
+      color: white;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      font-weight: 800;
+      line-height: 36px;
+      margin-bottom: 12px;
+    }
+    .step-icon { font-size: 56px; margin-bottom: 8px; line-height: 1; }
+    .step h3 { font-size: 18px; margin-bottom: 8px; }
+    .step p { font-size: 14px; color: #6b6b72; }
+
+    /* Features */
+    .features {
+      background: linear-gradient(180deg, #fff8e1 0%, #fafaf7 100%);
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .feature {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid #e5e2db;
+    }
+    .feature-emoji { font-size: 36px; margin-bottom: 8px; }
+    .feature h3 { font-size: 17px; margin-bottom: 6px; }
+    .feature p { font-size: 14px; color: #6b6b72; }
+
+    /* Course samples */
+    .course-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .course-card {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+      border: 1px solid #e5e2db;
+    }
+    .course-hero {
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 56px;
+      position: relative;
+    }
+    .course-rarity {
+      position: absolute;
+      top: 8px; left: 8px;
+      background: rgba(255,255,255,0.95);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #d4af37;
+    }
+    .course-rarity.sr { color: #ff9800; }
+    .course-rarity.lr { background: linear-gradient(135deg, #ff5722, #ffd700); color: white; }
+    .course-body { padding: 16px 18px; }
+    .course-name { font-weight: 700; font-size: 16px; margin-bottom: 4px; }
+    .course-meta { font-size: 12px; color: #6b6b72; margin-bottom: 8px; }
+    .course-desc { font-size: 13px; color: #1c1c1f; }
+
+    /* B2B CTA */
+    .b2b {
+      background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+      color: white;
+    }
+    .b2b h2 { color: white; }
+    .b2b .section-sub { color: rgba(255,255,255,0.85); }
+    .b2b-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin: 32px 0;
+    }
+    .b2b-item {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .b2b-item h3 { font-size: 16px; margin-bottom: 6px; }
+    .b2b-item p { font-size: 13px; opacity: 0.9; }
+    .b2b-cta {
+      display: inline-block;
+      background: white;
+      color: #1e40af;
+      padding: 14px 32px;
+      border-radius: 100px;
+      font-weight: 700;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    }
+
+    /* Footer */
+    footer {
+      background: #1c1c1f;
+      color: rgba(255,255,255,0.7);
+      padding: 40px 24px 24px;
+      font-size: 13px;
+      text-align: center;
+    }
+    footer a { color: rgba(255,255,255,0.9); }
+    .foot-links { margin-bottom: 16px; }
+    .foot-links a { margin: 0 12px; }
+    .foot-brand { font-size: 16px; color: white; margin-bottom: 8px; font-weight: 700; }
+
+    @media (max-width: 600px) {
+      .hero { padding: 56px 20px 72px; }
+      section { padding: 48px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-inner">
+      <span class="hero-emoji">👣</span>
+      <h1>あと◯分あったら、<br>どこ寄る？</h1>
+      <p class="hero-sub">街の散歩コースをガチャで引いて、<br>スタンプラリーで遊べる地図サービス。</p>
+      <a class="cta-primary" href="/">
+        <span>🎰</span>
+        <span>今すぐガチャを回す</span>
+        <span class="arrow">→</span>
+      </a>
+      <p class="cta-note">無料・登録不要・スマホでもPCでもOK</p>
+    </div>
+  </section>
+
+  <!-- 3-step -->
+  <section>
+    <div class="container">
+      <h2>遊び方は3ステップ</h2>
+      <p class="section-sub">手順は単純、体験はリッチ。</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-icon">🎰</div>
+          <h3>ガチャを回す</h3>
+          <p>巨大なガチャマシンのハンドルを回すと、その日のおすすめ散歩コースが1本ポロッと出てきます。</p>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-icon">🚶</div>
+          <h3>地図を見ながら歩く</h3>
+          <p>道なりルートで案内。GPSで自動チェックインしながら、各スポットでスタンプを集めます。</p>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-icon">🏅</div>
+          <h3>完走証明書をシェア</h3>
+          <p>すべてのスポットを巡ると完走証明書が発行。XやLINEで自慢できます。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features">
+    <div class="container">
+      <h2>こだわりポイント</h2>
+      <p class="section-sub">ただの地図でも、ただのガチャでもない、新しい散歩体験。</p>
+      <div class="feature-grid">
+        <div class="feature">
+          <div class="feature-emoji">📖</div>
+          <h3>キュレーション済みコース</h3>
+          <p>ハーモニカ横丁、夕やけだんだん、井の頭公園など、地元民に愛される名所を厳選してコース化。</p>
+        </div>
+        <div class="feature">
+          <div class="feature-emoji">✨</div>
+          <h3>レアコース＆コース図鑑</h3>
+          <p>レア度はN/R/SR/LRの4段階。早朝限定の「霧の井の頭」など隠しコースも。発見済みは図鑑に追加。</p>
+        </div>
+        <div class="feature">
+          <div class="feature-emoji">🗺</div>
+          <h3>道なりルート＆Googleマップ連携</h3>
+          <p>OSRMで実際の道に沿ったルートを表示。「Googleマップで開く」ボタンでそのままナビへ。</p>
+        </div>
+        <div class="feature">
+          <div class="feature-emoji">🎙</div>
+          <h3>音声ガイド</h3>
+          <p>「次は◯◯まで100m先」のように音声で案内。歩きスマホ防止＋安全な散歩。</p>
+        </div>
+        <div class="feature">
+          <div class="feature-emoji">🔥</div>
+          <h3>連続ログイン報酬</h3>
+          <p>毎日ログインでコイン獲得。続けるほどレアコースに出会いやすく。</p>
+        </div>
+        <div class="feature">
+          <div class="feature-emoji">📱</div>
+          <h3>PWAでアプリ化</h3>
+          <p>スマホで「ホーム画面に追加」すればネイティブアプリのように使えます。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Course samples -->
+  <section>
+    <div class="container">
+      <h2>たとえばこんなコース</h2>
+      <p class="section-sub">現在 吉祥寺・谷根千エリアの 9 コースを公開中。</p>
+      <div class="course-grid">
+        <div class="course-card">
+          <div class="course-hero" style="background: linear-gradient(135deg, #66bb6a 0%, #2e7d32 100%);">
+            <span class="course-rarity sr">🌟 SR</span>
+            🌳
+          </div>
+          <div class="course-body">
+            <div class="course-name">吉祥寺 王道・公園と路地裏散歩</div>
+            <div class="course-meta">📍 4スポット ・ 約75分 ・ 徒歩</div>
+            <div class="course-desc">ハーモニカ横丁から井の頭公園まで、住みたい街No.1の魅力を凝縮した定番コース。</div>
+          </div>
+        </div>
+        <div class="course-card">
+          <div class="course-hero" style="background: linear-gradient(135deg, #ff8a65 0%, #ffa726 50%, #4fc3f7 100%);">
+            <span class="course-rarity lr">✨ LR 限定</span>
+            🌅
+          </div>
+          <div class="course-body">
+            <div class="course-name">霧の井の頭・早朝禁忌の弁天さま</div>
+            <div class="course-meta">📍 4スポット ・ 約100分 ・ 早朝5:30〜限定</div>
+            <div class="course-desc">早朝のみ味わえる伝説のコース。霧の井の頭池、デート禁忌の弁財天、宮崎駿の世界。</div>
+          </div>
+        </div>
+        <div class="course-card">
+          <div class="course-hero" style="background: linear-gradient(135deg, #ff8a65 0%, #d84315 100%);">
+            <span class="course-rarity sr">🌟 SR</span>
+            🏮
+          </div>
+          <div class="course-body">
+            <div class="course-name">谷根千 下町情緒・夕やけだんだん</div>
+            <div class="course-meta">📍 4スポット ・ 約90分 ・ 徒歩</div>
+            <div class="course-desc">猫が集まる夕日の階段、根津神社の千本鳥居、老舗カフェ。下町情緒を堪能。</div>
+          </div>
+        </div>
+      </div>
+      <p style="text-align:center; margin-top:32px;">
+        <a class="cta-primary" href="/" style="background: linear-gradient(135deg, #ff7e3d, #ff4081); color: white;">
+          <span>🎰</span><span>ガチャで運命の一本を引く</span><span class="arrow">→</span>
+        </a>
+      </p>
+    </div>
+  </section>
+
+  <!-- B2B CTA -->
+  <section class="b2b">
+    <div class="container">
+      <h2>商店街・自治体・店舗の方へ</h2>
+      <p class="section-sub">あなたの街にも「公式の寄り道マップ」を。</p>
+
+      <div class="b2b-grid">
+        <div class="b2b-item">
+          <h3>📍 商店街振興組合</h3>
+          <p>食べ歩きコースを公式コース化。スタンプラリーで送客＆滞在時間UP。</p>
+        </div>
+        <div class="b2b-item">
+          <h3>🏛 自治体・観光協会</h3>
+          <p>観光振興・地方創生交付金の活用例として。エリア限定コースの編集権付与。</p>
+        </div>
+        <div class="b2b-item">
+          <h3>☕ 個店・施設</h3>
+          <p>コース内の経由スポットとして掲載。来店促進＋若年層リーチ。</p>
+        </div>
+        <div class="b2b-item">
+          <h3>🏘 不動産・ディベロッパー</h3>
+          <p>「住みたい街発見ツール」として内見前ガイドや沿線PRに活用可能。</p>
+        </div>
+      </div>
+
+      <p style="text-align:center;">
+        <a class="b2b-cta" href="mailto:info@in-dx.jp?subject=寄り道マップ%20提携問い合わせ">
+          📧 提携・取材のお問い合わせ
+        </a>
+      </p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="foot-brand">👣 寄り道マップ</div>
+    <div>あと◯分あったら、どこ寄る？</div>
+    <div class="foot-links" style="margin-top: 24px;">
+      <a href="/">アプリを開く</a>
+      <a href="/about.html">運営者情報</a>
+      <a href="mailto:info@in-dx.jp">お問い合わせ</a>
+    </div>
+    <div style="margin-top: 16px; font-size: 11px;">
+      運営：<strong>飲DX</strong>（屋号） ・ © 2026 ・ 地図データ © OpenStreetMap contributors
+    </div>
+  </footer>
+
+  <!-- Cloudflare Web Analytics (or similar - add token later) -->
+  <!-- <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "YOUR_TOKEN"}'></script> -->
+</body>
+</html>
