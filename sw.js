@@ -1,5 +1,5 @@
-/* Service Worker for Yorimichi Map (basic offline cache) */
-const CACHE = 'yorimichi-v31';
+/* Service Worker for Machiaruki Gacha (basic offline cache) */
+const CACHE = 'yorimichi-v32';
 const OFFLINE_URL = './offline.html';
 const ASSETS = [
   './',

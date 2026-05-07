@@ -4084,7 +4084,7 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
   vertical-align: middle;
 }
 
-/* Pokedex undiscovered course card */
+/* Silhouette undiscovered course card */
 .col-card.undiscovered {
   background: var(--surface-2);
   filter: grayscale(0.8);

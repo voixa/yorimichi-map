@@ -1,14 +1,14 @@
 /* Spot photos from Wikimedia Commons (CC-licensed). Map: stop name -> URL */
 
-/* Perks: 完走特典（提携準備中の店舗） */
+/* Perks: 完走特典（提携締結後に解放）
+ * status: 'pending' = まだ表示しない（app.js で 'live' のみレンダリング）
+ * status: 'live'    = 提携締結済みで表示OK
+ *
+ * IMPORTANT: 'pending' のままでは絶対に表示しない（景品表示法・優良誤認リスク）。
+ * 全店との書面合意後に 'live' に変更すること。
+ */
 window.YORIMICHI_PERKS = {
-  '中道通り': { label: '☕ コーヒー1杯おまけ', desc: '完走画面を提示で一部加盟店にて', status: 'pending', partner: '提携準備中' },
-  'カヤバ珈琲': { label: '🍰 ケーキ100円OFF', desc: '完走画面を提示で', status: 'pending', partner: '提携準備中' },
-  'いせや 総本店': { label: '🍢 焼き鳥1本サービス', desc: '完走画面を提示で', status: 'pending', partner: '提携準備中' },
-  '小ざさ': { label: '🍡 焼き菓子1個プレゼント', desc: '完走画面を提示で', status: 'pending', partner: '提携準備中' },
-  'カフェ どんぐり山': { label: '☕ ドリンク10%OFF', desc: '完走画面を提示で', status: 'pending', partner: '提携準備中' },
-  'さぼうる': { label: '🎟 ナポリタンセット100円OFF', desc: '完走画面を提示で', status: 'pending', partner: '提携準備中' },
-  '舟和 本店': { label: '🍠 喫茶100円OFF', desc: '完走画面を提示で', status: 'pending', partner: '提携準備中' },
+  // すべて提携準備中のため、現状は表示されない
 };
 
 window.YORIMICHI_PHOTOS = {
@@ -16,9 +16,8 @@ window.YORIMICHI_PHOTOS = {
   "さとう (吉祥寺)": "https://upload.wikimedia.org/wikipedia/commons/1/16/Menchi_%28minced_pork%29_katsu.jpg",
   "すずきの惣菜": "https://upload.wikimedia.org/wikipedia/commons/1/16/Menchi_%28minced_pork%29_katsu.jpg",
   "ラドリオ": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Jinbocho_ladrio_2023-10-20%282%29_as.jpg/3840px-Jinbocho_ladrio_2023-10-20%282%29_as.jpg",
-  "ヴィレッジヴァンガード 吉祥寺店": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Village_Vanguard_Headquarter_Shop_20150606.jpg/3840px-Village_Vanguard_Headquarter_Shop_20150606.jpg",
   "七井橋通り": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Mitaka_Inokashira_Park_In_Spring_1.JPG/3840px-Mitaka_Inokashira_Park_In_Spring_1.JPG",
-  "三鷹の森ジブリ美術館": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/%E4%B8%89%E9%B7%B9%E4%B9%8B%E6%A3%AE%E5%90%89%E5%8D%9C%E5%8A%9B%E7%BE%8E%E8%A1%93%E9%A4%A8_%2816202559242%29.jpg/3840px-%E4%B8%89%E9%B7%B9%E4%B9%8B%E6%A3%AE%E5%90%89%E5%8D%9C%E5%8A%9B%E7%BE%8E%E8%A1%93%E9%A4%A8_%2816202559242%29.jpg",
+  "玉川上水沿いの森": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Mitaka_Inokashira_Park_In_Spring_1.JPG/3840px-Mitaka_Inokashira_Park_In_Spring_1.JPG",
   "中道通り": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/%E5%90%89%E7%A5%A5%E5%AF%BA%E3%82%B5%E3%83%B3%E3%83%AD%E3%83%BC%E3%83%89%E5%95%86%E5%BA%97%E8%A1%97%282025%E5%B9%B4%29.jpg/3840px-%E5%90%89%E7%A5%A5%E5%AF%BA%E3%82%B5%E3%83%B3%E3%83%AD%E3%83%BC%E3%83%89%E5%95%86%E5%BA%97%E8%A1%97%282025%E5%B9%B4%29.jpg",
   "井の頭弁財天": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Mitaka_Inokashira_Park_In_Spring_1.JPG/3840px-Mitaka_Inokashira_Park_In_Spring_1.JPG",
   "井の頭池（早朝）": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Mitaka_Inokashira_Park_In_Spring_1.JPG/3840px-Mitaka_Inokashira_Park_In_Spring_1.JPG",

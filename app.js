@@ -19,7 +19,7 @@
   // ============================================================
   const I18N = {
     ja: {
-      brandName: '寄り道マップ',
+      brandName: '街歩きガチャ',
       brandTagline: 'あと◯分あったら、どこ寄る？',
       tabCourse: '📖 既存コース',
       tabRoute: '🎯 自由ルート',
@@ -38,7 +38,7 @@
       walkStartFree: 'このルートを歩き始める',
     },
     en: {
-      brandName: 'Yorimichi Map',
+      brandName: 'Machiaruki Gacha',
       brandTagline: 'Got a few extra minutes? Where to stop by?',
       tabCourse: '📖 Curated',
       tabRoute: '🎯 Free Route',
@@ -510,7 +510,9 @@
 
     const photoUrl = (window.YORIMICHI_PHOTOS || {})[stop.name];
     const photoBg = extra.photoBg || 'linear-gradient(135deg, var(--brand-soft), var(--surface-2))';
-    const perk = (window.YORIMICHI_PERKS || {})[stop.name];
+    // 提携締結済み（status: 'live'）の特典のみ表示。'pending' は景表法対策で非表示
+    const _rawPerk = (window.YORIMICHI_PERKS || {})[stop.name];
+    const perk = (_rawPerk && _rawPerk.status === 'live') ? _rawPerk : null;
     const courseId = state.activeWalk?.courseId;
     const isVisited = courseId && state.completedStops[courseId]?.has(idx);
 
@@ -1623,7 +1625,8 @@
     }
     if (state.filterHasPerk) {
       const perks = window.YORIMICHI_PERKS || {};
-      all = all.filter(c => c.stops.some(s => perks[s.name]));
+      // 提携締結済みの特典のみで絞り込み（status: 'live'）
+      all = all.filter(c => c.stops.some(s => perks[s.name] && perks[s.name].status === 'live'));
     }
     return all;
   }
@@ -2641,7 +2644,8 @@
     route.stops.forEach((stop, i) => {
       const cat = categoryById(stop.cat) || { emoji: stop.emoji || '📍', label: 'スポット' };
       const emoji = stop.emoji || cat.emoji;
-      const perk = (window.YORIMICHI_PERKS || {})[stop.name];
+      const _rawPerk = (window.YORIMICHI_PERKS || {})[stop.name];
+      const perk = (_rawPerk && _rawPerk.status === 'live') ? _rawPerk : null;
       const li = document.createElement('li');
       li.innerHTML = `
         <span class="stop-num">${i + 1}</span>
@@ -2807,7 +2811,7 @@
   }
 
   function renderCollection(filter) {
-    // Pokedex-style: show ALL canonical courses; discovered ones are revealed, others are silhouettes
+    // Silhouette-collection style: show ALL canonical courses; discovered ones are revealed, others are silhouettes
     const allCourses = window.YORIMICHI_COURSES || [];
     const discovered = state.discoveredCourses;
 
@@ -2955,7 +2959,8 @@
       <div class="cd-stops">
         ${course.stops.map((s, i) => {
           const photoUrl = (window.YORIMICHI_PHOTOS || {})[s.name];
-          const perk = (window.YORIMICHI_PERKS || {})[s.name];
+          const _rawPerk = (window.YORIMICHI_PERKS || {})[s.name];
+          const perk = (_rawPerk && _rawPerk.status === 'live') ? _rawPerk : null;
           const thumb = photoUrl
             ? `<span class="cd-stop-thumb" style="background-image:url('${photoUrl}')"></span>`
             : `<span class="cd-stop-emoji">${s.emoji || '📍'}</span>`;
@@ -3834,7 +3839,7 @@
     // Footer brand
     ctx.font = 'bold 56px sans-serif';
     ctx.fillStyle = '#ff7e3d';
-    ctx.fillText('👣 寄り道マップ', canvas.width / 2, 1700);
+    ctx.fillText('👣 街歩きガチャ', canvas.width / 2, 1700);
 
     ctx.font = '28px sans-serif';
     ctx.fillStyle = '#6b6b72';
@@ -3895,7 +3900,7 @@
 「${route.title}」
 ${route.themeIcon} ${route.themeName} ・ ${route.stops.length}スポット ・ ${Math.round(route.detourMin)}分
 
-寄り道マップで散歩コースをガチャしてみよう👣`;
+街歩きガチャで散歩コースを引いてみよう👣`;
     const url = location.href.split('#')[0].split('?')[0];
 
     // Picker modal
@@ -3973,7 +3978,7 @@ ${route.themeIcon} ${route.themeName} ・ ${route.stops.length}スポット ・ 
     const today = new Date();
     $('#cert-date').textContent = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
 
-    const shareText = `${course.name} を完走しました！🏅\n${course.areaIcon} ${course.areaName}\n👣 寄り道マップ`;
+    const shareText = `${course.name} を完走しました！🏅\n${course.areaIcon} ${course.areaName}\n👣 街歩きガチャ`;
     const shareUrl = location.href.split('#')[0];
 
     $('#share-x').onclick = () => {

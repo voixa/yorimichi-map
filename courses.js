@@ -249,14 +249,14 @@ window.YORIMICHI_COURSES = [
     areaIcon: '🌳',
     themeIcon: '🌅',
     rarity: 'legendary',
-    description: '早朝5:30〜のみ味わえる伝説のコース。霧に包まれる井の頭池、デート禁忌の伝承を持つ弁財天、宮崎駿の世界観。観光客が眠る時間に歩く特別な吉祥寺。',
-    description_en: 'A legendary course only available 5:30am onwards. The misty Inokashira pond, the Benten shrine with break-up legend, and the Ghibli world.',
+    description: '早朝5:30〜のみ味わえる伝説のコース。霧に包まれる井の頭池、デート禁忌の伝承を持つ弁財天、玉川上水沿いの森。観光客が眠る時間に歩く特別な吉祥寺。',
+    description_en: 'A legendary course only available 5:30am onwards. The misty Inokashira pond, the Benten shrine with break-up legend, and the forested Tamagawa-josui canal.',
     travelMode: 'walk',
     estimatedMin: 100,
-    budget: '¥2,000-4,000（要事前予約：ジブリ美術館）',
+    budget: '¥1,500-3,000（一部施設は事前予約制）',
     tags: ['早朝限定', 'パワースポット', '上級者向け'],
     origin: { lat: 35.7029, lng: 139.5800, name: '吉祥寺駅 公園口', shortLabel: '吉祥寺駅 公園口' },
-    dest:   { lat: 35.6962, lng: 139.5705, name: 'ジブリ美術館', shortLabel: 'ジブリ美術館' },
+    dest:   { lat: 35.6975, lng: 139.5740, name: '三鷹の森公園周辺', shortLabel: '三鷹の森公園周辺' },
     stops: [
       {
         lat: 35.7008, lng: 139.5710, name: '井の頭池（早朝）', name_en: 'Inokashira Pond (Dawn)', cat: 'viewpoint', emoji: '🌅',
@@ -280,11 +280,12 @@ window.YORIMICHI_COURSES = [
         desc: '公園内の隠れた名カフェ。木洩れ日とコーヒーで一息。'
       },
       {
-        lat: 35.6962, lng: 139.5705, name: '三鷹の森ジブリ美術館', name_en: 'Ghibli Museum, Mitaka', cat: 'art', emoji: '🎨',
+        lat: 35.6975, lng: 139.5740, name: '玉川上水沿いの森', name_en: 'Tamagawa-josui Canal Forest', cat: 'viewpoint', emoji: '🌳',
         photoBg: 'linear-gradient(135deg, #66bb6a 0%, #1565c0 100%)',
-        bestTime: '10:00-18:00', budget: '¥1,000', stayMin: 60,
-        tags: ['予約必須', 'ジブリ', '人気'],
-        desc: '宮崎駿の世界。事前予約必須の人気スポット。'
+        bestTime: '8:00-17:00', budget: '無料', stayMin: 30,
+        tags: ['緑陰', '小鳥', '散策路'],
+        desc: '木漏れ日の射す散策路。玉川上水沿いの静かな森を歩く。',
+        desc_en: 'A peaceful forest path along the Tamagawa-josui canal with dappled sunlight.'
       },
     ]
   },

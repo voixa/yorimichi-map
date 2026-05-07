@@ -64,7 +64,7 @@
   <!-- Brand + Tagline -->
   <g transform="translate(80, 200)">
     <text x="0" y="0" font-family="-apple-system, sans-serif" font-size="64" font-weight="900" fill="white">
-      <tspan x="0" dy="0">👣 寄り道マップ</tspan>
+      <tspan x="0" dy="0">👣 街歩きガチャ</tspan>
     </text>
     <text x="0" y="100" font-family="-apple-system, sans-serif" font-size="44" font-weight="700" fill="white">
       <tspan x="0" dy="0">あと◯分あったら、</tspan>

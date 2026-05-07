@@ -31,7 +31,7 @@ COURSE_TR = {
     },
     'kichijoji_dawn': {
         'name_en': '[Limited] Misty Inokashira & Forbidden Benten Shrine',
-        'description_en': 'A legendary course only available 5:30am onwards. The misty Inokashira pond, the Benten shrine with break-up legend, and the Ghibli world.',
+        'description_en': 'A legendary course only available 5:30am onwards. The misty Inokashira pond, the Benten shrine with break-up legend, and the forested Tamagawa-josui canal.',
     },
     'yanesen_classic': {
         'name_en': "Yanesen Classic: Sunset Steps & Cat Town",
@@ -89,7 +89,7 @@ STOP_TR = {
     '井の頭池（早朝）': 'Inokashira Pond (Dawn)',
     '井の頭弁財天': 'Inokashira Benzaiten Shrine',
     'カフェ どんぐり山': 'Cafe Donguri-yama',
-    '三鷹の森ジブリ美術館': 'Ghibli Museum, Mitaka',
+    '玉川上水沿いの森': 'Tamagawa-josui Canal Forest',
     '夕やけだんだん': 'Yuyake Dandan (Sunset Steps)',
     'カヤバ珈琲': 'Kayaba Coffee',
     '根津神社': 'Nezu Shrine',

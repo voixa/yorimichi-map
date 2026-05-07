@@ -28,7 +28,7 @@ RETRY = [
 
 def fetch_image_rest(title):
     url = "https://ja.wikipedia.org/api/rest_v1/page/summary/" + urllib.parse.quote(title)
-    req = urllib.request.Request(url, headers={"User-Agent": "YorimichiMap/0.1 (research) seijirooo.y@gmail.com"})
+    req = urllib.request.Request(url, headers={"User-Agent": "MachiarukiGacha/0.1 (research) info@in-dx.jp"})
     try:
         with urllib.request.urlopen(req, timeout=15) as r:
             data = json.loads(r.read().decode("utf-8"))

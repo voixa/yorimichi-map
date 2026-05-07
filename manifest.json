@@ -1,6 +1,6 @@
 {
-  "name": "寄り道マップ",
-  "short_name": "寄り道マップ",
+  "name": "街歩きガチャ",
+  "short_name": "街歩きガチャ",
   "description": "あと◯分あったら、どこ寄る？ 街の散歩コースをガチャで引く地図サービス。",
   "start_url": "./",
   "display": "standalone",
