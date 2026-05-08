@@ -3146,6 +3146,114 @@
     }
   }
 
+  // ---------- Lifetime stats + walk log ----------
+  function getLifetimeStats() {
+    const totalMin = parseInt(localStorage.getItem('yorimichi-total-walk-min') || '0', 10) || 0;
+    const completed = state.completedCourses.size;
+    const discovered = state.discoveredCourses.size;
+    const totalStamps = Object.values(state.walkCounts || {}).reduce((sum, n) => sum + (n || 0), 0);
+    // 最も歩いたコース
+    let mostId = null;
+    let mostCount = 0;
+    for (const [id, n] of Object.entries(state.walkCounts || {})) {
+      if (n > mostCount) { mostCount = n; mostId = id; }
+    }
+    const mostCourse = mostId ? (window.YORIMICHI_COURSES || []).find(c => c.id === mostId) : null;
+    // エリア集計
+    const areaCount = {};
+    for (const id of state.completedCourses) {
+      const c = (window.YORIMICHI_COURSES || []).find(x => x.id === id);
+      if (c?.area) areaCount[c.area] = (areaCount[c.area] || 0) + 1;
+    }
+    let mostArea = null, mostAreaN = 0;
+    for (const [a, n] of Object.entries(areaCount)) {
+      if (n > mostAreaN) { mostArea = a; mostAreaN = n; }
+    }
+    const mostAreaObj = mostArea ? (window.YORIMICHI_AREAS || []).find(a => a.id === mostArea) : null;
+    return { totalMin, completed, discovered, totalStamps, mostCourse, mostCourseCount: mostCount, mostArea: mostAreaObj };
+  }
+
+  function renderLifetimeStats() {
+    const el = $('#lifetime-stats');
+    if (!el) return;
+    const s = getLifetimeStats();
+    const hours = Math.floor(s.totalMin / 60);
+    const mins = s.totalMin % 60;
+    const timeLabel = hours > 0 ? `${hours}h${mins > 0 ? ' ' + mins + 'm' : ''}` : `${mins}m`;
+    el.innerHTML = `
+      <div class="lt-stat">
+        <div class="lt-stat-num">${s.completed}</div>
+        <div class="lt-stat-label">完走コース</div>
+      </div>
+      <div class="lt-stat">
+        <div class="lt-stat-num">${s.totalStamps}</div>
+        <div class="lt-stat-label">獲得スタンプ</div>
+      </div>
+      <div class="lt-stat">
+        <div class="lt-stat-num">${timeLabel}</div>
+        <div class="lt-stat-label">累計散歩時間</div>
+      </div>
+      <div class="lt-stat">
+        <div class="lt-stat-num">${s.mostArea ? (s.mostArea.icon + ' ' + s.mostArea.name.slice(0, 4)) : '—'}</div>
+        <div class="lt-stat-label">最頻エリア</div>
+      </div>
+    `;
+  }
+
+  function renderWalkLog() {
+    const list = $('#walk-log-list');
+    const stats = $('#walk-log-stats');
+    if (!list || !stats) return;
+    const history = (state.walkHistory || []).slice().reverse(); // 新しい順
+
+    // 集計
+    const totalCompleted = history.filter(h => h.completed).length;
+    const totalStops = history.reduce((s, h) => s + (h.stops || 0), 0);
+    const days = new Set(history.map(h => h.date)).size;
+    stats.innerHTML = `
+      <div>
+        <div class="wls-num">${totalCompleted}</div>
+        <div class="wls-label">完走回数</div>
+      </div>
+      <div>
+        <div class="wls-num">${totalStops}</div>
+        <div class="wls-label">スポット累計</div>
+      </div>
+      <div>
+        <div class="wls-num">${days}</div>
+        <div class="wls-label">散歩日数</div>
+      </div>
+    `;
+
+    if (history.length === 0) {
+      list.innerHTML = `
+        <div class="empty-state-polished">
+          <div class="es-icon">🚶</div>
+          <div class="es-title">まだ歩いていません</div>
+          <div class="es-desc">ガチャを引いて、はじめての散歩に出かけましょう！</div>
+        </div>
+      `;
+      return;
+    }
+
+    list.innerHTML = history.map(h => {
+      const course = (window.YORIMICHI_COURSES || []).find(c => c.id === h.courseId);
+      const name = course ? tField(course, 'name') : '自由ルート';
+      const emoji = course?.themeIcon || course?.areaIcon || '🚶';
+      const completed = h.completed ? '🏅 完走' : '途中';
+      return `
+        <div class="walk-log-item">
+          <div class="wli-emoji">${emoji}</div>
+          <div class="wli-body">
+            <div class="wli-name">${escapeHtml(name)}</div>
+            <div class="wli-meta">${completed} ・ ${h.stops || 0}スポット</div>
+          </div>
+          <div class="wli-date">${escapeHtml(h.date || '')}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
   // ---------- Daily missions ----------
   const MISSIONS_KEY = 'yorimichi-missions';
 
@@ -4202,6 +4310,7 @@
 
   function showProfile() {
     $('#profile-modal').hidden = false;
+    try { renderLifetimeStats(); } catch {}
     const xp = computeXP();
     const { current, next, progress } = computeLevel(xp);
     const rank = computeRank(xp);
@@ -5700,6 +5809,16 @@ ${hashtag}`;
     $('#data-export').addEventListener('click', exportData);
     $('#data-import').addEventListener('click', importData);
     $('#data-reset').addEventListener('click', resetData);
+    // 散歩履歴モーダル
+    const walkLogBtn = $('#show-walk-log');
+    if (walkLogBtn) walkLogBtn.addEventListener('click', () => {
+      $('#profile-modal').hidden = true;
+      renderWalkLog();
+      $('#walk-log-modal').hidden = false;
+    });
+    const walkLogClose = $('#walk-log-close');
+    if (walkLogClose) walkLogClose.addEventListener('click', () => { $('#walk-log-modal').hidden = true; });
+
     // ヘルプモーダル
     const helpBtn = $('#show-help');
     if (helpBtn) helpBtn.addEventListener('click', () => {

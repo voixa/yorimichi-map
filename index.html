@@ -168,6 +168,16 @@
         <button class="btn-primary" id="invite-share" type="button">📤 X / LINE で共有</button>
       </div>
 
+      <div class="profile-section-title">📊 生涯統計</div>
+      <div class="lifetime-stats" id="lifetime-stats">
+        <!-- populated by JS -->
+      </div>
+
+      <div class="profile-section-title">📜 散歩履歴</div>
+      <div class="data-actions" style="margin-bottom: 16px;">
+        <button class="btn-secondary" id="show-walk-log" type="button">🗓 すべての履歴を見る</button>
+      </div>
+
       <div class="profile-section-title">⚙️ データ管理</div>
       <div class="data-actions">
         <button class="btn-secondary" id="show-help" type="button">❓ ヘルプ・よくある質問</button>
@@ -421,7 +431,11 @@
           </div>
           <ul class="results-list" id="results-list" aria-live="polite"></ul>
           <div class="empty-state" id="empty-state">
-            <p>👈 設定して「寄り道候補を探す」を押してください</p>
+            <div class="empty-state-polished">
+              <div class="es-icon">🎰</div>
+              <div class="es-title">準備完了</div>
+              <div class="es-desc">出発地と目的地を設定して、ガチャを回すか<br>「寄り道候補を探す」ボタンで候補を見つけましょう。</div>
+            </div>
           </div>
         </section>
 
@@ -744,6 +758,18 @@
 
   <!-- 散歩中の写真撮影用（モバイルカメラ起動） -->
   <input type="file" id="walk-photo-input" accept="image/*" capture="environment" style="display:none" />
+
+  <!-- ============ Walk Log Modal ============ -->
+  <div class="modal-backdrop" id="walk-log-modal" hidden>
+    <div class="modal walk-log-modal" role="dialog" aria-label="散歩履歴" aria-modal="true">
+      <button class="modal-close" id="walk-log-close" type="button" aria-label="閉じる">✕</button>
+      <h2 class="modal-title">📜 散歩履歴</h2>
+      <div class="walk-log-stats" id="walk-log-stats"></div>
+      <div class="walk-log-list" id="walk-log-list">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </div>
 
   <!-- ============ Help / FAQ Modal ============ -->
   <div class="modal-backdrop" id="help-modal" hidden>

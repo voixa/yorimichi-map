@@ -3843,6 +3843,109 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
 .faq-item p strong { color: var(--brand); }
 .faq-item p a { color: var(--brand); }
 
+/* ===== Lifetime stats (in profile) ===== */
+.lifetime-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.lt-stat {
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+}
+.lt-stat-num {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--brand);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.lt-stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ===== Walk log modal ===== */
+.walk-log-modal { max-width: 520px; }
+.walk-log-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 12px 0 16px;
+  padding: 12px;
+  background: var(--surface-2);
+  border-radius: 12px;
+}
+.wls-num { font-size: 22px; font-weight: 900; color: var(--brand); text-align: center; }
+.wls-label { font-size: 11px; color: var(--text-muted); text-align: center; font-weight: 600; }
+
+.walk-log-list {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.walk-log-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.walk-log-item:last-child { border-bottom: 0; }
+.wli-emoji {
+  font-size: 24px;
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.wli-body { flex: 1; min-width: 0; }
+.wli-name {
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wli-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.wli-date {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ===== Empty state polish ===== */
+.empty-state-polished {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-muted);
+}
+.empty-state-polished .es-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+.empty-state-polished .es-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.empty-state-polished .es-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
 /* ===== Notification section ===== */
 .notify-section {
   background: var(--surface-2);
