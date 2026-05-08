@@ -456,11 +456,177 @@
       padding: 0 8px;
     }
 
+    /* Pricing section */
+    .pricing-section {
+      background: linear-gradient(180deg, #fafaf7 0%, #fff8e1 100%);
+      padding: 64px 20px;
+    }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      max-width: 720px;
+      margin: 32px auto 0;
+    }
+    .pricing-card {
+      background: white;
+      border: 2px solid #e5e2db;
+      border-radius: 18px;
+      padding: 28px 22px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+    }
+    .pricing-card.premium {
+      border-color: #d4af37;
+      background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+      position: relative;
+    }
+    .pricing-card.premium::before {
+      content: '⭐ おすすめ';
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(90deg, #ffd700, #ff9800);
+      color: #5a3a00;
+      padding: 4px 14px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .pricing-name {
+      font-size: 18px;
+      font-weight: 800;
+      margin: 0 0 8px;
+      color: #1c1c1f;
+    }
+    .pricing-price {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      margin: 0 0 16px;
+    }
+    .pricing-amount {
+      font-size: 36px;
+      font-weight: 900;
+      color: #ff7e3d;
+      line-height: 1;
+    }
+    .pricing-card.premium .pricing-amount { color: #d4af37; }
+    .pricing-period {
+      font-size: 14px;
+      color: #6b6b72;
+    }
+    .pricing-features {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 20px;
+      flex: 1;
+    }
+    .pricing-features li {
+      padding: 6px 0;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #1c1c1f;
+    }
+    .pricing-features li::before {
+      content: '✓ ';
+      color: #16a34a;
+      font-weight: 800;
+      margin-right: 4px;
+    }
+    .pricing-features li.dim {
+      color: #94a3b8;
+    }
+    .pricing-features li.dim::before {
+      content: '— ';
+      color: #cbd5e1;
+    }
+    .pricing-cta {
+      display: inline-block;
+      padding: 12px 24px;
+      border-radius: 100px;
+      text-align: center;
+      font-weight: 700;
+      text-decoration: none;
+      transition: transform 0.15s;
+    }
+    .pricing-cta.free {
+      background: #1c1c1f;
+      color: white;
+    }
+    .pricing-cta.premium {
+      background: linear-gradient(90deg, #ffd700, #ff9800);
+      color: #5a3a00;
+    }
+    .pricing-cta:hover { transform: translateY(-2px); }
+    .pricing-fine {
+      text-align: center;
+      font-size: 12px;
+      color: #6b6b72;
+      margin-top: 16px;
+    }
+
+    /* FAQ */
+    .lp-faq {
+      max-width: 720px;
+      margin: 32px auto 0;
+    }
+    .lp-faq-item {
+      border-bottom: 1px solid #e5e2db;
+      padding: 14px 0;
+    }
+    .lp-faq-item summary {
+      cursor: pointer;
+      font-weight: 700;
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 15px;
+      color: #1c1c1f;
+    }
+    .lp-faq-item summary::-webkit-details-marker { display: none; }
+    .lp-faq-item summary::after {
+      content: '＋';
+      color: #ff7e3d;
+      font-size: 20px;
+      font-weight: 900;
+    }
+    .lp-faq-item[open] summary::after { content: '−'; }
+    .lp-faq-item p {
+      margin: 10px 0 4px;
+      color: #6b6b72;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    /* Live ticker */
+    .live-ticker {
+      max-width: 720px;
+      margin: 16px auto 0;
+      padding: 12px 16px;
+      background: rgba(255, 126, 61, 0.1);
+      border: 1.5px dashed #ff7e3d;
+      border-radius: 12px;
+      font-size: 13px;
+      color: #b54300;
+      text-align: center;
+      font-weight: 600;
+    }
+    .live-ticker .live-tick-num {
+      font-weight: 900;
+      font-size: 16px;
+      color: #ff4500;
+    }
+
     @media (max-width: 600px) {
       .hero { padding: 56px 20px 72px; }
       section { padding: 48px 20px; }
       .hero-demo { max-width: 300px; }
       .stats-row { grid-template-columns: 1fr; }
+      .pricing-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -664,6 +830,99 @@
           <span>🎰</span><span>ガチャで運命の一本を引く</span><span class="arrow">→</span>
         </a>
       </p>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section class="pricing-section">
+    <div class="container">
+      <h2 style="color:#1c1c1f">料金プラン</h2>
+      <p class="section-sub">無料でフル機能を遊べます。ヘビーユーザーには ¥480/月 のプレミアムも。</p>
+      <div class="live-ticker">
+        🟢 <span class="live-tick-num">¥0〜</span> で全コース・GPSスタンプラリー・SNS共有が遊べます
+      </div>
+
+      <div class="pricing-grid">
+        <div class="pricing-card">
+          <h3 class="pricing-name">無料プラン</h3>
+          <div class="pricing-price">
+            <span class="pricing-amount">¥0</span>
+            <span class="pricing-period">/ ずっと無料</span>
+          </div>
+          <ul class="pricing-features">
+            <li>毎日ガチャ <strong>3回まで無料</strong></li>
+            <li>13本のキュレーションコース</li>
+            <li>AI生成の自由ルート / 散歩</li>
+            <li>GPSスタンプラリー・完走証明書</li>
+            <li>音声ナビ・写真撮影</li>
+            <li>連続ログインボーナス</li>
+            <li class="dim">ガチャ4回目以降は3コイン消費</li>
+          </ul>
+          <a class="pricing-cta free" href="/">今すぐ始める →</a>
+        </div>
+
+        <div class="pricing-card premium">
+          <h3 class="pricing-name">プレミアム</h3>
+          <div class="pricing-price">
+            <span class="pricing-amount">¥480</span>
+            <span class="pricing-period">/ 月</span>
+          </div>
+          <ul class="pricing-features">
+            <li>🎰 ガチャ <strong>使い放題</strong>（コイン消費なし）</li>
+            <li>👑 限定LRコース 月3本</li>
+            <li>🌅 早朝・深夜限定コース全解放</li>
+            <li>🏅 プレミアムデザイン完走証明書</li>
+            <li>無料プランの全機能</li>
+            <li>✨ 今だけ <strong>7日間無料</strong> トライアル</li>
+          </ul>
+          <a class="pricing-cta premium" href="/?premium=1">7日間無料で試す ⭐</a>
+        </div>
+      </div>
+
+      <p class="pricing-fine">
+        ※ 決済は Stripe を経由（クレジットカード・PayPay・Apple Pay 対応）<br>
+        ※ いつでも解約可能、解約後は期間末まで利用可能
+      </p>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section>
+    <div class="container">
+      <h2>よくある質問</h2>
+      <p class="section-sub">気になることがあればここで解決。</p>
+
+      <div class="lp-faq">
+        <details class="lp-faq-item" open>
+          <summary>本当に無料で遊べる？</summary>
+          <p>はい。毎日3回まで無料でガチャを引け、コース完走・SNS共有・写真撮影など <strong>全機能を無料で利用可能</strong> です。プレミアムはガチャ無制限・限定コースなど「もっと遊びたい人向け」のオプションです。</p>
+        </details>
+
+        <details class="lp-faq-item">
+          <summary>位置情報はどう扱われますか？</summary>
+          <p>位置情報は <strong>あなたの端末内でのみ</strong> 処理され、運営サーバーには送信していません。GPSはスタンプラリーのチェックインだけに使い、保存もしません。</p>
+        </details>
+
+        <details class="lp-faq-item">
+          <summary>登録は必要？</summary>
+          <p>不要です。ブラウザを開けばすぐに遊べます。プレミアム購読時のみ Stripe で決済情報を入力します。</p>
+        </details>
+
+        <details class="lp-faq-item">
+          <summary>対応エリアは？</summary>
+          <p>現在は東京の <strong>吉祥寺・谷根千・神保町・浅草</strong> でキュレーション済みコースを提供。「自由ルート」「散歩」モードなら <strong>全国どこでも</strong> AI が街歩きコースを生成します。</p>
+        </details>
+
+        <details class="lp-faq-item">
+          <summary>スマホとPC、どちらで遊ぶ？</summary>
+          <p>両対応ですが、<strong>散歩中はスマホ推奨</strong>。PWAなのでホーム画面に追加するとアプリ感覚で使えます。</p>
+        </details>
+
+        <details class="lp-faq-item">
+          <summary>商店街・自治体での導入は？</summary>
+          <p>提携・送客手数料モデルでご案内しています。お気軽に <a href="mailto:info@in-dx.jp?subject=街歩きガチャ%20導入相談">info@in-dx.jp</a> までご連絡ください。</p>
+        </details>
+      </div>
     </div>
   </section>
 
