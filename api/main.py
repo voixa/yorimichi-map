@@ -387,6 +387,80 @@ def _fallback_narrative(theme: str, area: str, stop_names: list, rarity: str) ->
 
 
 # ----- AI 写真描写（Gemini Vision） -----
+# ----- AI スポットガイド（撮影ヒント・豆知識・楽しみ方） -----
+@app.route("/api/spot-guide", methods=["POST"])
+def spot_guide():
+    """スポット名+エリアから「撮るべき写真」「豆知識」「楽しみ方」を3行生成"""
+    if not gemini_client:
+        return jsonify({"error": "ai_disabled"}), 503
+    data = request.get_json(silent=True) or {}
+    stop_name = (data.get("stop_name") or "").strip()[:60]
+    area = (data.get("area") or "").strip()[:40]
+    cat = (data.get("category") or "").strip()[:40]
+    if not stop_name:
+        return jsonify({"error": "no_stop_name"}), 400
+
+    prompt = (
+        f"日本のスポット「{stop_name}」（エリア:{area}・カテゴリ:{cat}）について、"
+        "散歩中の人向けに3つの一般的なヒントを生成してください。\n"
+        "\n"
+        "【重要なルール】\n"
+        "1. **特定の固有名詞・年号・歴史的事実は絶対に書かない**（誤情報を防ぐため）\n"
+        "2. このカテゴリの場所一般に当てはまる助言だけを書く\n"
+        "3. 「五重塔」「茶室」など、ある可能性があるが不明な施設名は書かない\n"
+        "4. 「実際に見て確認するのが楽しい」スタンスで記述\n"
+        "\n"
+        "出力（各行30-50字）:\n"
+        "- photo: このスポット周辺で見つけやすい撮影モチーフのヒント（被写体の種類のみ・固有名詞なし）\n"
+        "- trivia: このカテゴリの場所を訪れる時の一般的な作法・観点（事実主張なし）\n"
+        "- enjoy: 散歩を楽しむ一般的な過ごし方の提案\n"
+        "\n"
+        "悪い例: 「江戸時代に建てられた五重塔を撮る」（事実主張・固有施設名）\n"
+        "良い例: 「鳥居や石灯籠など、神社らしい構造物を見つけて切り取る」\n"
+        "\n"
+        '商標・著名キャラ・ジブリ等は使わない。\n'
+        'JSON: {"photo":"...","trivia":"...","enjoy":"..."}'
+    )
+
+    try:
+        config_kwargs = dict(
+            temperature=0.7,
+            max_output_tokens=2048,
+            response_mime_type="application/json",
+            response_schema=genai_types.Schema(
+                type=genai_types.Type.OBJECT,
+                required=["photo", "trivia", "enjoy"],
+                properties={
+                    "photo":  genai_types.Schema(type=genai_types.Type.STRING),
+                    "trivia": genai_types.Schema(type=genai_types.Type.STRING),
+                    "enjoy":  genai_types.Schema(type=genai_types.Type.STRING),
+                },
+            ),
+        )
+        try:
+            config_kwargs["thinking_config"] = genai_types.ThinkingConfig(thinking_budget=0)
+        except Exception:
+            pass
+        config = genai_types.GenerateContentConfig(**config_kwargs)
+        response = gemini_client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=config,
+        )
+        text = (response.text or "").strip()
+        if not text:
+            return jsonify({"error": "empty"}), 502
+        result = json.loads(text)
+        return jsonify({
+            "photo":  str(result.get("photo", ""))[:80],
+            "trivia": str(result.get("trivia", ""))[:120],
+            "enjoy":  str(result.get("enjoy", ""))[:80],
+        })
+    except Exception as e:
+        logger.exception("spot_guide failed")
+        return jsonify({"error": "server_error"}), 502
+
+
 @app.route("/api/describe-photo", methods=["POST"])
 def describe_photo():
     """ユーザーが撮影した写真を Gemini が一文で描写する。"""

@@ -4304,6 +4304,44 @@ button:focus-visible,
 .notify-status.granted { color: #16a34a; font-weight: 700; }
 .notify-status.denied { color: #ef4444; font-weight: 700; }
 
+/* ===== AI spot guide ===== */
+.ai-spot-guide {
+  background: linear-gradient(135deg, rgba(108, 99, 255, 0.08) 0%, rgba(255, 64, 129, 0.06) 100%);
+  border-left: 3px solid #6c63ff;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 10px 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+[data-theme="dark"] .ai-spot-guide {
+  background: linear-gradient(135deg, rgba(124, 117, 255, 0.12) 0%, rgba(255, 64, 129, 0.08) 100%);
+  border-left-color: #7c75ff;
+}
+.aig-loading {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 12px;
+}
+.aig-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 4px 0;
+}
+.aig-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+.aig-credit {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-align: right;
+  margin-top: 4px;
+  opacity: 0.7;
+}
+
 /* ===== Live counter ticker ===== */
 .live-counter {
   display: flex;

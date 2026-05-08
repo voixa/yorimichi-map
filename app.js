@@ -651,12 +651,27 @@
       </div>
       ${extra.tags && extra.tags.length ? `<div class="detail-tags">${extra.tags.map(t => `<span class="detail-tag">#${escapeHtml(t)}</span>`).join('')}</div>` : ''}
       ${stop.desc ? `<p class="desc">${escapeHtml(stop.desc)}</p>` : ''}
+      <div class="ai-spot-guide" id="ai-spot-guide" hidden>
+        <div class="aig-loading">✨ AIガイド読み込み中…</div>
+      </div>
       <div class="actions">
         <button class="add-btn" id="detail-fly">📍 地図でズーム</button>
         <a class="add-btn wiki-btn" id="detail-nav" target="_blank" rel="noopener">📱 ナビ起動</a>
       </div>
       ${state.activeWalk && !isVisited ? `<button class="add-btn" id="detail-checkin" style="background:#16a34a;margin-top:8px;width:100%">✓ チェックイン</button>` : ''}
     `;
+    // AIスポットガイドを非同期取得（キャッシュあり）
+    requestSpotGuide(stop.name, state.origin?.shortLabel || '', cat?.label || '').then(g => {
+      const el = $('#ai-spot-guide');
+      if (!el || !g) return;
+      el.hidden = false;
+      el.innerHTML = `
+        <div class="aig-row"><span class="aig-icon">📸</span><span>${escapeHtml(g.photo)}</span></div>
+        <div class="aig-row"><span class="aig-icon">📖</span><span>${escapeHtml(g.trivia)}</span></div>
+        <div class="aig-row"><span class="aig-icon">💡</span><span>${escapeHtml(g.enjoy)}</span></div>
+        <div class="aig-credit">✨ AIガイド (Gemini)</div>
+      `;
+    });
     card.hidden = false;
     $('#detail-fly').onclick = () => {
       state.map.flyTo([stop.lat, stop.lng], 17, { duration: 0.6 });
@@ -3072,10 +3087,16 @@
       showStage('select');
     };
 
-    // Share result
+    // Share result（curated course はディープリンクで共有）
     const shareBtn = $('#result-share');
     if (shareBtn) {
-      shareBtn.onclick = () => shareGachaResult(route);
+      shareBtn.onclick = () => {
+        if (route.isCurated && route.id) {
+          shareCourseImmediate(route);
+        } else {
+          shareGachaResult(route);
+        }
+      };
     }
 
     // Confetti for top rarities
@@ -3741,6 +3762,175 @@ ${trkPts}
   function toggleVisitedHeatmap() {
     if (_heatmapLayer) hideVisitedHeatmap();
     else showVisitedHeatmap();
+  }
+
+  // ===== AI spot guide (cached) =====
+  const _spotGuideCache = new Map();
+  async function requestSpotGuide(stopName, area, category) {
+    if (!stopName) return null;
+    if (_spotGuideCache.has(stopName)) return _spotGuideCache.get(stopName);
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 10000);
+      const res = await fetch(`${API_BASE}/api/spot-guide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stop_name: stopName, area, category }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (!data || !data.photo) return null;
+      _spotGuideCache.set(stopName, data);
+      return data;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // ===== Shareable course URL =====
+  // ?course=<id> でコースをディープリンク。開いた人は同じコースを地図に表示
+  function getCourseShareUrl(courseId) {
+    const userId = getOrCreateUserId();
+    return `${location.origin}/?course=${encodeURIComponent(courseId)}&ref=${encodeURIComponent(userId)}`;
+  }
+
+  function buildCourseShareText(course) {
+    const url = getCourseShareUrl(course.id);
+    const name = tField(course, 'name');
+    const meta = `${course.areaIcon || ''} ${tField(course, 'areaName')} ・ 約${course.estimatedMin}分`;
+    return `🎰「${name}」を引いた！\n${meta}\n\n一緒に歩こう👣\n${url}\n\n#街歩きガチャ`;
+  }
+
+  async function shareCourseImmediate(course) {
+    const text = buildCourseShareText(course);
+    const url = getCourseShareUrl(course.id);
+    const title = `${tField(course, 'name')} | 街歩きガチャ`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url });
+        return;
+      } catch (e) {
+        // ユーザーキャンセルは無視
+        if (e.name !== 'AbortError') console.warn('share failed', e);
+      }
+    }
+    // Fallback: X intent
+    const x = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    window.open(x, '_blank', 'noopener');
+  }
+
+  /**
+   * URL の ?course=xxx を検出し、該当コースを自動的に地図にロード
+   */
+  function processCourseShareLink() {
+    const params = new URLSearchParams(location.search);
+    const courseId = params.get('course');
+    if (!courseId) return;
+    // URL クリーン化
+    params.delete('course');
+    const newSearch = params.toString();
+    const cleanUrl = location.pathname + (newSearch ? '?' + newSearch : '') + location.hash;
+    history.replaceState(null, '', cleanUrl);
+
+    const course = (window.YORIMICHI_COURSES || []).find(c => c.id === courseId);
+    if (!course) {
+      showToast('共有されたコースが見つかりません', 'warning', 3000);
+      return;
+    }
+    setTimeout(() => {
+      try {
+        if (typeof setMode === 'function') setMode('course');
+        applyRoute(courseToRoute(course));
+        showToast(`✨ 共有された「${tField(course, 'name')}」を地図にセット`, 'success', 4500);
+      } catch (e) { console.warn('apply shared course failed', e); }
+    }, 800);
+  }
+
+  // ===== Streak Save (連続記録の救済) =====
+  // 連続日数が切れる直前に通知＋3コインで救済
+  const STREAK_SAVE_COST = 3;
+
+  function getDateString(d = new Date()) {
+    return d.toDateString();
+  }
+
+  /**
+   * 現在の連続日数が切れそうかを判定
+   * 「最終ログイン日と今日の差が1日（昨日）かつ、まだ今日アクセスしてないが
+   * 24時間以内に切れる」ケースは普通の流れ。
+   * ここでは「2日前にログインしていて昨日ログインせず、今日もログインしてない」=
+   * 既に切れた状態を救済対象とする。
+   */
+  function maybeOfferStreakSave() {
+    if (!state.loginStreak || state.loginStreak < 3) return; // 3日以上の人だけ
+    if (!state.lastLoginDate) return;
+    const today = new Date();
+    const last = new Date(state.lastLoginDate);
+    if (isNaN(last.getTime())) return;
+    const diffDays = Math.floor((today - last) / 86400000);
+    // 連続が切れたかどうか: 最後のログインから2日以上経過
+    if (diffDays < 2 || diffDays > 7) return; // 7日以上はもう諦め
+    // 救済オファーは1セッション1回まで
+    if (state._streakSaveOffered) return;
+    state._streakSaveOffered = true;
+
+    // モーダル表示
+    setTimeout(() => showStreakSaveModal(state.loginStreak, diffDays), 2000);
+  }
+
+  function showStreakSaveModal(brokenStreak, daysSince) {
+    if (document.getElementById('streak-save-modal')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'streak-save-modal';
+    overlay.className = 'modal-backdrop';
+    overlay.innerHTML = `
+      <div class="modal" style="max-width: 380px; text-align: center;">
+        <div style="font-size: 56px; margin-bottom: 8px;">🔥</div>
+        <h2 class="modal-title">連続${brokenStreak}日記録が切れそう…</h2>
+        <p style="font-size: 14px; color: var(--text-muted); line-height: 1.7; margin-bottom: 20px;">
+          ${daysSince}日空いてしまいました。<br>
+          <strong>${STREAK_SAVE_COST}🪙 で救済</strong>すれば連続記録を継続できます！
+        </p>
+        <div style="background: var(--surface-2); border-radius: 12px; padding: 12px; margin-bottom: 16px;">
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">救済すると</div>
+          <div style="font-weight: 800; color: var(--brand);">連続${brokenStreak + 1}日目に到達</div>
+        </div>
+        <button class="btn-primary" id="streak-save-yes" type="button" style="width:100%; margin-bottom:8px;">
+          🪙 ${STREAK_SAVE_COST}コインで救済する
+        </button>
+        <button class="btn-secondary" id="streak-save-no" type="button" style="width:100%;">
+          リセットしてやり直す
+        </button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#streak-save-yes').onclick = () => {
+      if (gacha.coins < STREAK_SAVE_COST) {
+        showToast(`コインが足りません（${STREAK_SAVE_COST}コイン必要）`, 'warning', 3500);
+        // ショップへ誘導
+        overlay.remove();
+        setTimeout(() => { try { showShop(); } catch {} }, 500);
+        return;
+      }
+      gacha.coins -= STREAK_SAVE_COST;
+      gachaSave();
+      // 連続日数を継続させる: lastLoginDate を「昨日」にする
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      state.lastLoginDate = yesterday.toDateString();
+      // saveCompletion / 永続化
+      try { localStorage.setItem('yorimichi-last-login', state.lastLoginDate); } catch {}
+      try { localStorage.setItem('yorimichi-login-streak', String(state.loginStreak)); } catch {}
+      showToast(`🔥 連続${state.loginStreak}日記録を救済しました！`, 'success', 4000);
+      overlay.remove();
+    };
+    overlay.querySelector('#streak-save-no').onclick = () => {
+      state.loginStreak = 0;
+      try { localStorage.setItem('yorimichi-login-streak', '0'); } catch {}
+      overlay.remove();
+    };
   }
 
   // ===== Live activity counter & heartbeat =====
@@ -4840,6 +5030,9 @@ ${trkPts}
 
     // ライブアクティビティ
     try { startLiveActivity(); } catch {}
+
+    // Streak Save 検出（連続記録が切れそうな人へ救済オファー）
+    try { maybeOfferStreakSave(); } catch {}
 
     // 所要時間フィルタ
     state.filterDuration = state.filterDuration || 'all';
@@ -6679,6 +6872,9 @@ ${hashtag}`;
 
     // 招待リンク（?ref=uuid）の処理
     try { processInviteParam(); } catch (e) { console.warn('invite param failed', e); }
+
+    // 共有コースリンク（?course=xxx）の処理
+    try { processCourseShareLink(); } catch (e) { console.warn('course share failed', e); }
 
     // Online/offline detection
     window.addEventListener('offline', () => {
