@@ -3266,8 +3266,20 @@ ${trkPts}
 
   // ---------- Course recommendation (history-based) ----------
   /**
+   * 天気コードから「外向き / 内向き」を判定。
+   * 雨・雪・雷雨は内向き（神保町の古書店巡り等）を優先。
+   */
+  function isIndoorPreferredWeather(code) {
+    if (typeof code !== 'number') return false;
+    // 雨系 51-67, 80-86, 雷雨95-99, 雪71-77
+    if ((code >= 51 && code <= 67) || (code >= 80 && code <= 86) || code >= 95) return true;
+    if (code >= 71 && code <= 77) return true;
+    return false;
+  }
+
+  /**
    * 履歴から最も歩かれたエリア・テーマを学習し、
-   * 未訪問のコースから「あなた向け」を1本選んで返す。
+   * 天気も考慮して「あなた向け」を1本選んで返す。
    */
   function getRecommendedCourse() {
     const all = (window.YORIMICHI_COURSES || []).filter(c => {
@@ -3289,6 +3301,18 @@ ${trkPts}
     const candidates = all.filter(c => !state.completedCourses.has(c.id));
     if (candidates.length === 0) return null;
 
+    // 現在の天気をチェック（キャッシュから）
+    let weatherCode = null;
+    try {
+      const w = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY) || 'null');
+      if (w && Date.now() - w.fetchedAt < WEATHER_CACHE_TTL_MS) weatherCode = w.code;
+    } catch {}
+    const indoorPreferred = isIndoorPreferredWeather(weatherCode);
+    // 屋内向きカテゴリ（雨の日にスコア+）
+    const INDOOR_CATS = new Set(['cafe', 'shop', 'museum', 'art', 'bakery']);
+    // 屋外向きカテゴリ（晴れの日にスコア+）
+    const OUTDOOR_CATS = new Set(['park', 'viewpoint', 'shrine', 'temple']);
+
     // スコアリング: 同じエリア/テーマなら点数増、既に発見済みなら少し減らす
     const ranked = candidates.map(c => {
       let score = 0;
@@ -3299,12 +3323,31 @@ ${trkPts}
       score += rarityBonus;
       // 未発見ならボーナス
       if (!state.discoveredCourses.has(c.id)) score += 2;
+      // 天気適合ボーナス
+      if (c.stops && c.stops.length > 0) {
+        const indoorCount = c.stops.filter(s => INDOOR_CATS.has(s.cat)).length;
+        const outdoorCount = c.stops.filter(s => OUTDOOR_CATS.has(s.cat)).length;
+        const indoorRatio = indoorCount / c.stops.length;
+        const outdoorRatio = outdoorCount / c.stops.length;
+        if (indoorPreferred) {
+          score += indoorRatio * 4;
+          score -= outdoorRatio * 2;
+        } else if (weatherCode === 0) {
+          // 快晴
+          score += outdoorRatio * 3;
+        }
+      }
       // ランダムノイズ
       score += Math.random() * 1.5;
-      return { c, score };
+      return { c, score, indoorPreferred };
     }).sort((a, b) => b.score - a.score);
 
-    return ranked[0]?.c || candidates[0];
+    const top = ranked[0];
+    if (top) {
+      // メモリにメタデータを残す（バナー表示で「☔ 雨でも楽しめる」など）
+      state._lastRecoMeta = { indoorPreferred, weatherCode };
+    }
+    return top?.c || candidates[0];
   }
 
   // ---------- Lifetime stats + walk log ----------
@@ -3545,6 +3588,36 @@ ${trkPts}
     if (notifyBtn) notifyBtn.addEventListener('click', toggleNotifications);
   }
 
+  // ===== Daily tip rotation =====
+  const DAILY_TIPS = [
+    '🚶 はじめての街は「逆方向の路地」を選ぶと発見が増えます',
+    '📸 看板や色だけ撮ると、後で見返した時に旅の記憶が蘇ります',
+    '☕ カフェに入る前に、外観の写真を1枚撮るのがおすすめ',
+    '🌅 同じ場所でも時間帯を変えると、まったく別の街に見えます',
+    '🍂 季節の終わりかけに歩くと、その街らしい風景が濃く出ます',
+    '👟 歩きやすい靴に変えるだけで、寄り道距離は1.5倍に',
+    '🎧 知らない街では、音楽より周囲の音を聴く方が記憶に残ります',
+    '🗺 紙の地図を一度開くと、画面では気づかない街の形が見えます',
+    '🍶 商店街は「個人店3軒以内」のエリアを狙うと当たりが多い',
+    '🐈 角を曲がる前に立ち止まると、知らない景色に出会えます',
+    '🍰 和菓子屋さんは午前中、洋菓子屋さんは午後が品揃え◎',
+    '🌳 公園の入口より、出口側の方が穴場ベンチがあります',
+    '🚉 駅から3つ目の角で曲がると、観光客のいない街に入れます',
+    '📚 古本屋では、平積みより棚の3段目から見るのが上級者',
+    '⛩️ 神社は朝6時台が一番空気が澄んでます',
+  ];
+
+  function renderDailyTip() {
+    const tipEl = $('#daily-tip');
+    if (!tipEl) return;
+    // 日付ベースで決定的に選ぶ（毎日同じ Tip）
+    const today = new Date();
+    const dayKey = today.getFullYear() * 1000 + today.getMonth() * 50 + today.getDate();
+    const idx = dayKey % DAILY_TIPS.length;
+    $('#daily-tip-text').textContent = DAILY_TIPS[idx];
+    tipEl.hidden = false;
+  }
+
   // ===== Weather indicator (Open-Meteo, free, no API key) =====
   const WEATHER_CACHE_KEY = 'yorimichi-weather-cache';
   const WEATHER_CACHE_TTL_MS = 60 * 60 * 1000; // 1時間
@@ -3637,7 +3710,10 @@ ${trkPts}
     $('#reco-emoji').textContent = reco.themeIcon || reco.areaIcon || '🌳';
     $('#reco-title').textContent = tField(reco, 'name');
     const minutes = reco.estimatedMin ? `約${reco.estimatedMin}分` : '';
-    $('#reco-meta').textContent = `${reco.areaIcon || ''} ${tField(reco, 'areaName')} ・ ${minutes} ・ ${reco.stops.length}スポット`;
+    let metaPrefix = '';
+    if (state._lastRecoMeta?.indoorPreferred) metaPrefix = '☔ 雨でも楽しめる ・ ';
+    else if (state._lastRecoMeta?.weatherCode === 0) metaPrefix = '☀️ 快晴日和に ・ ';
+    $('#reco-meta').textContent = `${metaPrefix}${reco.areaIcon || ''} ${tField(reco, 'areaName')} ・ ${minutes} ・ ${reco.stops.length}スポット`;
     const card = $('#reco-card');
     if (card) {
       card.onclick = () => {
@@ -4394,6 +4470,9 @@ ${trkPts}
 
     // 天気バナー
     try { renderWeatherBanner(); } catch {}
+
+    // 今日のTip
+    try { renderDailyTip(); } catch {}
 
     // 所要時間フィルタ
     state.filterDuration = state.filterDuration || 'all';
@@ -6045,49 +6124,84 @@ ${hashtag}`;
       showToast('📡 オンラインに復帰しました', 'success', 2500);
     });
 
-    // PWA install prompt (Android Chrome)
+    // PWA install prompt (Android Chrome) — エンゲージメント高い人にだけ出す
     let deferredInstallPrompt = null;
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredInstallPrompt = e;
-      // Show install banner after 30s if not dismissed
-      setTimeout(showPwaInstallBanner, 30000);
+      // ガチャ1回引いた後（より価値を体感した後）にバナー表示
+      // 30秒で出すよりエンゲージメント検出ベースで出す
+      const checkAndShow = () => {
+        // 1ガチャ以上引いた人 or 1コース以上発見済み or 60秒以上滞在で表示
+        if (gacha.pulls >= 1 || state.discoveredCourses.size >= 1) {
+          setTimeout(showPwaInstallBanner, 1500);
+        } else {
+          setTimeout(checkAndShow, 5000);
+        }
+      };
+      setTimeout(checkAndShow, 30000);
     });
 
     function showPwaInstallBanner() {
+      let dismissCount = 0;
       let dismissed = false;
-      try { dismissed = localStorage.getItem('yorimichi-pwa-dismissed') === '1'; } catch (e) {}
-      if (dismissed) return;
-      if (window.matchMedia('(display-mode: standalone)').matches) return; // already installed
+      try {
+        dismissCount = parseInt(localStorage.getItem('yorimichi-pwa-dismiss-count') || '0', 10) || 0;
+        dismissed = localStorage.getItem('yorimichi-pwa-dismissed') === '1';
+      } catch (e) {}
+      // 3回以上閉じられたら諦める
+      if (dismissed || dismissCount >= 3) return;
+      if (window.matchMedia('(display-mode: standalone)').matches) return;
+      // 既存バナーがあれば破棄
+      const existing = document.getElementById('pwa-install-banner');
+      if (existing) existing.remove();
+
       const banner = document.createElement('div');
+      banner.id = 'pwa-install-banner';
       banner.className = 'pwa-install-banner';
       const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+      const benefit = (gacha.pulls >= 3)
+        ? '気に入ってくれてありがとう！ホーム画面に追加すると2タップで起動できます'
+        : 'ホーム画面に追加すると、アプリ感覚で使えてオフラインでも一部動作します';
       if (isIOS) {
         banner.innerHTML = `
-          📱 ホーム画面に追加すると、アプリ感覚で使えます
-          <small>共有 → 「ホーム画面に追加」</small>
-          <button class="pwa-dismiss">了解</button>
+          <div class="pwa-banner-icon">📱</div>
+          <div class="pwa-banner-body">
+            <div class="pwa-banner-title">${escapeHtml(benefit)}</div>
+            <div class="pwa-banner-sub">画面下の「共有」 → 「ホーム画面に追加」をタップ</div>
+          </div>
+          <button class="pwa-dismiss" aria-label="閉じる">✕</button>
         `;
       } else if (deferredInstallPrompt) {
         banner.innerHTML = `
-          📱 ホーム画面に追加？ ネイティブアプリのように使えます
+          <div class="pwa-banner-icon">📱</div>
+          <div class="pwa-banner-body">
+            <div class="pwa-banner-title">${escapeHtml(benefit)}</div>
+            <div class="pwa-banner-sub">通信量も節約できます</div>
+          </div>
           <button class="pwa-install">追加</button>
-          <button class="pwa-dismiss">後で</button>
+          <button class="pwa-dismiss" aria-label="閉じる">✕</button>
         `;
         banner.querySelector('.pwa-install').onclick = async () => {
-          deferredInstallPrompt.prompt();
-          const result = await deferredInstallPrompt.userChoice;
-          if (result.outcome === 'accepted') {
-            showToast('🎉 ホーム画面に追加しました', 'success');
-          }
+          try {
+            deferredInstallPrompt.prompt();
+            const result = await deferredInstallPrompt.userChoice;
+            if (result.outcome === 'accepted') {
+              showToast('🎉 ホーム画面に追加しました！', 'success', 4000);
+              try { localStorage.setItem('yorimichi-pwa-dismissed', '1'); } catch {}
+            }
+          } catch (e) { console.warn('install failed', e); }
           banner.remove();
           deferredInstallPrompt = null;
         };
       } else {
-        return; // no install possible
+        return;
       }
       banner.querySelector('.pwa-dismiss').onclick = () => {
-        try { localStorage.setItem('yorimichi-pwa-dismissed', '1'); } catch (e) {}
+        try {
+          localStorage.setItem('yorimichi-pwa-dismiss-count', String(dismissCount + 1));
+          if (dismissCount + 1 >= 3) localStorage.setItem('yorimichi-pwa-dismissed', '1');
+        } catch (e) {}
         banner.remove();
       };
       document.body.appendChild(banner);

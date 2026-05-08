@@ -1659,36 +1659,62 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
   right: 16px;
   background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
   color: white;
-  padding: 12px 16px;
+  padding: 12px 14px;
   border-radius: var(--radius);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   font-size: 13px;
-  font-weight: 600;
-  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4);
   z-index: 7500;
   animation: slide-up 0.3s ease;
-  flex-wrap: wrap;
 }
-.pwa-install-banner small { font-size: 11px; opacity: 0.85; flex-basis: 100%; font-weight: 400; }
-.pwa-install-banner button {
+.pwa-banner-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+.pwa-banner-body {
+  flex: 1;
+  min-width: 0;
+}
+.pwa-banner-title {
+  font-weight: 700;
+  line-height: 1.4;
+  margin-bottom: 2px;
+}
+.pwa-banner-sub {
+  font-size: 11px;
+  opacity: 0.85;
+  font-weight: 400;
+}
+.pwa-install-banner small { font-size: 11px; opacity: 0.85; font-weight: 400; }
+.pwa-install-banner .pwa-install {
   background: white;
   color: #1e40af;
   border: none;
-  padding: 6px 14px;
+  padding: 8px 14px;
   border-radius: 14px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
   font-size: 12px;
-  margin-left: auto;
+  flex-shrink: 0;
 }
 .pwa-install-banner .pwa-dismiss {
   background: transparent;
   color: white;
-  border: 1px solid rgba(255,255,255,0.3);
-  margin-left: 4px;
+  border: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0.7;
 }
+.pwa-install-banner .pwa-dismiss:hover { opacity: 1; background: rgba(255,255,255,0.15); }
 @media (min-width: 768px) {
   .pwa-install-banner { left: auto; right: 16px; max-width: 400px; }
 }
@@ -4149,6 +4175,32 @@ button:focus-visible,
 }
 .notify-status.granted { color: #16a34a; font-weight: 700; }
 .notify-status.denied { color: #ef4444; font-weight: 700; }
+
+/* ===== Daily tip ===== */
+.daily-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--surface-2);
+  border-left: 3px solid #ffd54f;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin: 8px 0;
+}
+.daily-tip-icon { font-size: 20px; flex-shrink: 0; }
+.daily-tip-body { flex: 1; }
+.daily-tip-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+  letter-spacing: 0.05em;
+}
+.daily-tip-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+}
 
 /* ===== Weather banner ===== */
 .weather-banner {
