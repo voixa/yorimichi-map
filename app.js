@@ -3456,6 +3456,165 @@ ${trkPts}
       showToast(`✅ ミッション達成: ${labels[key] || key}`, 'success', 2500);
     }
   }
+  // ===== Settings consolidation =====
+  function openSettingsModal() {
+    const modal = $('#settings-modal');
+    if (!modal) return;
+    // 現在値を反映
+    const themeSel = $('#settings-theme');
+    if (themeSel) {
+      try { themeSel.value = localStorage.getItem('yorimichi-theme') || 'auto'; } catch {}
+    }
+    const mapSel = $('#settings-mapstyle');
+    if (mapSel) {
+      try { mapSel.value = localStorage.getItem('yorimichi-mapstyle') || 'default'; } catch {}
+    }
+    const langSel = $('#settings-lang');
+    if (langSel) {
+      try { langSel.value = localStorage.getItem('yorimichi-lang') || 'ja'; } catch {}
+    }
+    const voiceCb = $('#settings-voice');
+    if (voiceCb) voiceCb.checked = !!voice.enabled;
+    const sfxCb = $('#settings-sfx');
+    if (sfxCb) {
+      try { sfxCb.checked = (localStorage.getItem('yorimichi-sfx') || '1') === '1'; } catch { sfxCb.checked = true; }
+    }
+    const hapticCb = $('#settings-haptic');
+    if (hapticCb) {
+      try { hapticCb.checked = (localStorage.getItem('yorimichi-haptic') || '1') === '1'; } catch { hapticCb.checked = true; }
+    }
+    const pedoCb = $('#settings-pedometer');
+    if (pedoCb) {
+      try { pedoCb.checked = (localStorage.getItem('yorimichi-pedometer') || '1') === '1'; } catch { pedoCb.checked = true; }
+    }
+    const gpsHi = $('#settings-gps-hi');
+    if (gpsHi) {
+      try { gpsHi.checked = (localStorage.getItem('yorimichi-gps-hi') || '1') === '1'; } catch { gpsHi.checked = true; }
+    }
+    modal.hidden = false;
+  }
+
+  function setupSettingsControls() {
+    const persist = (key, val) => { try { localStorage.setItem(key, val); } catch {} };
+
+    const themeSel = $('#settings-theme');
+    if (themeSel) themeSel.addEventListener('change', () => {
+      const v = themeSel.value;
+      persist('yorimichi-theme', v);
+      // 即時反映: 既存テーマ切替ロジックに合わせる
+      if (v === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+      else if (v === 'light') document.documentElement.setAttribute('data-theme', 'light');
+      else document.documentElement.removeAttribute('data-theme');
+    });
+
+    const mapSel = $('#settings-mapstyle');
+    if (mapSel) mapSel.addEventListener('change', () => {
+      const v = mapSel.value;
+      persist('yorimichi-mapstyle', v);
+      // 既存マップ切替があれば呼ぶ
+      try { if (typeof switchMapStyle === 'function') switchMapStyle(v); } catch {}
+    });
+
+    const langSel = $('#settings-lang');
+    if (langSel) langSel.addEventListener('change', () => {
+      const v = langSel.value;
+      persist('yorimichi-lang', v);
+      // 即時反映: i18n関数が既存
+      try { if (typeof setLanguage === 'function') setLanguage(v); } catch {}
+    });
+
+    const voiceCb = $('#settings-voice');
+    if (voiceCb) voiceCb.addEventListener('change', () => {
+      voice.enabled = voiceCb.checked;
+      saveVoicePref();
+    });
+
+    const sfxCb = $('#settings-sfx');
+    if (sfxCb) sfxCb.addEventListener('change', () => persist('yorimichi-sfx', sfxCb.checked ? '1' : '0'));
+
+    const hapticCb = $('#settings-haptic');
+    if (hapticCb) hapticCb.addEventListener('change', () => persist('yorimichi-haptic', hapticCb.checked ? '1' : '0'));
+
+    const pedoCb = $('#settings-pedometer');
+    if (pedoCb) pedoCb.addEventListener('change', () => persist('yorimichi-pedometer', pedoCb.checked ? '1' : '0'));
+
+    const gpsHi = $('#settings-gps-hi');
+    if (gpsHi) gpsHi.addEventListener('change', () => persist('yorimichi-gps-hi', gpsHi.checked ? '1' : '0'));
+
+    const notifyBtn = $('#settings-notify-btn');
+    if (notifyBtn) notifyBtn.addEventListener('click', toggleNotifications);
+  }
+
+  // ===== Weather indicator (Open-Meteo, free, no API key) =====
+  const WEATHER_CACHE_KEY = 'yorimichi-weather-cache';
+  const WEATHER_CACHE_TTL_MS = 60 * 60 * 1000; // 1時間
+
+  // WMO 天気コード簡易マッピング
+  function describeWeather(code) {
+    if (code === 0) return { icon: '☀️', label: '快晴', mood: '散歩日和！', cls: 'warm' };
+    if (code >= 1 && code <= 2) return { icon: '⛅', label: '晴れ時々曇り', mood: '気持ちよく歩けます', cls: '' };
+    if (code === 3) return { icon: '☁️', label: 'くもり', mood: '日差しを気にせず歩けます', cls: '' };
+    if (code >= 45 && code <= 48) return { icon: '🌫️', label: '霧', mood: '幻想的な散歩に', cls: '' };
+    if (code >= 51 && code <= 67) return { icon: '🌧️', label: '雨', mood: '今日は屋根のあるコースを', cls: 'rain' };
+    if (code >= 71 && code <= 77) return { icon: '❄️', label: '雪', mood: '足元注意、暖かく', cls: 'cold' };
+    if (code >= 80 && code <= 86) return { icon: '🌧️', label: 'にわか雨', mood: '傘を忘れずに', cls: 'rain' };
+    if (code >= 95) return { icon: '⛈️', label: '雷雨', mood: '今日は外出を控えて', cls: 'rain' };
+    return { icon: '🌤️', label: '天気', mood: '街歩き日和', cls: '' };
+  }
+
+  function getCachedWeather() {
+    try {
+      const data = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY) || 'null');
+      if (!data) return null;
+      if (Date.now() - data.fetchedAt > WEATHER_CACHE_TTL_MS) return null;
+      return data;
+    } catch { return null; }
+  }
+
+  async function fetchWeather(lat, lng) {
+    const cached = getCachedWeather();
+    if (cached && Math.abs(cached.lat - lat) < 0.5 && Math.abs(cached.lng - lng) < 0.5) {
+      return cached;
+    }
+    try {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}&current=temperature_2m,weather_code&timezone=auto`;
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 5000);
+      const res = await fetch(url, { signal: ctrl.signal });
+      clearTimeout(timer);
+      if (!res.ok) return null;
+      const data = await res.json();
+      const weather = {
+        lat, lng,
+        temp: data.current?.temperature_2m,
+        code: data.current?.weather_code ?? 0,
+        fetchedAt: Date.now(),
+      };
+      try { localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(weather)); } catch {}
+      return weather;
+    } catch { return null; }
+  }
+
+  async function renderWeatherBanner() {
+    const banner = $('#weather-banner');
+    if (!banner) return;
+    // 出発地が設定されていれば優先、なければ東京駅をデフォルト
+    let lat = 35.6812, lng = 139.7671; // Tokyo Station
+    if (state.origin && state.origin.lat) {
+      lat = state.origin.lat;
+      lng = state.origin.lng;
+    }
+    const w = await fetchWeather(lat, lng);
+    if (!w) { banner.hidden = true; return; }
+    const desc = describeWeather(w.code);
+    banner.className = 'weather-banner' + (desc.cls ? ' ' + desc.cls : '');
+    $('#weather-icon').textContent = desc.icon;
+    $('#weather-msg').textContent = desc.mood;
+    const tempStr = (typeof w.temp === 'number') ? `${Math.round(w.temp)}°C` : '';
+    $('#weather-meta').textContent = `${desc.label}${tempStr ? ' ・ ' + tempStr : ''}`;
+    banner.hidden = false;
+  }
+
   // ===== Recommendation banner on home =====
   function renderRecommendationBanner() {
     const banner = $('#reco-banner');
@@ -4232,6 +4391,9 @@ ${trkPts}
 
     // レコメンド初期描画
     try { renderRecommendationBanner(); } catch {}
+
+    // 天気バナー
+    try { renderWeatherBanner(); } catch {}
 
     // 所要時間フィルタ
     state.filterDuration = state.filterDuration || 'all';
@@ -6129,6 +6291,16 @@ ${hashtag}`;
     });
     const walkLogClose = $('#walk-log-close');
     if (walkLogClose) walkLogClose.addEventListener('click', () => { $('#walk-log-modal').hidden = true; });
+
+    // 設定モーダル
+    const settingsBtn = $('#show-settings');
+    if (settingsBtn) settingsBtn.addEventListener('click', () => {
+      $('#profile-modal').hidden = true;
+      openSettingsModal();
+    });
+    const settingsClose = $('#settings-close');
+    if (settingsClose) settingsClose.addEventListener('click', () => { $('#settings-modal').hidden = true; });
+    setupSettingsControls();
 
     // ヘルプモーダル
     const helpBtn = $('#show-help');

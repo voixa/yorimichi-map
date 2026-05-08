@@ -3847,6 +3847,75 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
 .faq-item p strong { color: var(--brand); }
 .faq-item p a { color: var(--brand); }
 
+/* ===== Settings modal ===== */
+.settings-modal { max-width: 480px; }
+.settings-group {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.settings-group:last-child { border-bottom: 0; }
+.settings-group-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--brand);
+  margin: 0 0 12px;
+  letter-spacing: 0.05em;
+}
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+.settings-row.toggle {
+  cursor: pointer;
+}
+.settings-row input[type="checkbox"] {
+  width: 44px;
+  height: 24px;
+  appearance: none;
+  background: var(--surface-2);
+  border-radius: 100px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.settings-row input[type="checkbox"]:checked {
+  background: var(--brand);
+}
+.settings-row input[type="checkbox"]::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 20px; height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+.settings-row input[type="checkbox"]:checked::after {
+  transform: translateX(20px);
+}
+.settings-select {
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+  min-width: 140px;
+}
+.settings-fine {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 12px 0 0;
+}
+
 /* ===== Lifetime stats (in profile) ===== */
 .lifetime-stats {
   display: grid;
@@ -4080,6 +4149,34 @@ button:focus-visible,
 }
 .notify-status.granted { color: #16a34a; font-weight: 700; }
 .notify-status.denied { color: #ef4444; font-weight: 700; }
+
+/* ===== Weather banner ===== */
+.weather-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin: 12px 0 8px;
+  background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%);
+  color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(41, 182, 246, 0.2);
+}
+.weather-banner.warm {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  box-shadow: 0 4px 12px rgba(245, 124, 0, 0.2);
+}
+.weather-banner.rain {
+  background: linear-gradient(135deg, #607d8b 0%, #455a64 100%);
+  box-shadow: 0 4px 12px rgba(69, 90, 100, 0.2);
+}
+.weather-banner.cold {
+  background: linear-gradient(135deg, #5c6bc0 0%, #3949ab 100%);
+}
+.weather-icon { font-size: 32px; line-height: 1; }
+.weather-body { flex: 1; min-width: 0; }
+.weather-msg { font-weight: 800; font-size: 14px; }
+.weather-meta { font-size: 12px; opacity: 0.9; margin-top: 2px; }
 
 /* ===== Smart recommendation banner ===== */
 .reco-banner {

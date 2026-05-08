@@ -730,6 +730,58 @@ window.YORIMICHI_COURSES = [
     ]
   },
 
+  // ============== 下北沢エリア ==============
+
+  {
+    id: 'shimokita_culture',
+    name: '下北沢 サブカル・古着とライブハウスの路地',
+    name_en: 'Shimokitazawa Subculture: Vintage & Live Houses',
+    area: 'shimokita',
+    areaName: '下北沢',
+    areaName_en: 'Shimokitazawa',
+    areaIcon: '🎸',
+    themeIcon: '🎸',
+    rarity: 'sr',
+    description: '東京の若者文化の聖地・下北沢。古着屋、ライブハウス、小劇場、独立系カフェが密集する路地裏を歩く。',
+    description_en: 'The youth culture mecca of Tokyo. Wander narrow alleys packed with vintage shops, live houses, indie theaters, and quirky cafes.',
+    travelMode: 'walk',
+    estimatedMin: 80,
+    budget: '¥1,500-3,500',
+    tags: ['サブカル', '古着', '若者文化', '路地裏'],
+    origin: { lat: 35.6614, lng: 139.6677, name: '下北沢駅', shortLabel: '下北沢駅' },
+    dest:   { lat: 35.6589, lng: 139.6691, name: '下北沢南口', shortLabel: '下北沢南口' },
+    stops: [
+      {
+        lat: 35.6620, lng: 139.6680, name: '北口商店街', name_en: 'North Gate Shotengai', cat: 'shop', emoji: '🛍️',
+        photoBg: 'linear-gradient(135deg, #ff7043 0%, #d84315 100%)',
+        bestTime: '11:00-19:00', budget: '¥500-2,000', stayMin: 25,
+        tags: ['商店街', '昭和レトロ', '食べ歩き'],
+        desc: '昭和の香りが残る商店街。下町感と若者カルチャーが入り混じる入り口。'
+      },
+      {
+        lat: 35.6618, lng: 139.6664, name: '古着屋ストリート', name_en: 'Vintage Street', cat: 'shop', emoji: '👕',
+        photoBg: 'linear-gradient(135deg, #ab47bc 0%, #5e35b1 100%)',
+        bestTime: '12:00-19:00', budget: '¥1,000-5,000', stayMin: 30,
+        tags: ['古着', 'ヴィンテージ', '宝探し'],
+        desc: '日本最大級の古着エリア。一点もののヴィンテージウェアを探す。'
+      },
+      {
+        lat: 35.6595, lng: 139.6685, name: 'ボーナストラック', name_en: 'Bonus Track', cat: 'shop', emoji: '🎬',
+        photoBg: 'linear-gradient(135deg, #26a69a 0%, #00897b 100%)',
+        bestTime: '11:00-21:00', budget: '¥500-2,500', stayMin: 30,
+        tags: ['複合施設', 'カフェ', '本屋'],
+        desc: '小田急線地下化で生まれた新スポット。独立系の店舗が並ぶ。'
+      },
+      {
+        lat: 35.6589, lng: 139.6691, name: '南口路地裏', name_en: 'South Gate Alleys', cat: 'shop', emoji: '🍻',
+        photoBg: 'linear-gradient(135deg, #5d4037 0%, #795548 100%)',
+        bestTime: '17:00-23:00', budget: '¥1,500-3,500', stayMin: 30,
+        tags: ['居酒屋', '夜景', 'ローカル'],
+        desc: '夜の下北沢を彩る飲み屋路地。地元民とサブカル好きが集う。'
+      },
+    ]
+  },
+
   {
     id: 'kamakura_temple',
     name: '【限定】古都鎌倉・苔と禅の北鎌倉',
@@ -789,5 +841,5 @@ window.YORIMICHI_AREAS = [
   { id: 'asakusa',   name: '浅草',       name_en: 'Asakusa',    icon: '🎎', enabled: true,  region: 'tokyo' },
   { id: 'meiji',     name: '原宿表参道', name_en: 'Harajuku-Omotesando', icon: '🌸', enabled: true, region: 'tokyo' },
   { id: 'kamakura',  name: '鎌倉',       name_en: 'Kamakura',   icon: '🏯', enabled: true, region: 'tokyo' },
-  { id: 'shimokita', name: '下北沢',     name_en: 'Shimokitazawa', icon: '🎸', enabled: false, comingSoon: true, region: 'tokyo' },
+  { id: 'shimokita', name: '下北沢',     name_en: 'Shimokitazawa', icon: '🎸', enabled: true, region: 'tokyo' },
 ];
