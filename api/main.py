@@ -189,6 +189,69 @@ def restore_user_state():
         return jsonify({"error": "firestore_error", "message": str(e)[:200]}), 502
 
 
+# ----- ライブ統計（匿名・集計値のみ） -----
+import time as _time
+
+# In-memory 直近アクティビティ集計（インスタンス内のみ）
+# 高頻度・低価値なイベントは Firestore に書かずメモリで集計
+_LIVE_BUCKET_SIZE = 60  # 60秒バケット
+_live_buckets = {
+    "active": {},  # ts_minute -> set of user_ids（直近30分）
+    "pulls": {},   # ts_minute -> count
+    "completes": {},  # ts_minute -> count
+}
+
+def _trim_buckets(now_min):
+    """30分より古いバケットを削除"""
+    cutoff = now_min - 30
+    for kind in _live_buckets:
+        for k in list(_live_buckets[kind].keys()):
+            if k < cutoff:
+                _live_buckets[kind].pop(k, None)
+
+@app.route("/api/heartbeat", methods=["POST"])
+def heartbeat():
+    """ユーザーが「いる」ことを匿名で記録（直近30分のアクティブ数集計用）"""
+    data = request.get_json(silent=True) or {}
+    user_id = (data.get("user_id") or "").strip()[:64]
+    event = (data.get("event") or "").strip()  # "tick" | "pull" | "complete"
+    now_min = int(_time.time() // _LIVE_BUCKET_SIZE)
+    _trim_buckets(now_min)
+    if user_id:
+        _live_buckets["active"].setdefault(now_min, set()).add(user_id[:32])
+    if event == "pull":
+        _live_buckets["pulls"][now_min] = _live_buckets["pulls"].get(now_min, 0) + 1
+    elif event == "complete":
+        _live_buckets["completes"][now_min] = _live_buckets["completes"].get(now_min, 0) + 1
+    return jsonify({"ok": True})
+
+
+@app.route("/api/live-stats", methods=["GET"])
+def live_stats():
+    """直近30分のアクティブ数 / pulls / completes を返す（匿名集計）"""
+    now_min = int(_time.time() // _LIVE_BUCKET_SIZE)
+    _trim_buckets(now_min)
+    # active: 直近30分のユニークユーザー数
+    all_active = set()
+    for s in _live_buckets["active"].values():
+        all_active.update(s)
+    pulls_30 = sum(_live_buckets["pulls"].values())
+    completes_30 = sum(_live_buckets["completes"].values())
+    # 直近5分のアクティブ
+    cutoff5 = now_min - 5
+    active5 = set()
+    for k, s in _live_buckets["active"].items():
+        if k >= cutoff5:
+            active5.update(s)
+    return jsonify({
+        "active_30min": len(all_active),
+        "active_5min": len(active5),
+        "pulls_30min": pulls_30,
+        "completes_30min": completes_30,
+        "ts": int(_time.time()),
+    })
+
+
 @app.route("/api/delete-user-data", methods=["POST"])
 def delete_user_data():
     """ユーザー要求でクラウド側のデータを完全削除（GDPR/個人情報保護法対応）"""

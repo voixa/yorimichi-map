@@ -2598,6 +2598,8 @@
     setTimeout(maybeGrantInviteeBonus, 2000);
     // ミッション「ガチャを1回引く」
     try { markMissionDone('gacha'); } catch {}
+    // ライブイベント
+    try { sendHeartbeat('pull'); } catch {}
   }
 
   function updateSessionStreak() {
@@ -3741,6 +3743,91 @@ ${trkPts}
     else showVisitedHeatmap();
   }
 
+  // ===== Live activity counter & heartbeat =====
+  let _liveStatsTimer = null;
+
+  async function sendHeartbeat(event = 'tick') {
+    try {
+      const userId = getOrCreateUserId();
+      await fetch(`${API_BASE}/api/heartbeat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, event }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {}
+  }
+
+  async function fetchAndRenderLiveStats() {
+    try {
+      const res = await fetch(`${API_BASE}/api/live-stats`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const banner = $('#live-counter');
+      const text = $('#live-counter-text');
+      if (!banner || !text) return;
+      const active5 = data.active_5min || 0;
+      const active30 = data.active_30min || 0;
+      const pulls30 = data.pulls_30min || 0;
+
+      // 1人だけだと「自分だけ」感が出るので、表示閾値あり
+      if (active30 < 1) {
+        banner.hidden = true;
+        return;
+      }
+      // メッセージ生成
+      let msg;
+      if (active5 >= 1) {
+        msg = `今 ${active5}人が街歩き中`;
+      } else if (active30 >= 1) {
+        msg = `この30分で ${active30}人が街歩き`;
+      }
+      if (pulls30 >= 5) {
+        msg += ` ・ ${pulls30}コース引かれた`;
+      }
+      text.textContent = msg;
+      banner.hidden = false;
+    } catch (e) { console.warn('live stats failed', e); }
+  }
+
+  function startLiveActivity() {
+    sendHeartbeat('tick');
+    fetchAndRenderLiveStats();
+    if (_liveStatsTimer) clearInterval(_liveStatsTimer);
+    _liveStatsTimer = setInterval(() => {
+      sendHeartbeat('tick');
+      fetchAndRenderLiveStats();
+    }, 60_000); // 60秒ごと
+  }
+
+  async function quickStart() {
+    try {
+      // Course mode に強制セット
+      if (state.mode !== 'course' && typeof setMode === 'function') {
+        setMode('course');
+      }
+      // 全エリアON / 未発見優先
+      state.activeArea = null;
+      state.activeTags = state.activeTags || new Set();
+      state.activeTags.clear();
+      state.filterDuration = 'all';
+      state.filterHasPhoto = false;
+      state.filterHasPerk = false;
+      // ガチャモーダルを開く
+      await showGachaModal();
+      // 自動でハンドルを回す
+      setTimeout(() => {
+        const turnBtn = $('#btn-turn');
+        if (turnBtn && !turnBtn.disabled) {
+          turnBtn.click();
+        }
+      }, 600);
+    } catch (e) {
+      console.warn('quickStart failed', e);
+      showToast('開始に失敗しました', 'error', 2500);
+    }
+  }
+
   // ===== Daily tip rotation =====
   const DAILY_TIPS = [
     '🚶 はじめての街は「逆方向の路地」を選ぶと発見が増えます',
@@ -4746,6 +4833,13 @@ ${trkPts}
 
     // 今日のTip
     try { renderDailyTip(); } catch {}
+
+    // Quick Start ボタン
+    const quickBtn = $('#quickstart-btn');
+    if (quickBtn) quickBtn.addEventListener('click', quickStart);
+
+    // ライブアクティビティ
+    try { startLiveActivity(); } catch {}
 
     // 所要時間フィルタ
     state.filterDuration = state.filterDuration || 'all';
@@ -5838,6 +5932,8 @@ ${trkPts}
     gacha.coins += COMPLETION_BONUS;
     gachaSave();
     showToast(`🪙 完走ボーナス +${COMPLETION_BONUS}コイン！`, 'success', 4000);
+    // ライブイベント
+    try { sendHeartbeat('complete'); } catch {}
 
     const course = (window.YORIMICHI_COURSES || []).find(c => c.id === courseId);
     setTimeout(() => {
@@ -5867,6 +5963,197 @@ ${trkPts}
     speak('全コース発見コンプリート！おめでとう！');
     burst.querySelector('.cb-close').onclick = () => burst.remove();
     setTimeout(() => { if (burst.parentElement) burst.remove(); }, 6000);
+  }
+
+  // ===== QR Code generation (light implementation) =====
+  // 軽量QRコード生成（外部ライブラリ無し・矩形描画ベース）
+  // 一般的なQRには専用ライブラリが必要なため、このアプリでは
+  // 「Google Chart API 風の URL を Canvas にロード」する方式を採用
+  // Note: api.qrserver.com (フリー・APIキー不要・QR生成専門)
+  async function loadQRImage(text, size = 280) {
+    const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=4&data=${encodeURIComponent(text)}`;
+    return loadImage(url);
+  }
+
+  // ===== Instagram縦長シェア画像 (1080x1920) =====
+  async function generateInstagramShareImage(course) {
+    const W = 1080;
+    const H = 1920;
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    // 背景：オレンジ→ピンク→紫のグラデ
+    const bg = ctx.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, '#ff7e3d');
+    bg.addColorStop(0.5, '#ff4081');
+    bg.addColorStop(1, '#9c27b0');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // 装飾円
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.beginPath();
+    ctx.arc(150, 200, 250, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(W - 150, H - 250, 280, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ヘッダー
+    ctx.font = 'bold 48px sans-serif';
+    ctx.fillStyle = 'white';
+    ctx.textAlign = 'center';
+    ctx.fillText('👣 街歩きガチャ', W / 2, 120);
+
+    ctx.font = '32px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillText('完走しました！', W / 2, 175);
+
+    // 完走メダル（中央上部）
+    ctx.font = '180px serif';
+    ctx.fillText('🏅', W / 2, 380);
+
+    // コース名（白枠＋黒文字カード）
+    const cardX = 60, cardY = 440, cardW = W - 120, cardH = 280;
+    ctx.fillStyle = 'rgba(255,255,255,0.97)';
+    roundRect(ctx, cardX, cardY, cardW, cardH, 28);
+    ctx.fill();
+
+    ctx.fillStyle = '#1c1c1f';
+    ctx.font = 'bold 56px sans-serif';
+    ctx.textAlign = 'center';
+    const name = tField(course, 'name');
+    wrapText(ctx, name, W / 2, cardY + 80, cardW - 80, 70);
+
+    // エリア + メタ
+    ctx.font = '36px sans-serif';
+    ctx.fillStyle = '#6b6b72';
+    ctx.fillText(`${course.areaIcon || ''} ${tField(course, 'areaName')}`, W / 2, cardY + 200);
+    ctx.font = '28px sans-serif';
+    ctx.fillText(`📍 ${course.stops.length}スポット ・ 約${course.estimatedMin}分`, W / 2, cardY + 250);
+
+    // 写真コラージュ（あれば）
+    const photos = getCoursePhotos(course.id);
+    const photoEntries = Object.entries(photos)
+      .map(([idx, entry]) => ({ idx: parseInt(idx, 10), url: _photoUrlOf(entry) }))
+      .filter(p => p.url)
+      .sort((a, b) => a.idx - b.idx);
+    const loaded = await Promise.all(photoEntries.slice(0, 4).map(p => loadImage(p.url)));
+    const validPhotos = loaded.filter(Boolean);
+
+    if (validPhotos.length > 0) {
+      const pcRows = validPhotos.length <= 2 ? 1 : 2;
+      const pcCols = validPhotos.length <= 1 ? 1 : 2;
+      const pad = 16;
+      const totalW = W - 120;
+      const cellSize = Math.floor((totalW - pad * (pcCols - 1)) / pcCols);
+      const startX = (W - (cellSize * pcCols + pad * (pcCols - 1))) / 2;
+      const startY = 770;
+      validPhotos.forEach((img, i) => {
+        const r = Math.floor(i / pcCols);
+        const c = i % pcCols;
+        const x = startX + c * (cellSize + pad);
+        const y = startY + r * (cellSize + pad);
+        ctx.save();
+        roundRect(ctx, x, y, cellSize, cellSize, 24);
+        ctx.clip();
+        const ratio = Math.max(cellSize / img.width, cellSize / img.height);
+        const dw = img.width * ratio;
+        const dh = img.height * ratio;
+        const dx = x + (cellSize - dw) / 2;
+        const dy = y + (cellSize - dh) / 2;
+        ctx.drawImage(img, dx, dy, dw, dh);
+        ctx.restore();
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+        ctx.lineWidth = 6;
+        roundRect(ctx, x, y, cellSize, cellSize, 24);
+        ctx.stroke();
+      });
+    } else {
+      // 写真ない時はスタンプ円
+      ctx.font = '120px serif';
+      ctx.textAlign = 'center';
+      const stamps = course.stops.slice(0, 4);
+      const stampSize = 200;
+      const stampPad = 24;
+      const stampStart = (W - (stamps.length * stampSize + (stamps.length - 1) * stampPad)) / 2;
+      stamps.forEach((s, i) => {
+        const cx = stampStart + i * (stampSize + stampPad) + stampSize / 2;
+        const cy = 900 + (i % 2) * (stampSize + 30);
+        ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, stampSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#1c1c1f';
+        ctx.fillText(s.emoji || '📍', cx, cy + 40);
+      });
+    }
+
+    // QRコード（招待リンク）
+    let qrImg = null;
+    try {
+      qrImg = await loadQRImage(getInviteUrl(), 280);
+    } catch {}
+    const qrSize = 240;
+    const qrX = 100;
+    const qrY = H - 360;
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    roundRect(ctx, qrX - 12, qrY - 12, qrSize + 24, qrSize + 24, 16);
+    ctx.fill();
+    if (qrImg) {
+      ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+    } else {
+      ctx.fillStyle = '#1c1c1f';
+      ctx.font = '30px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('QR', qrX + qrSize / 2, qrY + qrSize / 2);
+    }
+
+    // QRラベル
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 36px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('スキャンで', qrX + qrSize + 30, qrY + 70);
+    ctx.font = 'bold 44px sans-serif';
+    ctx.fillText('街歩きガチャ', qrX + qrSize + 30, qrY + 130);
+    ctx.font = '28px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fillText('+15🪙ボーナス', qrX + qrSize + 30, qrY + 175);
+
+    // 日付 + ハッシュタグ
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`;
+    ctx.font = '28px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.textAlign = 'center';
+    ctx.fillText(dateStr, W / 2, H - 80);
+    ctx.font = 'bold 30px sans-serif';
+    ctx.fillStyle = 'white';
+    ctx.fillText('#街歩きガチャ', W / 2, H - 40);
+
+    return canvas;
+  }
+
+  async function downloadInstagramShareImage(course) {
+    try {
+      showToast('🎨 IG用画像を生成中...', 'info', 1500);
+      const canvas = await generateInstagramShareImage(course);
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/png', 0.95));
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `machiaruki_${(course.id || 'course').replace(/[^a-z0-9_-]/gi, '_')}_ig.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      showToast('💾 IGストーリー用画像を保存', 'success', 3000);
+    } catch (e) {
+      console.error(e);
+      showToast('画像生成に失敗しました', 'error', 3000);
+    }
   }
 
   // 写真を Image にロード
@@ -6220,6 +6507,10 @@ ${hashtag}`;
     // GPX export
     const gpxBtn = $('#cert-gpx');
     if (gpxBtn) gpxBtn.onclick = () => downloadGPX(course);
+
+    // Instagram縦長シェア画像
+    const igBtn = $('#cert-ig');
+    if (igBtn) igBtn.onclick = () => downloadInstagramShareImage(course);
 
     // Suggest next course - 履歴ベースのレコメンドエンジンで強化
     const next = getRecommendedCourse() || pickNextSuggestion(course);

@@ -253,6 +253,24 @@
       <div class="panel-inner">
 
         <!-- Active walk resume banner (shown if previous walk was unfinished) -->
+        <!-- Live counter ticker -->
+        <section class="live-counter" id="live-counter" hidden>
+          <span class="live-counter-dot"></span>
+          <span class="live-counter-text" id="live-counter-text">—</span>
+        </section>
+
+        <!-- Quick Start hero (1-tap full flow) -->
+        <section class="quickstart-hero" id="quickstart-hero">
+          <button class="quickstart-btn" id="quickstart-btn" type="button">
+            <span class="qs-icon">🎰</span>
+            <div class="qs-body">
+              <div class="qs-label">とにかくガチャを引いて歩く</div>
+              <div class="qs-sub">エリア自動・1タップでスタート</div>
+            </div>
+            <span class="qs-arrow">→</span>
+          </button>
+        </section>
+
         <section class="resume-banner" id="resume-banner" hidden>
           <div class="resume-icon">🚶</div>
           <div class="resume-body">
@@ -1125,6 +1143,7 @@
         <button class="btn-share-copy" id="share-copy" type="button">🔗 URL</button>
       </div>
       <button class="btn-cert-download" id="cert-download" type="button">📥 画像でダウンロード</button>
+      <button class="btn-primary" id="cert-ig" type="button" style="margin-top: 8px; width: 100%; background: linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%);">📱 Instagramストーリー用 (9:16)</button>
       <button class="btn-secondary" id="cert-gpx" type="button" style="margin-top: 8px; width: 100%;">🗺 GPX エクスポート（Stravaなど用）</button>
 
       <div class="next-suggestion" id="next-suggestion" hidden>

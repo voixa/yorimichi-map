@@ -4304,6 +4304,97 @@ button:focus-visible,
 .notify-status.granted { color: #16a34a; font-weight: 700; }
 .notify-status.denied { color: #ef4444; font-weight: 700; }
 
+/* ===== Live counter ticker ===== */
+.live-counter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(22, 163, 74, 0.1);
+  border: 1px solid rgba(22, 163, 74, 0.3);
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #15803d;
+  margin: 8px 0;
+  width: fit-content;
+}
+[data-theme="dark"] .live-counter {
+  background: rgba(74, 222, 128, 0.1);
+  border-color: rgba(74, 222, 128, 0.3);
+  color: #4ade80;
+}
+.live-counter-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #16a34a;
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+/* ===== Quick Start Hero (1-tap full flow) ===== */
+.quickstart-hero {
+  margin: 8px 0 12px;
+}
+.quickstart-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ff7e3d 0%, #ff4081 50%, #9c27b0 100%);
+  color: white;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 8px 24px rgba(255, 64, 129, 0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.quickstart-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  animation: qsShine 3s ease-in-out infinite;
+}
+@keyframes qsShine {
+  0%, 100% { left: -100%; }
+  50% { left: 100%; }
+}
+.quickstart-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(255, 64, 129, 0.45);
+}
+.quickstart-btn:active {
+  transform: scale(0.98);
+}
+.qs-icon {
+  font-size: 36px;
+  line-height: 1;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+.qs-body { flex: 1; min-width: 0; }
+.qs-label {
+  font-weight: 800;
+  font-size: 15px;
+  margin-bottom: 2px;
+}
+.qs-sub {
+  font-size: 12px;
+  opacity: 0.9;
+}
+.qs-arrow {
+  font-size: 24px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
 /* ===== Daily tip ===== */
 .daily-tip {
   display: flex;
