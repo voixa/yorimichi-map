@@ -877,6 +877,114 @@ window.YORIMICHI_COURSES = [
     ]
   },
 
+  // ============== 大阪・道頓堀エリア ==============
+
+  {
+    id: 'dotombori_classic',
+    name: '道頓堀・心斎橋 王道・グリコと食い倒れ',
+    name_en: 'Dotombori-Shinsaibashi Classic: Glico & Foodie Heaven',
+    area: 'dotombori',
+    areaName: '道頓堀・心斎橋',
+    areaName_en: 'Dotombori-Shinsaibashi',
+    areaIcon: '🐙',
+    themeIcon: '🍜',
+    rarity: 'sr',
+    description: '大阪の食い倒れ文化を代表するエリア。道頓堀川のネオン、グリコ看板、そしてたこ焼き・お好み焼きの香り。',
+    description_en: "The heart of Osaka's foodie culture. Dotombori canal neon lights, the iconic Glico sign, and the aromas of takoyaki and okonomiyaki.",
+    travelMode: 'walk',
+    estimatedMin: 90,
+    budget: '¥2,000-4,500',
+    tags: ['食い倒れ', 'ネオン', '大阪定番'],
+    origin: { lat: 34.6688, lng: 135.5022, name: 'なんば駅', shortLabel: 'なんば駅' },
+    dest:   { lat: 34.6745, lng: 135.5009, name: '心斎橋筋商店街', shortLabel: '心斎橋筋商店街' },
+    stops: [
+      {
+        lat: 34.6687, lng: 135.5021, name: '道頓堀川 グリコ前', name_en: 'Dotombori Glico Sign', cat: 'viewpoint', emoji: '🌃',
+        photoBg: 'linear-gradient(135deg, #ff6f00 0%, #c62828 100%)',
+        bestTime: '17:00-23:00', budget: '無料', stayMin: 20,
+        tags: ['ネオン', '撮影スポット', 'シンボル'],
+        desc: '大阪のシンボル・グリコの看板。川面に映るネオンが大阪らしさの極み。'
+      },
+      {
+        lat: 34.6692, lng: 135.5019, name: '道頓堀商店街', name_en: 'Dotombori Shotengai', cat: 'shop', emoji: '🍜',
+        photoBg: 'linear-gradient(135deg, #d84315 0%, #ff8a65 100%)',
+        bestTime: '11:00-23:00', budget: '¥1,000-3,000', stayMin: 30,
+        tags: ['食い倒れ', 'たこ焼き', 'お好み焼き'],
+        desc: 'たこ焼き・お好み焼き・串カツが軒を連ねる食の天国。'
+      },
+      {
+        lat: 34.6712, lng: 135.5012, name: '法善寺横丁', name_en: 'Hozenji Yokocho', cat: 'shrine', emoji: '⛩️',
+        photoBg: 'linear-gradient(135deg, #4e342e 0%, #6d4c41 100%)',
+        bestTime: '15:00-21:00', budget: '無料', stayMin: 20,
+        tags: ['路地裏', '苔のお寺', '昭和'],
+        desc: '苔むしたお地蔵様で有名な小さな寺と路地裏の昭和情緒。'
+      },
+      {
+        lat: 34.6745, lng: 135.5009, name: '心斎橋筋商店街', name_en: 'Shinsaibashi-suji Shotengai', cat: 'shop', emoji: '🛍️',
+        photoBg: 'linear-gradient(135deg, #ec407a 0%, #ab47bc 100%)',
+        bestTime: '10:00-21:00', budget: '¥1,000-5,000', stayMin: 30,
+        tags: ['アーケード', '買い物', '老舗'],
+        desc: '長さ約580mのアーケード商店街。老舗から最新ファッションまで。'
+      },
+    ]
+  },
+
+  // ============== ヴェネツィア・サン・マルコエリア ==============
+
+  {
+    id: 'sanmarco_classic',
+    name: 'San Marco 王道・水の都の中心',
+    name_en: 'San Marco Classic: Heart of the Floating City',
+    area: 'sanmarco',
+    areaName: 'サン・マルコ',
+    areaName_en: 'San Marco',
+    areaIcon: '🛶',
+    themeIcon: '🏛️',
+    rarity: 'legendary',
+    description: '水の都ヴェネツィアの中心。サン・マルコ広場、ドゥカーレ宮殿、ため息の橋、そして運河沿いのカフェ。観光客の波が引いた朝が最高。',
+    description_en: 'The heart of Venice. St. Mark\'s Square, Doge\'s Palace, Bridge of Sighs, and canalside cafes. Best in the early morning when the crowds thin out.',
+    travelMode: 'walk',
+    estimatedMin: 120,
+    budget: '€20-40',
+    tags: ['世界遺産', '海外', '水の都'],
+    origin: { lat: 45.4341, lng: 12.3387, name: 'サン・マルコ広場', shortLabel: 'San Marco' },
+    dest:   { lat: 45.4347, lng: 12.3402, name: 'リアルト橋', shortLabel: 'Rialto' },
+    stops: [
+      {
+        lat: 45.4341, lng: 12.3387, name: 'サン・マルコ広場', name_en: "Piazza San Marco", cat: 'viewpoint', emoji: '🕊️',
+        photoBg: 'linear-gradient(135deg, #d4af37 0%, #fff8e1 100%)',
+        bestTime: '7:00-10:00', budget: '無料', stayMin: 30,
+        tags: ['世界遺産', '広場', '鳩'],
+        desc: 'ナポレオンが「世界一美しい広場」と讃えた場所。早朝の鳩は格別。',
+        desc_en: 'Napoleon called it "the world\'s finest drawing room". Best with morning pigeons.'
+      },
+      {
+        lat: 45.4344, lng: 12.3390, name: 'サン・マルコ大聖堂', name_en: "St. Mark's Basilica", cat: 'temple', emoji: '🏛️',
+        photoBg: 'linear-gradient(135deg, #b8860b 0%, #d4af37 100%)',
+        bestTime: '9:30-17:00', budget: '€3', stayMin: 30,
+        tags: ['ビザンティン建築', '黄金モザイク', '世界遺産'],
+        desc: 'ビザンティン建築の傑作。内部は数千平米の黄金モザイク。',
+        desc_en: 'Masterpiece of Byzantine architecture, with thousands of square meters of golden mosaics.'
+      },
+      {
+        lat: 45.4337, lng: 12.3401, name: 'ため息の橋', name_en: 'Bridge of Sighs', cat: 'viewpoint', emoji: '🌉',
+        photoBg: 'linear-gradient(135deg, #5d4037 0%, #8d6e63 100%)',
+        bestTime: '10:00-18:00', budget: '無料', stayMin: 15,
+        tags: ['ロマン', '撮影スポット', '伝説'],
+        desc: '囚人がドゥカーレ宮殿から牢獄へ渡る際にこの橋でため息をついたと伝わる。',
+        desc_en: 'Prisoners crossing from the Doge\'s Palace to the prison were said to sigh at this bridge.'
+      },
+      {
+        lat: 45.4347, lng: 12.3402, name: 'リアルト橋', name_en: 'Rialto Bridge', cat: 'viewpoint', emoji: '🌉',
+        photoBg: 'linear-gradient(135deg, #1976d2 0%, #b8860b 100%)',
+        bestTime: '8:00-19:00', budget: '無料', stayMin: 25,
+        tags: ['運河', 'ゴンドラ', 'ヴェネツィアの象徴'],
+        desc: '大運河に架かる最古の橋。ゴンドラと水上バスが行き交う絶景。',
+        desc_en: 'The oldest bridge over the Grand Canal. Gondolas and water taxis pass below.'
+      },
+    ]
+  },
+
   {
     id: 'kamakura_temple',
     name: '【限定】古都鎌倉・苔と禅の北鎌倉',
@@ -925,8 +1033,8 @@ window.YORIMICHI_COURSES = [
 window.YORIMICHI_REGIONS = [
   { id: 'tokyo',   country: 'JP', name: '東京',           name_en: 'Tokyo',   icon: '🗼', enabled: true,  centerLat: 35.6812, centerLng: 139.7671 },
   { id: 'kyoto',   country: 'JP', name: '京都',           name_en: 'Kyoto',   icon: '🍵', enabled: true, centerLat: 35.0116, centerLng: 135.7681 },
-  { id: 'osaka',   country: 'JP', name: '大阪',           name_en: 'Osaka',   icon: '🐙', enabled: false, comingSoon: true, centerLat: 34.6937, centerLng: 135.5023 },
-  { id: 'venezia', country: 'IT', name: 'ヴェネツィア', name_en: 'Venezia', icon: '🛶', enabled: false, comingSoon: true, centerLat: 45.4408, centerLng: 12.3155 },
+  { id: 'osaka',   country: 'JP', name: '大阪',           name_en: 'Osaka',   icon: '🐙', enabled: true, centerLat: 34.6937, centerLng: 135.5023 },
+  { id: 'venezia', country: 'IT', name: 'ヴェネツィア', name_en: 'Venezia', icon: '🛶', enabled: true, centerLat: 45.4408, centerLng: 12.3155 },
 ];
 
 window.YORIMICHI_AREAS = [
@@ -939,4 +1047,6 @@ window.YORIMICHI_AREAS = [
   { id: 'shimokita', name: '下北沢',     name_en: 'Shimokitazawa', icon: '🎸', enabled: true, region: 'tokyo' },
   { id: 'gion',      name: '祇園・東山', name_en: 'Gion-Higashiyama', icon: '🍵', enabled: true, region: 'kyoto' },
   { id: 'fushimi',   name: '伏見',       name_en: 'Fushimi',       icon: '⛩️', enabled: true, region: 'kyoto' },
+  { id: 'dotombori', name: '道頓堀・心斎橋', name_en: 'Dotombori-Shinsaibashi', icon: '🐙', enabled: true, region: 'osaka' },
+  { id: 'sanmarco',  name: 'サン・マルコ', name_en: 'San Marco', icon: '🛶', enabled: true, region: 'venezia' },
 ];
