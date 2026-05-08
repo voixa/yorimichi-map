@@ -918,6 +918,20 @@
       </div>
 
       <div class="settings-group">
+        <h3 class="settings-group-title">☁️ クラウド同期（オプトイン）</h3>
+        <p class="settings-help">複数端末で進捗を引き継ぎます。匿名IDで暗号化通信。<br>送信内容: コイン・発見コース・歩行履歴のみ。位置情報や写真は送信しません。</p>
+        <label class="settings-row toggle">
+          <span>クラウド同期を有効化</span>
+          <input type="checkbox" id="settings-cloudsync" />
+        </label>
+        <div class="data-actions" style="margin-top: 8px; display: flex; gap: 8px;">
+          <button class="btn-secondary" id="settings-sync-now" type="button" style="flex: 1;">⬆ いま同期</button>
+          <button class="btn-secondary" id="settings-restore" type="button" style="flex: 1;">⬇ 復元</button>
+        </div>
+        <button class="btn-secondary danger" id="settings-cloud-delete" type="button" style="margin-top: 8px; width: 100%;">🗑 クラウドのデータを削除</button>
+      </div>
+
+      <div class="settings-group">
         <h3 class="settings-group-title">🚶 歩行</h3>
         <label class="settings-row toggle">
           <span>歩数計（モバイルのみ）</span>
@@ -1221,12 +1235,20 @@
   <!-- Confetti container -->
   <div class="confetti-container" id="confetti" hidden></div>
 
-  <!-- Leaflet JS (BSD-2-Clause) -->
+  <!-- Leaflet JS (BSD-2-Clause) — defer for non-blocking load -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""></script>
+    crossorigin=""
+    defer></script>
+  <!-- Data files: defer = HTML parsing非ブロック・順序保証 -->
   <script src="photos.js" defer></script>
   <script src="courses.js" defer></script>
   <script src="app.js" defer></script>
+
+  <!-- Module preload hints: 主要ファイルを並列ダウンロード -->
+  <link rel="preload" as="script" href="app.js" />
+  <link rel="preload" as="script" href="courses.js" />
+  <link rel="preload" as="script" href="style.css" />
+  <link rel="prefetch" href="og.png" />
 </body>
 </html>

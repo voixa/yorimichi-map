@@ -2110,12 +2110,16 @@
       localStorage.setItem('yorimichi-walk-counts', JSON.stringify(state.walkCounts));
       localStorage.setItem('yorimichi-walk-history', JSON.stringify(state.walkHistory));
     } catch (e) {}
+    // クラウド同期スケジュール
+    try { if (typeof scheduleSync === 'function') scheduleSync('completion'); } catch {}
   }
 
   function gachaSave() {
     try {
       localStorage.setItem('yorimichi-gacha', JSON.stringify(gacha));
     } catch (e) {}
+    // クラウド同期スケジュール（オプトイン時のみ）
+    try { if (typeof scheduleSync === 'function') scheduleSync('gacha'); } catch {}
   }
 
   function gachaUpdateUI() {
@@ -3613,6 +3617,64 @@ ${trkPts}
       });
     }
 
+    // クラウド同期トグル
+    const syncCb = $('#settings-cloudsync');
+    if (syncCb) {
+      syncCb.checked = isCloudSyncEnabled();
+      syncCb.addEventListener('change', async () => {
+        setCloudSyncEnabled(syncCb.checked);
+        if (syncCb.checked) {
+          showToast('☁️ クラウド同期を有効化しました', 'success', 3000);
+          // 既存サーバーデータがあるか確認
+          const existing = await pullRestoreFromCloud();
+          if (existing && (existing.coins > 0 || (existing.discoveredCourses && existing.discoveredCourses.length > 0))) {
+            if (confirm('クラウドに既存のデータが見つかりました。復元しますか？\n（現在のローカルデータは上書きされます）')) {
+              applyRestoredState(existing);
+              showToast('✅ クラウドから復元しました', 'success', 3500);
+              setTimeout(() => location.reload(), 1500);
+              return;
+            }
+          }
+          // 既存なし or 復元しない → 現状をプッシュ
+          await pushSync('initial');
+        } else {
+          showToast('☁️ クラウド同期をオフにしました', 'info', 2500);
+        }
+      });
+    }
+    const syncNowBtn = $('#settings-sync-now');
+    if (syncNowBtn) syncNowBtn.addEventListener('click', async () => {
+      if (!isCloudSyncEnabled()) {
+        showToast('まずクラウド同期をオンにしてください', 'warning', 3000);
+        return;
+      }
+      await pushSync('manual');
+      showToast('⬆ 同期しました', 'success', 2500);
+    });
+    const restoreBtn = $('#settings-restore');
+    if (restoreBtn) restoreBtn.addEventListener('click', async () => {
+      if (!isCloudSyncEnabled()) {
+        showToast('まずクラウド同期をオンにしてください', 'warning', 3000);
+        return;
+      }
+      const restored = await pullRestoreFromCloud();
+      if (!restored) {
+        showToast('復元できるデータがありません', 'info', 3000);
+        return;
+      }
+      if (!confirm('クラウドから復元すると、現在のローカルデータは上書きされます。続行しますか？')) return;
+      applyRestoredState(restored);
+      showToast('✅ クラウドから復元しました', 'success', 3000);
+      setTimeout(() => location.reload(), 1500);
+    });
+    const cloudDelBtn = $('#settings-cloud-delete');
+    if (cloudDelBtn) cloudDelBtn.addEventListener('click', async () => {
+      if (!confirm('クラウド側のあなたのデータを完全に削除します。\nこの操作は元に戻せません。続行しますか？')) return;
+      const ok = await deleteCloudData();
+      if (ok) showToast('🗑 クラウドのデータを削除しました', 'success', 3000);
+      else showToast('削除に失敗しました', 'error', 3000);
+    });
+
     const notifyBtn = $('#settings-notify-btn');
     if (notifyBtn) notifyBtn.addEventListener('click', toggleNotifications);
   }
@@ -4003,6 +4065,126 @@ ${trkPts}
       $('#rating-modal').hidden = true;
       selectedRating = 0;
     });
+  }
+
+  // ---------- Cloud Sync (Firestore, opt-in) ----------
+  const CLOUD_SYNC_KEY = 'yorimichi-cloud-sync';
+  const CLOUD_SYNC_LAST_KEY = 'yorimichi-cloud-sync-last';
+  let _syncDebounceTimer = null;
+
+  function isCloudSyncEnabled() {
+    try { return localStorage.getItem(CLOUD_SYNC_KEY) === '1'; } catch { return false; }
+  }
+  function setCloudSyncEnabled(v) {
+    try { localStorage.setItem(CLOUD_SYNC_KEY, v ? '1' : '0'); } catch {}
+  }
+
+  /** 現在の状態を Firestore 用にシリアライズ */
+  function buildSyncPayload() {
+    const ratedCourses = (() => { try { return JSON.parse(localStorage.getItem('yorimichi-rated-courses') || '{}'); } catch { return {}; } })();
+    const totalWalkMin = parseInt(localStorage.getItem('yorimichi-total-walk-min') || '0', 10) || 0;
+    const totalSteps = parseInt(localStorage.getItem('yorimichi-total-steps') || '0', 10) || 0;
+
+    return {
+      coins: gacha.coins || 0,
+      freeUsedToday: gacha.freeUsedToday || 0,
+      lastFreeDate: gacha.lastFreeDate || '',
+      pulls: gacha.pulls || 0,
+      pullsSinceSR: gacha.pullsSinceSR || 0,
+      pullsSinceLR: gacha.pullsSinceLR || 0,
+      discoveredCourses: [...state.discoveredCourses],
+      completedCourses: [...state.completedCourses],
+      walkCounts: state.walkCounts || {},
+      walkHistory: (state.walkHistory || []).slice(-200),
+      loginStreak: state.loginStreak || 0,
+      lastLoginDate: state.lastLoginDate || '',
+      totalWalkMin: totalWalkMin,
+      totalSteps: totalSteps,
+      ratedCourses: ratedCourses,
+    };
+  }
+
+  /** サーバーから取得した state を localStorage / 実行時 state に反映 */
+  function applyRestoredState(restored) {
+    if (!restored) return;
+    if (typeof restored.coins === 'number') gacha.coins = restored.coins;
+    if (typeof restored.freeUsedToday === 'number') gacha.freeUsedToday = restored.freeUsedToday;
+    if (typeof restored.lastFreeDate === 'string') gacha.lastFreeDate = restored.lastFreeDate;
+    if (typeof restored.pulls === 'number') gacha.pulls = restored.pulls;
+    if (typeof restored.pullsSinceSR === 'number') gacha.pullsSinceSR = restored.pullsSinceSR;
+    if (typeof restored.pullsSinceLR === 'number') gacha.pullsSinceLR = restored.pullsSinceLR;
+    if (Array.isArray(restored.discoveredCourses)) state.discoveredCourses = new Set(restored.discoveredCourses);
+    if (Array.isArray(restored.completedCourses)) state.completedCourses = new Set(restored.completedCourses);
+    if (restored.walkCounts && typeof restored.walkCounts === 'object') state.walkCounts = restored.walkCounts;
+    if (Array.isArray(restored.walkHistory)) state.walkHistory = restored.walkHistory;
+    if (typeof restored.loginStreak === 'number') state.loginStreak = restored.loginStreak;
+    if (typeof restored.lastLoginDate === 'string') state.lastLoginDate = restored.lastLoginDate;
+    if (typeof restored.totalWalkMin === 'number') {
+      try { localStorage.setItem('yorimichi-total-walk-min', String(restored.totalWalkMin)); } catch {}
+    }
+    if (typeof restored.totalSteps === 'number') {
+      try { localStorage.setItem('yorimichi-total-steps', String(restored.totalSteps)); } catch {}
+    }
+    if (restored.ratedCourses && typeof restored.ratedCourses === 'object') {
+      try { localStorage.setItem('yorimichi-rated-courses', JSON.stringify(restored.ratedCourses)); } catch {}
+    }
+    // 永続化
+    try {
+      gachaSave();
+      localStorage.setItem('yorimichi-discovered', JSON.stringify([...state.discoveredCourses]));
+      saveCompletion();
+    } catch {}
+  }
+
+  async function pushSync(reason) {
+    if (!isCloudSyncEnabled()) return;
+    const userId = getOrCreateUserId();
+    const payload = { user_id: userId, state: buildSyncPayload() };
+    try {
+      const res = await fetch(`${API_BASE}/api/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        keepalive: true,
+      });
+      if (res.ok) {
+        try { localStorage.setItem(CLOUD_SYNC_LAST_KEY, String(Date.now())); } catch {}
+      }
+    } catch (e) { console.warn('cloud sync push failed', e); }
+  }
+
+  function scheduleSync(reason = 'change') {
+    if (!isCloudSyncEnabled()) return;
+    clearTimeout(_syncDebounceTimer);
+    _syncDebounceTimer = setTimeout(() => pushSync(reason), 5000); // 5秒デバウンス
+  }
+
+  async function pullRestoreFromCloud() {
+    if (!isCloudSyncEnabled()) return null;
+    const userId = getOrCreateUserId();
+    try {
+      const res = await fetch(`${API_BASE}/api/restore`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (!data.exists || !data.state) return null;
+      return data.state;
+    } catch (e) { console.warn('cloud restore failed', e); return null; }
+  }
+
+  async function deleteCloudData() {
+    const userId = getOrCreateUserId();
+    try {
+      const res = await fetch(`${API_BASE}/api/delete-user-data`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      return res.ok;
+    } catch { return false; }
   }
 
   // ---------- Subscription (Premium) ----------

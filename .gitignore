@@ -37,3 +37,13 @@ scripts/v3-stderr.txt
 
 # Cloud Run / GCP local artifacts
 .gcloudignore
+
+# Test artifacts
+node_modules/
+playwright-report/
+test-results/
+.cache/
+
+# Local test outputs
+_ai_test*.json
+_test_payload.json

@@ -1,0 +1,15 @@
+{
+  "name": "machiaruki-gacha",
+  "version": "1.0.0",
+  "description": "街歩きガチャ — 街の散歩コースをガチャで引く Web 地図サービス",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:install": "playwright install chromium --with-deps",
+    "serve": "python -m http.server 8765"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.46.0"
+  }
+}

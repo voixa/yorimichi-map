@@ -32,6 +32,13 @@ except ImportError:
     genai_types = None
     _gemini_available = False
 
+try:
+    from google.cloud import firestore
+    _firestore_available = True
+except ImportError:
+    firestore = None
+    _firestore_available = False
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -63,6 +70,16 @@ if _gemini_available and GEMINI_API_KEY:
         logger.warning(f"Gemini init failed: {e}")
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-lite")
 
+# Firestore: Cloud Run の Application Default Credentials を使用
+firestore_client = None
+USER_STATE_COLLECTION = "yorimichi_user_state"
+if _firestore_available:
+    try:
+        firestore_client = firestore.Client()
+        logger.info("Firestore client initialized")
+    except Exception as e:
+        logger.warning(f"Firestore init failed: {e}")
+
 # 単一の Source of Truth
 # 1ガチャ = 3コイン
 PACKS = {
@@ -91,7 +108,103 @@ def health():
         "packs": list(PACKS.keys()),
         "ai_enabled": gemini_client is not None,
         "ai_model": GEMINI_MODEL if gemini_client else None,
+        "firestore_enabled": firestore_client is not None,
     })
+
+
+# ----- Firestore: ユーザー状態の同期（オプトイン） -----
+# 個人情報は受け取らず、UUID形式のユーザーIDのみで識別。
+# クライアントが任意で「クラウド同期」をONにした時のみ動作。
+import re as _re
+_USER_ID_PATTERN = _re.compile(r"^[a-zA-Z0-9_-]{8,64}$")
+
+def _validate_user_id(uid: str) -> bool:
+    return bool(uid and _USER_ID_PATTERN.match(uid))
+
+# 同期可能なフィールド（ホワイトリスト）
+_SYNC_FIELDS = {
+    "coins", "freeUsedToday", "lastFreeDate",
+    "pulls", "pullsSinceSR", "pullsSinceLR",
+    "discoveredCourses", "completedCourses",
+    "walkCounts", "walkHistory",
+    "loginStreak", "lastLoginDate",
+    "totalWalkMin", "totalSteps",
+    "ratedCourses",
+}
+
+@app.route("/api/sync", methods=["POST"])
+def sync_user_state():
+    """クライアントの状態を Firestore に保存（オプトイン）"""
+    if not firestore_client:
+        return jsonify({"error": "firestore_disabled"}), 503
+    data = request.get_json(silent=True) or {}
+    user_id = (data.get("user_id") or "").strip()
+    if not _validate_user_id(user_id):
+        return jsonify({"error": "invalid_user_id"}), 400
+
+    state = data.get("state") or {}
+    if not isinstance(state, dict):
+        return jsonify({"error": "invalid_state"}), 400
+
+    # ホワイトリストに含まれるフィールドのみ抽出
+    safe_state = {k: v for k, v in state.items() if k in _SYNC_FIELDS}
+    # サイズ上限: walkHistoryが長すぎないように
+    if isinstance(safe_state.get("walkHistory"), list):
+        safe_state["walkHistory"] = safe_state["walkHistory"][-200:]
+
+    try:
+        doc_ref = firestore_client.collection(USER_STATE_COLLECTION).document(user_id)
+        safe_state["_synced_at"] = firestore.SERVER_TIMESTAMP
+        doc_ref.set(safe_state, merge=True)
+        return jsonify({"ok": True, "fields_synced": list(safe_state.keys())})
+    except Exception as e:
+        logger.exception("sync failed")
+        return jsonify({"error": "firestore_error", "message": str(e)[:200]}), 502
+
+
+@app.route("/api/restore", methods=["POST"])
+def restore_user_state():
+    """Firestore からユーザー状態を取得"""
+    if not firestore_client:
+        return jsonify({"error": "firestore_disabled"}), 503
+    data = request.get_json(silent=True) or {}
+    user_id = (data.get("user_id") or "").strip()
+    if not _validate_user_id(user_id):
+        return jsonify({"error": "invalid_user_id"}), 400
+    try:
+        doc_ref = firestore_client.collection(USER_STATE_COLLECTION).document(user_id)
+        doc = doc_ref.get()
+        if not doc.exists:
+            return jsonify({"exists": False, "state": None})
+        state = doc.to_dict() or {}
+        # 内部メタを除去
+        synced_at = state.pop("_synced_at", None)
+        return jsonify({
+            "exists": True,
+            "state": state,
+            "synced_at": synced_at.isoformat() if synced_at else None,
+        })
+    except Exception as e:
+        logger.exception("restore failed")
+        return jsonify({"error": "firestore_error", "message": str(e)[:200]}), 502
+
+
+@app.route("/api/delete-user-data", methods=["POST"])
+def delete_user_data():
+    """ユーザー要求でクラウド側のデータを完全削除（GDPR/個人情報保護法対応）"""
+    if not firestore_client:
+        return jsonify({"error": "firestore_disabled"}), 503
+    data = request.get_json(silent=True) or {}
+    user_id = (data.get("user_id") or "").strip()
+    if not _validate_user_id(user_id):
+        return jsonify({"error": "invalid_user_id"}), 400
+    try:
+        doc_ref = firestore_client.collection(USER_STATE_COLLECTION).document(user_id)
+        doc_ref.delete()
+        return jsonify({"ok": True})
+    except Exception as e:
+        logger.exception("delete failed")
+        return jsonify({"error": "firestore_error", "message": str(e)[:200]}), 502
 
 
 # ----- AI コース生成 -----
