@@ -1702,6 +1702,11 @@
       // 提携締結済みの特典のみで絞り込み（status: 'live'）
       all = all.filter(c => c.stops.some(s => perks[s.name] && perks[s.name].status === 'live'));
     }
+    // 所要時間フィルタ
+    const dur = state.filterDuration || 'all';
+    if (dur === 'short') all = all.filter(c => (c.estimatedMin || 0) <= 30);
+    else if (dur === 'medium') all = all.filter(c => (c.estimatedMin || 0) > 30 && (c.estimatedMin || 0) <= 90);
+    else if (dur === 'long') all = all.filter(c => (c.estimatedMin || 0) > 90);
     return all;
   }
 
@@ -3887,6 +3892,33 @@
     // 評価モーダル
     setupRatingListeners();
 
+    // 中断ウォークの自動リカバリ（30分以内）
+    try {
+      const raw = localStorage.getItem(ACTIVE_WALK_KEY);
+      if (raw) {
+        const saved = JSON.parse(raw);
+        const ageMin = (Date.now() - (saved.savedAt || 0)) / 60000;
+        if (ageMin <= 30 && saved.courseId && !saved.courseId.startsWith('__free_')) {
+          const course = (window.YORIMICHI_COURSES || []).find(c => c.id === saved.courseId);
+          if (course) {
+            setTimeout(() => {
+              if (confirm(`前回のウォーク「${tField(course, 'name')}」を再開しますか？\n（${Math.round(ageMin)}分前に中断されました）`)) {
+                applyRoute(courseToRoute(course));
+                setTimeout(() => startWalk(), 600);
+              } else {
+                clearActiveWalkPersist();
+              }
+            }, 1500);
+          } else {
+            clearActiveWalkPersist();
+          }
+        } else {
+          // 30分超過したら破棄
+          clearActiveWalkPersist();
+        }
+      }
+    } catch (e) { console.warn('walk recovery failed', e); }
+
     // 通知トグル
     const notifyBtn = $('#notify-toggle');
     if (notifyBtn) notifyBtn.addEventListener('click', toggleNotifications);
@@ -3896,6 +3928,18 @@
 
     // ミッションUI 初期描画
     try { renderMissions(); } catch {}
+
+    // 所要時間フィルタ
+    state.filterDuration = state.filterDuration || 'all';
+    $$('.duration-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        $$('.duration-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        state.filterDuration = chip.dataset.duration || 'all';
+        if (typeof updateFilterStat === 'function') updateFilterStat();
+        if (typeof renderPoolPreview === 'function') renderPoolPreview();
+      });
+    });
 
     // テーマチップ（route / stroll モード）
     $$('.theme-chip').forEach(chip => {
@@ -4451,7 +4495,11 @@
       courseId,
       stopsTotal: state.selected.length,
       gpsWatchId: null,
+      paused: false,
+      startedAt: Date.now(),
+      lastTouchedAt: Date.now(),
     };
+    persistActiveWalk();
 
     if (!state.completedStops[courseId]) {
       state.completedStops[courseId] = new Set();
@@ -4488,7 +4536,16 @@
     if (state.activeWalk && state.activeWalk.gpsWatchId != null) {
       navigator.geolocation.clearWatch(state.activeWalk.gpsWatchId);
     }
+    // 累計ウォーク時間を加算
+    if (state.activeWalk && state.activeWalk.startedAt) {
+      const minutes = Math.round((Date.now() - state.activeWalk.startedAt) / 60000);
+      try {
+        const total = parseInt(localStorage.getItem('yorimichi-total-walk-min') || '0', 10) || 0;
+        localStorage.setItem('yorimichi-total-walk-min', String(total + Math.max(0, minutes)));
+      } catch {}
+    }
     state.activeWalk = null;
+    clearActiveWalkPersist();
     if (state.userMarker) { state.userMarker.remove(); state.userMarker = null; }
     $('#walk-session').hidden = true;
     $('#walk-start').hidden = false;
@@ -4496,6 +4553,58 @@
     hideWalkHud();
     renderSelectedMarkers();
     showToast('ウォーク終了', 'info');
+  }
+
+  // ===== Walk pause/resume + persistence =====
+  const ACTIVE_WALK_KEY = 'yorimichi-active-walk';
+
+  function persistActiveWalk() {
+    if (!state.activeWalk) return;
+    try {
+      localStorage.setItem(ACTIVE_WALK_KEY, JSON.stringify({
+        courseId: state.activeWalk.courseId,
+        stopsTotal: state.activeWalk.stopsTotal,
+        paused: !!state.activeWalk.paused,
+        startedAt: state.activeWalk.startedAt,
+        savedAt: Date.now(),
+      }));
+    } catch {}
+  }
+  function clearActiveWalkPersist() {
+    try { localStorage.removeItem(ACTIVE_WALK_KEY); } catch {}
+  }
+
+  function pauseWalk() {
+    if (!state.activeWalk || state.activeWalk.paused) return;
+    state.activeWalk.paused = true;
+    if (state.activeWalk.gpsWatchId != null) {
+      try { navigator.geolocation.clearWatch(state.activeWalk.gpsWatchId); } catch {}
+      state.activeWalk.gpsWatchId = null;
+    }
+    persistActiveWalk();
+    const btn = $('#walk-hud-pause');
+    if (btn) btn.textContent = '▶';
+    showToast('⏸ ウォークを一時停止しました', 'info', 2500);
+  }
+  function resumeWalk() {
+    if (!state.activeWalk || !state.activeWalk.paused) return;
+    state.activeWalk.paused = false;
+    if (navigator.geolocation) {
+      state.activeWalk.gpsWatchId = navigator.geolocation.watchPosition(
+        onGpsUpdate,
+        (err) => console.warn('GPS error', err),
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+      );
+    }
+    persistActiveWalk();
+    const btn = $('#walk-hud-pause');
+    if (btn) btn.textContent = '⏸';
+    showToast('▶ ウォークを再開しました', 'success', 2500);
+  }
+  function togglePauseWalk() {
+    if (!state.activeWalk) return;
+    if (state.activeWalk.paused) resumeWalk();
+    else pauseWalk();
   }
 
   // ===== Voice navigation during walks =====
@@ -5482,6 +5591,9 @@ ${hashtag}`;
     if (hudEnd) hudEnd.addEventListener('click', () => {
       if (confirm('ウォークを終了しますか？')) stopWalk();
     });
+    const hudPause = $('#walk-hud-pause');
+    if (hudPause) hudPause.addEventListener('click', togglePauseWalk);
+
     const hudVoice = $('#walk-hud-voice');
     if (hudVoice) {
       const refreshIcon = () => { hudVoice.textContent = voice.enabled ? '🔊' : '🔇'; };
@@ -5588,6 +5700,15 @@ ${hashtag}`;
     $('#data-export').addEventListener('click', exportData);
     $('#data-import').addEventListener('click', importData);
     $('#data-reset').addEventListener('click', resetData);
+    // ヘルプモーダル
+    const helpBtn = $('#show-help');
+    if (helpBtn) helpBtn.addEventListener('click', () => {
+      $('#profile-modal').hidden = true;
+      $('#help-modal').hidden = false;
+    });
+    const helpClose = $('#help-close');
+    if (helpClose) helpClose.addEventListener('click', () => { $('#help-modal').hidden = true; });
+
     // Tutorial replay
     const tutBtn = $('#show-tutorial');
     if (tutBtn) tutBtn.addEventListener('click', () => {

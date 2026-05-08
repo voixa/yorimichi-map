@@ -170,6 +170,7 @@
 
       <div class="profile-section-title">⚙️ データ管理</div>
       <div class="data-actions">
+        <button class="btn-secondary" id="show-help" type="button">❓ ヘルプ・よくある質問</button>
         <button class="btn-secondary" id="show-tutorial" type="button">📚 チュートリアル再表示</button>
         <button class="btn-secondary" id="data-export" type="button">📤 エクスポート</button>
         <button class="btn-secondary" id="data-import" type="button">📥 インポート</button>
@@ -274,6 +275,16 @@
               <button class="tag-clear" id="tag-clear" type="button">クリア</button>
             </div>
             <div class="tag-grid" id="tag-grid" role="group" aria-label="タグフィルタ"></div>
+          </div>
+
+          <div class="filter-block">
+            <div class="filter-block-label">所要時間</div>
+            <div class="duration-chips" id="duration-chips" role="group" aria-label="所要時間フィルタ">
+              <button class="duration-chip active" data-duration="all" type="button">すべて</button>
+              <button class="duration-chip" data-duration="short" type="button">⏱ 30分以下</button>
+              <button class="duration-chip" data-duration="medium" type="button">⏱ 30-90分</button>
+              <button class="duration-chip" data-duration="long" type="button">⏱ 90分以上</button>
+            </div>
           </div>
 
           <div class="filter-block">
@@ -734,6 +745,64 @@
   <!-- 散歩中の写真撮影用（モバイルカメラ起動） -->
   <input type="file" id="walk-photo-input" accept="image/*" capture="environment" style="display:none" />
 
+  <!-- ============ Help / FAQ Modal ============ -->
+  <div class="modal-backdrop" id="help-modal" hidden>
+    <div class="modal help-modal" role="dialog" aria-label="ヘルプ" aria-modal="true">
+      <button class="modal-close" id="help-close" type="button" aria-label="閉じる">✕</button>
+      <h2 class="modal-title">❓ ヘルプ・よくある質問</h2>
+
+      <details class="faq-item" open>
+        <summary>街歩きガチャって何？</summary>
+        <p>街の散歩コースを <strong>ガチャ形式で1本だけ引いて</strong>、GPSスタンプラリーで遊べる地図サービスです。あなたの街にあるまだ知らないスポットを発見できます。</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>無料で遊べる？</summary>
+        <p>はい、毎日3回まで無料でガチャを引けます。それ以降は1ガチャ=3コイン（コインショップで購入）。月額¥480の <strong>プレミアムプラン</strong> なら無制限に引けます。</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>位置情報は安全？</summary>
+        <p>位置情報は <strong>あなたの端末内でのみ</strong> 処理されます。運営サーバーには送信していません。GPSはスタンプラリーのチェックインだけに使います。</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>「自由ルート」と「コース」の違いは？</summary>
+        <p><strong>📖 既存コース</strong>：吉祥寺・谷根千・神保町・浅草の<strong>キュレーション済み</strong>コース（13本）<br><strong>🎯 自由ルート</strong>：出発地と目的地を入れるとAIがランダムにコース生成<br><strong>🌿 散歩</strong>：出発地のみ入れて気の向くままに</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>コインの使い道は？</summary>
+        <p>無料ガチャ3回を使い切った後、追加でガチャを引くのに必要です（1ガチャ=3コイン）。コインは <strong>毎日のログインボーナス・コース完走・友達招待</strong> でも貯まります。</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>友達と一緒に遊びたい</summary>
+        <p>プロフィール画面の「🎁 友達を招待」リンクをコピーして送ってください。招待された人が初ガチャを引くと <strong>あなた・友達ともに +15🪙</strong>。</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>歩きスマホは大丈夫？</summary>
+        <p>歩きスマホは危険です。本サービスは <strong>音声ガイド</strong> と <strong>ホーム画面ロック中も動作</strong> する設計です。HUDの 🔊 ボタンで音声案内をオン推奨。</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>データを別端末に移したい</summary>
+        <p>プロフィール → ⚙️データ管理 → <strong>📤 エクスポート</strong> でJSON保存 → 移行先で <strong>📥 インポート</strong>。</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>サブスクの解約方法は？</summary>
+        <p>コインショップ画面下部の「プレミアム会員」セクションから「プランを解約」を押してください。期間末まで利用可能です。</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>不具合報告・問い合わせ</summary>
+        <p>📧 <a href="mailto:info@in-dx.jp?subject=街歩きガチャ%20問い合わせ">info@in-dx.jp</a> までメールください。</p>
+      </details>
+    </div>
+  </div>
+
   <!-- ============ Course Rating Modal ============ -->
   <div class="modal-backdrop" id="rating-modal" hidden>
     <div class="modal rating-modal" role="dialog" aria-label="コース評価" aria-modal="true">
@@ -770,6 +839,7 @@
       <button class="walk-hud-btn" id="walk-hud-voice" type="button" aria-label="音声ナビ切替">🔊</button>
       <button class="walk-hud-btn" id="walk-hud-photo" type="button" aria-label="写真を撮る">📸</button>
       <button class="walk-hud-btn" id="walk-hud-checkin" type="button" aria-label="手動チェックイン">✓</button>
+      <button class="walk-hud-btn" id="walk-hud-pause" type="button" aria-label="一時停止">⏸</button>
       <button class="walk-hud-btn walk-hud-end" id="walk-hud-end" type="button" aria-label="ウォーク終了">⏹</button>
     </div>
   </div>
