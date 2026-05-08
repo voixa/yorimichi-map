@@ -260,16 +260,48 @@
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-  function showToast(msg, type = 'info', duration = 2400) {
+  // ===== Toast queue =====
+  // 連発時に上書きで消えてしまわないよう、順番に表示するキュー
+  const _toastQueue = [];
+  let _toastShowing = false;
+  function _showNextToast() {
+    if (_toastShowing) return;
+    const next = _toastQueue.shift();
+    if (!next) return;
+    _toastShowing = true;
     const t = $('#toast');
-    t.textContent = msg;
-    t.className = 'toast ' + type;
+    if (!t) { _toastShowing = false; return; }
+    t.textContent = next.msg;
+    t.className = 'toast ' + next.type;
     t.hidden = false;
+    // フェードイン用：1tick後にopacity
+    requestAnimationFrame(() => {
+      t.classList.add('toast-visible');
+    });
     clearTimeout(t._timer);
-    t._timer = setTimeout(() => { t.hidden = true; }, duration);
-    // Mirror to screen-reader live region
+    t._timer = setTimeout(() => {
+      t.classList.remove('toast-visible');
+      // フェードアウト後にhide
+      setTimeout(() => {
+        t.hidden = true;
+        _toastShowing = false;
+        // キューに次があれば連続表示
+        _showNextToast();
+      }, 200);
+    }, next.duration);
     const sr = $('#sr-live');
-    if (sr) sr.textContent = msg;
+    if (sr) sr.textContent = next.msg;
+  }
+
+  function showToast(msg, type = 'info', duration = 2400) {
+    if (!msg) return;
+    // 直前と同じメッセージの重複は無視（5秒以内）
+    const last = _toastQueue[_toastQueue.length - 1];
+    if (last && last.msg === msg) return;
+    _toastQueue.push({ msg, type, duration });
+    // キューが長すぎる場合は古いものを切る
+    while (_toastQueue.length > 5) _toastQueue.shift();
+    _showNextToast();
   }
 
   function showLoader(text = '読み込み中...') {
@@ -277,6 +309,26 @@
     $('#loader').hidden = false;
   }
   function hideLoader() { $('#loader').hidden = true; }
+
+  function renderSkeletonList(count = 4) {
+    const list = $('#results-list');
+    if (!list) return;
+    const empty = $('#empty-state');
+    if (empty) empty.hidden = true;
+    list.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+      const li = document.createElement('li');
+      li.className = 'skeleton-card';
+      li.innerHTML = `
+        <div class="skel-thumb"></div>
+        <div class="skel-body">
+          <div class="skel-line medium"></div>
+          <div class="skel-line short"></div>
+        </div>
+      `;
+      list.appendChild(li);
+    }
+  }
 
   // ---------- Math ----------
 
@@ -887,6 +939,7 @@
 
     const cats = [...state.activeCategories].map(categoryById).filter(Boolean);
     showLoader('寄り道スポットを探しています...');
+    renderSkeletonList(5);
     try {
       const pois = await fetchPois(state.origin, state.dest, cats, state.budgetMin);
       const ranked = rankPois(pois);
