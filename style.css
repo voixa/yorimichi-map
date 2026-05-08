@@ -2252,6 +2252,42 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
 }
 [data-theme="dark"] .quick-mode.active { color: var(--brand); }
 
+/* ---------- Theme chips (route / stroll mode) ---------- */
+.theme-chips {
+  margin: 12px 0;
+}
+.theme-chips-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  text-align: center;
+}
+.theme-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+.theme-chip {
+  padding: 8px 12px;
+  border-radius: 100px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.theme-chip:hover { border-color: var(--brand); }
+.theme-chip.active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: white;
+}
+
 /* ---------- Capsule hint ---------- */
 .capsule-hint {
   text-align: center;

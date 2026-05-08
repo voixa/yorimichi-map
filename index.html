@@ -510,11 +510,25 @@
           </div>
         </div>
 
-        <!-- Quick gacha modes -->
-        <div class="quick-modes">
+        <!-- Quick gacha modes (course mode のみ表示) -->
+        <div class="quick-modes" id="quick-modes-course">
           <button class="quick-mode active" data-quickmode="all" type="button">🌍 全部</button>
           <button class="quick-mode" data-quickmode="undiscovered" type="button">🔍 未発見</button>
           <button class="quick-mode" data-quickmode="rare-up" type="button">✨ レアUP</button>
+        </div>
+
+        <!-- Theme selection (route / stroll mode のみ表示) -->
+        <div class="theme-chips" id="theme-chips" hidden>
+          <div class="theme-chips-title">気分にあうテーマを選ぶ（任意）</div>
+          <div class="theme-chips-row">
+            <button class="theme-chip" data-theme="" type="button">🎲 おまかせ</button>
+            <button class="theme-chip" data-theme="cafe" type="button">☕ カフェ・喫茶</button>
+            <button class="theme-chip" data-theme="shrine" type="button">🏯 神社・寺</button>
+            <button class="theme-chip" data-theme="photo" type="button">📸 写真映え</button>
+            <button class="theme-chip" data-theme="food" type="button">🍱 食べ歩き</button>
+            <button class="theme-chip" data-theme="green" type="button">🌳 緑の散歩道</button>
+            <button class="theme-chip" data-theme="sunset" type="button">🌅 夕焼けタイム</button>
+          </div>
         </div>
 
         <p class="capsule-hint" id="capsule-hint">ハンドルを回してコースを引こう</p>
@@ -715,6 +729,7 @@
       </div>
     </div>
     <div class="walk-hud-actions">
+      <button class="walk-hud-btn" id="walk-hud-voice" type="button" aria-label="音声ナビ切替">🔊</button>
       <button class="walk-hud-btn" id="walk-hud-photo" type="button" aria-label="写真を撮る">📸</button>
       <button class="walk-hud-btn" id="walk-hud-checkin" type="button" aria-label="手動チェックイン">✓</button>
       <button class="walk-hud-btn walk-hud-end" id="walk-hud-end" type="button" aria-label="ウォーク終了">⏹</button>

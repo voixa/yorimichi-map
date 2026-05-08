@@ -854,8 +854,10 @@
       .map(p => {
         const detourMin = detourMinutes(origin, dest, p);
         const distKm = haversineKm(origin, p);
-        return { ...p, detourMin, distKm };
+        return { ...p, detourMin, distKm, qualityScore: poiQualityScore(p) };
       })
+      // 街歩きに不向きなPOI（病院・銀行・ガソリン等）を除外
+      .filter(p => p.qualityScore > -50)
       .filter(p => p.detourMin <= budget);
 
     // Sort: prefer info-rich, then less detour
@@ -1526,6 +1528,11 @@
         ? 'コースガチャを回す'
         : (mode === 'stroll' ? '散歩ガチャを回す（ランダム生成）' : '自由ルートガチャを回す（ランダム生成）');
     }
+    // モード別にテーマ選択 / quick-modes を出し分け
+    const quickModes = $('#quick-modes-course');
+    const themeChips = $('#theme-chips');
+    if (quickModes) quickModes.style.display = (mode === 'course') ? '' : 'none';
+    if (themeChips) themeChips.hidden = (mode === 'course');
     // Update collection button label
     const colBtn = $('#collection-btn span:last-child');
     if (colBtn) colBtn.textContent = (mode === 'course') ? 'コース図鑑' : 'コレクション';
@@ -1843,6 +1850,51 @@
   // コース完走ボーナス
   const COMPLETION_BONUS = 3;
 
+  // ===== Theme → Category mapping for random gacha =====
+  // 自由ルート/散歩モードでテーマ選択時にPOI抽選を寄せる
+  const THEME_CONFIG = {
+    cafe:   { label: 'カフェ・喫茶',   cats: ['cafe'],                              boost: 3 },
+    shrine: { label: '神社・寺',       cats: ['shrine'],                            boost: 3 },
+    photo:  { label: '写真映え',       cats: ['viewpoint', 'art', 'monument'],      boost: 3 },
+    food:   { label: '食べ歩き',       cats: ['restaurant', 'bakery'],              boost: 3 },
+    green:  { label: '緑の散歩道',     cats: ['park'],                              boost: 3 },
+    sunset: { label: '夕焼けタイム',   cats: ['viewpoint', 'shrine', 'park'],       boost: 3 },
+  };
+
+  // ランダムガチャから除外するOSM amenity（病院・銀行・ガソリン等）
+  const EXCLUDE_AMENITIES = new Set([
+    'hospital', 'pharmacy', 'doctors', 'clinic', 'dentist', 'veterinary',
+    'fuel', 'bank', 'atm', 'parking', 'parking_entrance', 'parking_space',
+    'taxi', 'embassy', 'police', 'post_office', 'post_box',
+    'school', 'university', 'kindergarten', 'college', 'driving_school',
+    'fire_station', 'townhall', 'courthouse', 'prison',
+    'recycling', 'waste_disposal', 'vending_machine',
+    'car_wash', 'car_rental', 'car_repair',
+  ]);
+
+  // POI quality scoring（高いほど街歩きに向く）
+  function poiQualityScore(poi) {
+    let s = 0;
+    const tags = poi.tags || {};
+    if (tags.wikipedia) s += 5;
+    if (tags.wikidata) s += 2;
+    if (tags.image || tags['mapillary']) s += 2;
+    if (tags.website) s += 2;
+    if (tags.opening_hours) s += 1;
+    if (tags.description) s += 2;
+    if (tags.tourism) s += 3;
+    if (tags.historic) s += 3;
+    // amenity ブラックリスト
+    if (tags.amenity && EXCLUDE_AMENITIES.has(tags.amenity)) s -= 100;
+    if (tags.shop && (tags.shop === 'convenience' || tags.shop === 'supermarket')) s -= 5;
+    if (tags.highway) s -= 50;
+    if (tags.barrier) s -= 50;
+    return s;
+  }
+
+  // 選択中のテーマ（route / stroll モードでのみ意味を持つ）
+  state.activeTheme = '';
+
   // Gacha state (persisted in localStorage)
   const gacha = {
     coins: 0,
@@ -2111,13 +2163,30 @@
     const [minN, maxN] = stopRanges[tr];
     const n = minN + Math.floor(Math.random() * (maxN - minN + 1));
 
-    // Pick theme
-    const theme = pickTheme(annotated, tr);
+    // ユーザー選択テーマがあれば優先、なければ自動 pickTheme
+    const userTheme = state.activeTheme && THEME_CONFIG[state.activeTheme];
+    let theme;
+    if (userTheme) {
+      theme = {
+        id: state.activeTheme,
+        name: userTheme.label,
+        icon: ({ cafe: '☕', shrine: '🏯', photo: '📸', food: '🍱', green: '🌳', sunset: '🌅' })[state.activeTheme] || '🌍',
+        cats: userTheme.cats,
+      };
+    } else {
+      theme = pickTheme(annotated, tr);
+    }
 
-    // Filter candidates by theme
-    let pool = theme.cats === null
-      ? annotated
-      : annotated.filter(p => theme.cats.includes(p.cat));
+    // Filter candidates by theme（cats マッチを優先）
+    let pool;
+    if (theme.cats === null) {
+      pool = annotated;
+    } else {
+      const matched = annotated.filter(p => theme.cats.includes(p.cat));
+      // ユーザー指定テーマで該当少なければ全候補にフォールバック（ガチャ自体は引ける）
+      if (matched.length >= Math.min(n, 2)) pool = matched;
+      else pool = annotated;
+    }
     if (pool.length < n) pool = annotated; // fallback
 
     // Sort pool by quality for higher rarities
@@ -3518,6 +3587,18 @@
         startStripeCheckout(packId);
       });
     });
+    // テーマチップ（route / stroll モード）
+    $$('.theme-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        $$('.theme-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        state.activeTheme = chip.dataset.theme || '';
+      });
+    });
+    // 初期: 「おまかせ」
+    const initialTheme = document.querySelector('.theme-chip[data-theme=""]');
+    if (initialTheme) initialTheme.classList.add('active');
+
     // サブスクボタン
     const subCta = $('#sub-cta');
     if (subCta) subCta.addEventListener('click', startSubscriptionCheckout);
@@ -4107,6 +4188,85 @@
     showToast('ウォーク終了', 'info');
   }
 
+  // ===== Voice navigation during walks =====
+  // 距離アナウンスの閾値（このメートル数を切ったら一度だけ案内）
+  const VOICE_DISTANCE_THRESHOLDS = [500, 200, 100, 50];
+
+  function compass8(bearingDeg) {
+    const b = ((bearingDeg % 360) + 360) % 360;
+    const labels = ['北', '北東', '東', '南東', '南', '南西', '西', '北西'];
+    const idx = Math.round(b / 45) % 8;
+    return labels[idx];
+  }
+
+  // AI でスポット紹介ナレーションを生成（軽量・キャッシュ）
+  const _spotIntroCache = new Map();
+  async function fetchSpotIntro(stopName, areaLabel) {
+    if (!stopName) return null;
+    if (_spotIntroCache.has(stopName)) return _spotIntroCache.get(stopName);
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 6000);
+      const res = await fetch(`${API_BASE}/api/generate-narrative`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          theme: 'スポット紹介',
+          area: areaLabel || '',
+          rarity: 'r',
+          stops: [stopName, '到着案内'],
+        }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      if (!res.ok) return null;
+      const data = await res.json();
+      // story を 50字程度の音声向け文字列に整形
+      const intro = (data?.story || '').slice(0, 80);
+      _spotIntroCache.set(stopName, intro);
+      return intro;
+    } catch { return null; }
+  }
+
+  function maybeAnnounceDistance(userLoc, nextStop) {
+    if (!state.activeWalk) return;
+    if (!voice.enabled) return;
+    if (!userLoc || !nextStop || nextStop.lat == null || nextStop.lng == null) return;
+    const dM = haversineKm(userLoc, nextStop) * 1000;
+    state.activeWalk.voiceState = state.activeWalk.voiceState || { announcedThresholds: new Set(), introPlayed: new Set(), nextStopIdx: -1 };
+    const vs = state.activeWalk.voiceState;
+    // 次スポット番号が変わったらリセット
+    if (vs.nextStopIdx !== nextStop._idx) {
+      vs.announcedThresholds = new Set();
+      vs.nextStopIdx = nextStop._idx;
+    }
+    // 50m手前で初めて → AIスポット紹介
+    if (dM < 60 && !vs.introPlayed.has(nextStop._idx)) {
+      vs.introPlayed.add(nextStop._idx);
+      const areaLabel = state.origin?.shortLabel || '';
+      fetchSpotIntro(nextStop.name, areaLabel).then(intro => {
+        if (intro) speak(`まもなく${nextStop.name}に到着します。${intro}`);
+        else speak(`まもなく${nextStop.name}に到着します`);
+      });
+      return;
+    }
+    // 距離節目アナウンス
+    for (const th of VOICE_DISTANCE_THRESHOLDS) {
+      if (dM < th && !vs.announcedThresholds.has(th)) {
+        vs.announcedThresholds.add(th);
+        const dir = nextStop._bearing != null ? compass8(nextStop._bearing) : null;
+        if (th >= 200 && dir) {
+          speak(`次のスポット${nextStop.name}まで約${th}メートル。${dir}方向です`);
+        } else if (th >= 100) {
+          speak(`次のスポットまで約${th}メートル`);
+        } else {
+          speak(`もうすぐ${nextStop.name}です`);
+        }
+        break;
+      }
+    }
+  }
+
   // ===== Photo capture during walks =====
   // 写真は localStorage（容量制限のため最大解像度640px・JPEG quality 0.7）に保存
   // キー: yorimichi-photos-<courseId> = { stopIdx: dataUrl, ... }
@@ -4238,6 +4398,8 @@
       const brg = bearing([userLoc.lat, userLoc.lng], [next.lat, next.lng]);
       $('#walk-hud-arrow').style.transform = `rotate(${brg}deg)`;
       $('#walk-hud-arrow').style.opacity = '1';
+      // 音声ナビ：次スポットの index と方位を保持して案内
+      maybeAnnounceDistance(userLoc, { ...next, _idx: nextIdx, _bearing: brg });
     } else {
       $('#walk-hud-dist').textContent = 'GPS取得中…';
       $('#walk-hud-arrow').style.opacity = '0.5';
@@ -5004,6 +5166,18 @@ ${hashtag}`;
     if (hudEnd) hudEnd.addEventListener('click', () => {
       if (confirm('ウォークを終了しますか？')) stopWalk();
     });
+    const hudVoice = $('#walk-hud-voice');
+    if (hudVoice) {
+      const refreshIcon = () => { hudVoice.textContent = voice.enabled ? '🔊' : '🔇'; };
+      refreshIcon();
+      hudVoice.addEventListener('click', () => {
+        voice.enabled = !voice.enabled;
+        saveVoicePref();
+        refreshIcon();
+        if (voice.enabled) speak('音声ナビをオンにしました');
+        else { try { window.speechSynthesis.cancel(); } catch {} }
+      });
+    }
     const hudCheckin = $('#walk-hud-checkin');
     if (hudCheckin) hudCheckin.addEventListener('click', () => {
       if (!state.activeWalk) return;

@@ -237,9 +237,230 @@
     .foot-links a { margin: 0 12px; }
     .foot-brand { font-size: 16px; color: white; margin-bottom: 8px; font-weight: 700; }
 
+    /* Hero animation */
+    .hero-demo {
+      width: 100%;
+      max-width: 360px;
+      margin: 28px auto 0;
+      aspect-ratio: 1.2 / 1;
+      position: relative;
+      background: rgba(255,255,255,0.08);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+    }
+    .demo-stage {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      animation: stageFlow 12s infinite;
+    }
+    .demo-stage:nth-child(1) { animation-delay: 0s; }
+    .demo-stage:nth-child(2) { animation-delay: 3s; }
+    .demo-stage:nth-child(3) { animation-delay: 6s; }
+    .demo-stage:nth-child(4) { animation-delay: 9s; }
+    @keyframes stageFlow {
+      0%, 25% { opacity: 1; transform: scale(1); }
+      26%, 100% { opacity: 0; transform: scale(0.98); }
+    }
+    .demo-label {
+      position: absolute;
+      bottom: 12px;
+      left: 0; right: 0;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: white;
+      letter-spacing: 0.05em;
+      opacity: 0.92;
+    }
+    .demo-title { font-size: 22px; font-weight: 900; color: white; text-align: center; line-height: 1.3; }
+    .demo-title small { display: block; font-size: 13px; opacity: 0.8; margin-top: 4px; font-weight: 500; }
+    /* Stage 1: gachapon machine */
+    .demo-gp {
+      width: 130px; height: 130px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.5), rgba(255,200,180,0.15) 70%);
+      border: 6px solid #b71c1c;
+      position: relative;
+      animation: gpShake 1.2s ease-in-out infinite;
+    }
+    @keyframes gpShake {
+      0%,100% { transform: rotate(0); }
+      25% { transform: rotate(-3deg); }
+      75% { transform: rotate(3deg); }
+    }
+    .demo-gp::before, .demo-gp::after {
+      content: '';
+      position: absolute;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .demo-gp::before { top: 20px; left: 25px; background: radial-gradient(circle at 30% 30%, #fff, #81c784 60%, #388e3c); }
+    .demo-gp::after  { top: 60px; right: 25px; background: radial-gradient(circle at 30% 30%, #fff, #f06292 60%, #c2185b); }
+    /* Stage 2: course card */
+    .demo-card {
+      width: 80%;
+      background: white;
+      border-radius: 18px;
+      padding: 18px 16px;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.3);
+      transform: rotate(-2deg);
+      animation: cardSpin 0.6s ease-out;
+    }
+    @keyframes cardSpin {
+      from { transform: rotate(180deg) scale(0.5); opacity: 0; }
+      to { transform: rotate(-2deg) scale(1); opacity: 1; }
+    }
+    .demo-card-rarity { color: #b71c1c; font-weight: 800; font-size: 14px; }
+    .demo-card-title { color: #1c1c1f; font-size: 17px; font-weight: 800; margin: 6px 0; line-height: 1.3; }
+    .demo-card-meta { color: #6b6b72; font-size: 12px; }
+    /* Stage 3: walking */
+    .demo-route {
+      width: 90%; height: 140px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .demo-route::before {
+      content: '';
+      position: absolute;
+      top: 50%; left: 10%;
+      width: 80%; height: 4px;
+      background: repeating-linear-gradient(90deg, white 0 12px, transparent 12px 22px);
+      transform: translateY(-50%);
+    }
+    .demo-walker {
+      position: absolute;
+      top: 50%; left: 10%;
+      transform: translateY(-50%);
+      font-size: 32px;
+      animation: walkerMove 2.5s linear infinite;
+    }
+    @keyframes walkerMove {
+      0% { left: 10%; }
+      100% { left: 85%; }
+    }
+    .demo-spot {
+      position: absolute;
+      top: 50%; transform: translateY(-50%);
+      font-size: 28px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    }
+    .demo-spot:nth-child(2) { left: 28%; }
+    .demo-spot:nth-child(3) { left: 56%; }
+    .demo-spot:nth-child(4) { left: 84%; }
+    /* Stage 4: certificate */
+    .demo-cert {
+      width: 75%;
+      background: linear-gradient(135deg, #fff8e1, #ffecb3);
+      border: 4px solid #d4af37;
+      border-radius: 16px;
+      padding: 22px 18px;
+      text-align: center;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.3);
+      animation: certPop 0.5s ease-out;
+    }
+    @keyframes certPop {
+      from { transform: scale(0.6); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .demo-cert-medal { font-size: 48px; }
+    .demo-cert-title { font-weight: 900; color: #b71c1c; font-size: 16px; margin: 6px 0; }
+    .demo-cert-name { color: #1c1c1f; font-weight: 700; font-size: 13px; }
+
+    /* Social proof */
+    .social-proof {
+      background: linear-gradient(180deg, #fafaf7 0%, #fff8e1 100%);
+      padding: 56px 20px;
+    }
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      max-width: 720px;
+      margin: 0 auto 40px;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px 12px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .stat-num {
+      font-size: 32px;
+      font-weight: 900;
+      color: #ff7e3d;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #6b6b72;
+      font-weight: 600;
+    }
+    .live-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #16a34a;
+      margin-right: 6px;
+      animation: livePulse 2s ease-in-out infinite;
+    }
+    @keyframes livePulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
+    .voice-table {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .testimonial {
+      background: white;
+      border-left: 4px solid #ff7e3d;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+      font-size: 14px;
+      line-height: 1.6;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .testimonial-handle { color: #ff7e3d; font-weight: 700; margin-bottom: 4px; font-size: 12px; }
+
+    /* B2B logos */
+    .b2b-logos {
+      max-width: 720px;
+      margin: 24px auto 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+    }
+    .b2b-logo-slot {
+      background: rgba(255,255,255,0.06);
+      border: 1.5px dashed rgba(255,255,255,0.25);
+      border-radius: 12px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255,255,255,0.55);
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      padding: 0 8px;
+    }
+
     @media (max-width: 600px) {
       .hero { padding: 56px 20px 72px; }
       section { padding: 48px 20px; }
+      .hero-demo { max-width: 300px; }
+      .stats-row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -251,12 +472,82 @@
       <span class="hero-emoji">👣</span>
       <h1>あと◯分あったら、<br>どこ寄る？</h1>
       <p class="hero-sub">街の散歩コースをガチャで引いて、<br>スタンプラリーで遊べる地図サービス。</p>
-      <a class="cta-primary" href="/">
+
+      <!-- Animated demo: gacha → course → walk → certificate -->
+      <div class="hero-demo" aria-hidden="true">
+        <div class="demo-stage">
+          <div class="demo-gp"></div>
+          <div class="demo-label">① 巨大ガチャを回す</div>
+        </div>
+        <div class="demo-stage">
+          <div class="demo-card">
+            <div class="demo-card-rarity">🌟 SR レア</div>
+            <div class="demo-card-title">谷根千 下町情緒・<br>夕やけだんだんコース</div>
+            <div class="demo-card-meta">📍 4スポット ・ 約90分</div>
+          </div>
+          <div class="demo-label">② コースが当選</div>
+        </div>
+        <div class="demo-stage">
+          <div class="demo-route">
+            <span class="demo-spot">🏯</span>
+            <span class="demo-spot">☕</span>
+            <span class="demo-spot">🏅</span>
+            <div class="demo-walker">🚶</div>
+          </div>
+          <div class="demo-label">③ GPSで自動スタンプ</div>
+        </div>
+        <div class="demo-stage">
+          <div class="demo-cert">
+            <div class="demo-cert-medal">🏅</div>
+            <div class="demo-cert-title">完 走 証 明 書</div>
+            <div class="demo-cert-name">谷根千 下町情緒コース</div>
+          </div>
+          <div class="demo-label">④ 完走証明書をシェア</div>
+        </div>
+      </div>
+
+      <a class="cta-primary" href="/" style="margin-top: 28px">
         <span>🎰</span>
         <span>今すぐガチャを回す</span>
         <span class="arrow">→</span>
       </a>
       <p class="cta-note">無料・登録不要・スマホでもPCでもOK</p>
+    </div>
+  </section>
+
+  <!-- Social proof -->
+  <section class="social-proof">
+    <div class="container">
+      <h2 style="color:#1c1c1f"><span class="live-dot"></span>みんなの街歩き</h2>
+      <p class="section-sub">2026年5月リリース。AI×ガチャ×地図サービスとして注目されています。</p>
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-num">13+</div>
+          <div class="stat-label">キュレーション済みコース</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">∞</div>
+          <div class="stat-label">AI生成のランダムコース</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">4</div>
+          <div class="stat-label">公開エリア（順次拡大）</div>
+        </div>
+      </div>
+      <div class="voice-table">
+        <div class="testimonial">
+          <div class="testimonial-handle">📝 想定ユーザー（観光客）</div>
+          「Googleマップで店を探すのと違って、<strong>まだ見たことない街角</strong>を歩けた」
+        </div>
+        <div class="testimonial">
+          <div class="testimonial-handle">📝 想定ユーザー（学生）</div>
+          「友達と引き合って結果を比べる遊びがしたい。<strong>違うコースが出るのも面白い</strong>」
+        </div>
+        <div class="testimonial">
+          <div class="testimonial-handle">📝 想定パートナー（商店街）</div>
+          「<strong>送客×滞在時間UP</strong>のツールとして検討したい」
+        </div>
+      </div>
     </div>
   </section>
 
@@ -406,6 +697,17 @@
           📧 提携・取材のお問い合わせ
         </a>
       </p>
+
+      <p class="section-sub" style="margin-top: 40px; color: rgba(255,255,255,0.7);">
+        将来の加盟店ロゴエリア（ご一緒できる方を募集中）
+      </p>
+      <div class="b2b-logos" aria-label="加盟店ロゴ枠（提携前）">
+        <div class="b2b-logo-slot">武蔵野市・吉祥寺<br>商店街連合会</div>
+        <div class="b2b-logo-slot">谷中・根津・千駄木<br>観光まちづくり協議会</div>
+        <div class="b2b-logo-slot">神田カレー街<br>活性化委員会</div>
+        <div class="b2b-logo-slot">浅草<br>観光連盟</div>
+        <div class="b2b-logo-slot">＋ あなたの街</div>
+      </div>
     </div>
   </section>
 
