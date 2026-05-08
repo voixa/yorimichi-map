@@ -53,6 +53,12 @@
   </script>
 </head>
 <body>
+  <!-- Skip to content for keyboard users -->
+  <a href="#map-container" class="sr-only" style="position: absolute; left: 8px; top: 8px; background: #ff7e3d; color: white; padding: 8px 12px; border-radius: 6px; z-index: 100;" onfocus="this.classList.remove('sr-only')" onblur="this.classList.add('sr-only')">本文へスキップ</a>
+
+  <!-- Live region for screen readers -->
+  <div id="sr-live" role="status" aria-live="polite" class="sr-only"></div>
+
   <!-- Header / Brand -->
   <header class="app-header" role="banner">
     <div class="brand">
@@ -859,6 +865,7 @@
       <div class="walk-hud-meta">
         <span class="walk-hud-dist" id="walk-hud-dist">— m</span>
         <span class="walk-hud-progress" id="walk-hud-progress">0/0</span>
+        <span class="walk-hud-steps" id="walk-hud-steps" hidden>👣 0歩</span>
       </div>
     </div>
     <div class="walk-hud-actions">
@@ -948,6 +955,7 @@
         <button class="btn-share-copy" id="share-copy" type="button">🔗 URL</button>
       </div>
       <button class="btn-cert-download" id="cert-download" type="button">📥 画像でダウンロード</button>
+      <button class="btn-secondary" id="cert-gpx" type="button" style="margin-top: 8px; width: 100%;">🗺 GPX エクスポート（Stravaなど用）</button>
 
       <div class="next-suggestion" id="next-suggestion" hidden>
         <div class="next-label">🎰 次に歩くなら？</div>

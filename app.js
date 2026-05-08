@@ -3199,6 +3199,114 @@
     }
   }
 
+  // ---------- GPX export ----------
+  // 1コースの stops 配列を GPX 1.1 形式に変換
+  function buildGPX(course) {
+    if (!course || !course.stops || course.stops.length === 0) return null;
+    const escape = (s) => String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
+    const ts = (new Date()).toISOString();
+    const courseName = escape(tField(course, 'name') || course.name || '街歩きコース');
+    const desc = escape(tField(course, 'description') || course.description || '');
+    const wpts = course.stops.map((s, i) => {
+      const lat = (s.lat || 0).toFixed(6);
+      const lng = (s.lng || 0).toFixed(6);
+      const name = escape(`${i + 1}. ${s.name || 'スポット'}`);
+      const stopDesc = escape(s.desc || s.cat || '');
+      return `  <wpt lat="${lat}" lon="${lng}">
+    <name>${name}</name>
+    <desc>${stopDesc}</desc>
+    <sym>Waypoint</sym>
+  </wpt>`;
+    }).join('\n');
+    const trkPts = course.stops.map(s => {
+      const lat = (s.lat || 0).toFixed(6);
+      const lng = (s.lng || 0).toFixed(6);
+      return `      <trkpt lat="${lat}" lon="${lng}"></trkpt>`;
+    }).join('\n');
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="街歩きガチャ - https://yorimichi.in-dx.jp" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>${courseName}</name>
+    <desc>${desc}</desc>
+    <time>${ts}</time>
+    <link href="https://yorimichi.in-dx.jp/"><text>街歩きガチャ</text></link>
+  </metadata>
+${wpts}
+  <trk>
+    <name>${courseName}</name>
+    <trkseg>
+${trkPts}
+    </trkseg>
+  </trk>
+</gpx>`;
+  }
+
+  function downloadGPX(course) {
+    const xml = buildGPX(course);
+    if (!xml) {
+      showToast('エクスポートできるコースがありません', 'error', 3000);
+      return;
+    }
+    const blob = new Blob([xml], { type: 'application/gpx+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(course.id || 'course').replace(/[^a-z0-9_-]/gi, '_')}.gpx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast('💾 GPXファイルをダウンロードしました', 'success', 3000);
+  }
+
+  // ---------- Course recommendation (history-based) ----------
+  /**
+   * 履歴から最も歩かれたエリア・テーマを学習し、
+   * 未訪問のコースから「あなた向け」を1本選んで返す。
+   */
+  function getRecommendedCourse() {
+    const all = (window.YORIMICHI_COURSES || []).filter(c => {
+      const enabled = (window.YORIMICHI_AREAS || []).find(a => a.id === c.area)?.enabled;
+      return enabled !== false;
+    });
+    if (all.length === 0) return null;
+
+    // エリア・テーマ集計
+    const areaScore = {};
+    const themeScore = {};
+    for (const id of state.completedCourses) {
+      const c = all.find(x => x.id === id);
+      if (!c) continue;
+      areaScore[c.area] = (areaScore[c.area] || 0) + 1;
+      if (c.theme) themeScore[c.theme] = (themeScore[c.theme] || 0) + 1;
+    }
+    // 未完走 + 未発見を最優先
+    const candidates = all.filter(c => !state.completedCourses.has(c.id));
+    if (candidates.length === 0) return null;
+
+    // スコアリング: 同じエリア/テーマなら点数増、既に発見済みなら少し減らす
+    const ranked = candidates.map(c => {
+      let score = 0;
+      score += (areaScore[c.area] || 0) * 3;
+      if (c.theme) score += (themeScore[c.theme] || 0) * 2;
+      // レアリティ加点
+      const rarityBonus = { legendary: 4, sr: 3, r: 2, n: 1 }[c.rarity || 'r'] || 1;
+      score += rarityBonus;
+      // 未発見ならボーナス
+      if (!state.discoveredCourses.has(c.id)) score += 2;
+      // ランダムノイズ
+      score += Math.random() * 1.5;
+      return { c, score };
+    }).sort((a, b) => b.score - a.score);
+
+    return ranked[0]?.c || candidates[0];
+  }
+
   // ---------- Lifetime stats + walk log ----------
   function getLifetimeStats() {
     const totalMin = parseInt(localStorage.getItem('yorimichi-total-walk-min') || '0', 10) || 0;
@@ -4689,6 +4797,12 @@
 
     // モバイル用 Walk HUD を表示
     showWalkHud();
+
+    // 歩数計（モバイルのみ・iOS は権限要求）
+    startStepCounter().then(ok => {
+      const stepEl = $('#walk-hud-steps');
+      if (stepEl && ok) stepEl.hidden = false;
+    });
     // Welcome voice
     const first = state.selected[0];
     if (first) speak(`ウォーク開始！最初のスポット、${first.name}を目指しましょう`);
@@ -4713,6 +4827,7 @@
     $('#walk-start').hidden = false;
     $('#walk-stop').hidden = true;
     hideWalkHud();
+    stopStepCounter();
     renderSelectedMarkers();
     showToast('ウォーク終了', 'info');
   }
@@ -4767,6 +4882,61 @@
     if (!state.activeWalk) return;
     if (state.activeWalk.paused) resumeWalk();
     else pauseWalk();
+  }
+
+  // ===== Step counter (DeviceMotion API) =====
+  // 加速度センサで歩数を概算。完璧な歩数計ではないが「歩いてる感」UI に十分
+  const _stepCounter = {
+    enabled: false,
+    count: 0,
+    lastPeakTime: 0,
+    lastMag: 0,
+    threshold: 1.2, // 重力加速度との差
+  };
+
+  function _onDeviceMotion(e) {
+    if (!_stepCounter.enabled) return;
+    const a = e.accelerationIncludingGravity || e.acceleration;
+    if (!a) return;
+    const mag = Math.sqrt((a.x || 0) ** 2 + (a.y || 0) ** 2 + (a.z || 0) ** 2);
+    const now = performance.now();
+    // 単純なピーク検出（0.3秒以上の間隔・閾値超え）
+    if (mag - _stepCounter.lastMag > _stepCounter.threshold &&
+        now - _stepCounter.lastPeakTime > 300) {
+      _stepCounter.count += 1;
+      _stepCounter.lastPeakTime = now;
+      // HUDに反映
+      const stepEl = $('#walk-hud-steps');
+      if (stepEl) stepEl.textContent = `👣 ${_stepCounter.count}歩`;
+    }
+    _stepCounter.lastMag = mag;
+  }
+
+  async function startStepCounter() {
+    if (!('DeviceMotionEvent' in window)) return false;
+    // iOS 13+ は requestPermission が必要
+    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+      try {
+        const perm = await DeviceMotionEvent.requestPermission();
+        if (perm !== 'granted') return false;
+      } catch { return false; }
+    }
+    _stepCounter.enabled = true;
+    _stepCounter.count = 0;
+    window.addEventListener('devicemotion', _onDeviceMotion, { passive: true });
+    return true;
+  }
+
+  function stopStepCounter() {
+    _stepCounter.enabled = false;
+    window.removeEventListener('devicemotion', _onDeviceMotion);
+    if (_stepCounter.count > 0) {
+      try {
+        const total = parseInt(localStorage.getItem('yorimichi-total-steps') || '0', 10) || 0;
+        localStorage.setItem('yorimichi-total-steps', String(total + _stepCounter.count));
+      } catch {}
+    }
+    _stepCounter.count = 0;
   }
 
   // ===== Voice navigation during walks =====
@@ -4858,9 +5028,10 @@
     if (!courseId) return {};
     try { return JSON.parse(localStorage.getItem('yorimichi-photos-' + courseId) || '{}'); } catch { return {}; }
   }
-  function saveCoursePhoto(courseId, stopIdx, dataUrl) {
+  function saveCoursePhoto(courseId, stopIdx, dataUrl, description) {
     const all = getCoursePhotos(courseId);
-    all[stopIdx] = dataUrl;
+    // 旧フォーマット (string dataUrl) と 新フォーマット ({url, desc}) を両対応
+    all[stopIdx] = description ? { url: dataUrl, desc: description } : { url: dataUrl };
     try {
       localStorage.setItem('yorimichi-photos-' + courseId, JSON.stringify(all));
     } catch (e) {
@@ -4871,6 +5042,41 @@
         try { localStorage.setItem('yorimichi-photos-' + courseId, JSON.stringify(all)); } catch {}
       }
       console.warn('photo save failed', e);
+    }
+  }
+  function _photoUrlOf(entry) {
+    if (!entry) return null;
+    if (typeof entry === 'string') return entry; // 旧フォーマット
+    return entry.url || null;
+  }
+  function _photoDescOf(entry) {
+    if (!entry || typeof entry === 'string') return '';
+    return entry.desc || '';
+  }
+
+  // Gemini Vision で写真を描写
+  async function describePhotoWithAI(dataUrl, stopName, areaName) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 10000); // 10秒で諦める
+      const res = await fetch(`${API_BASE}/api/describe-photo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: dataUrl,
+          stop_name: stopName || '',
+          area: areaName || '',
+        }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      if (!res.ok) return null;
+      const data = await res.json();
+      const desc = (data?.description || '').trim();
+      return desc || null;
+    } catch (e) {
+      console.warn('describePhotoWithAI failed', e);
+      return null;
     }
   }
 
@@ -4926,11 +5132,19 @@
       try {
         showToast('📸 写真を保存中…', 'info', 1500);
         const dataUrl = await compressImageToDataUrl(file);
-        saveCoursePhoto(courseId, targetIdx, dataUrl);
         const stopName = state.selected[targetIdx]?.name || 'スポット';
-        showToast(`✅ ${stopName} で1枚保存しました`, 'success', 3000);
+        const areaName = state.origin?.shortLabel || '';
+        // 即時保存（AI待たずに）
+        saveCoursePhoto(courseId, targetIdx, dataUrl);
+        showToast(`✅ ${stopName} で1枚保存しました`, 'success', 2500);
         // ミッション「写真を1枚撮影」
         try { markMissionDone('photo'); } catch {}
+        // バックグラウンドで AI 描写を取得・後付けで保存
+        describePhotoWithAI(dataUrl, stopName, areaName).then(desc => {
+          if (!desc) return;
+          saveCoursePhoto(courseId, targetIdx, dataUrl, desc);
+          showToast(`✨ AIが描写: ${desc.slice(0, 40)}${desc.length > 40 ? '…' : ''}`, 'info', 4000);
+        });
       } catch (err) {
         console.error(err);
         showToast('写真の保存に失敗しました', 'error', 3000);
@@ -5123,13 +5337,18 @@
     canvas.height = 1920;
     const ctx = canvas.getContext('2d');
 
-    // 撮影写真を事前ロード
+    // 撮影写真を事前ロード（旧フォーマット string と新フォーマット {url,desc} 両対応）
     const photos = getCoursePhotos(course.id);
     const photoEntries = Object.entries(photos)
-      .map(([idx, url]) => ({ idx: parseInt(idx, 10), url }))
+      .map(([idx, entry]) => ({
+        idx: parseInt(idx, 10),
+        url: _photoUrlOf(entry),
+        desc: _photoDescOf(entry),
+      }))
+      .filter(p => p.url)
       .sort((a, b) => a.idx - b.idx);
     const loadedPhotos = await Promise.all(photoEntries.map(p => loadImage(p.url)));
-    const validPhotos = loadedPhotos.map((img, i) => img ? { img, idx: photoEntries[i].idx } : null).filter(Boolean);
+    const validPhotos = loadedPhotos.map((img, i) => img ? { img, idx: photoEntries[i].idx, desc: photoEntries[i].desc } : null).filter(Boolean);
 
     // Background gradient
     const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
@@ -5449,8 +5668,12 @@ ${hashtag}`;
       }
     };
 
-    // Suggest next course (smart pick: prefer same area > undiscovered > others)
-    const next = pickNextSuggestion(course);
+    // GPX export
+    const gpxBtn = $('#cert-gpx');
+    if (gpxBtn) gpxBtn.onclick = () => downloadGPX(course);
+
+    // Suggest next course - 履歴ベースのレコメンドエンジンで強化
+    const next = getRecommendedCourse() || pickNextSuggestion(course);
     const nextSec = $('#next-suggestion');
     if (next) {
       nextSec.hidden = false;

@@ -210,6 +210,76 @@ def _fallback_narrative(theme: str, area: str, stop_names: list, rarity: str) ->
     return {"name": nm[:40], "story": story[:200]}
 
 
+# ----- AI 写真描写（Gemini Vision） -----
+@app.route("/api/describe-photo", methods=["POST"])
+def describe_photo():
+    """ユーザーが撮影した写真を Gemini が一文で描写する。"""
+    if not gemini_client:
+        return jsonify({"error": "ai_disabled", "description": ""}), 503
+    data = request.get_json(silent=True) or {}
+    image_b64 = (data.get("image") or "").strip()
+    stop_name = (data.get("stop_name") or "")[:60]
+    area_name = (data.get("area") or "")[:40]
+    if not image_b64:
+        return jsonify({"error": "no_image"}), 400
+    # data:image/jpeg;base64,XXX 形式の場合は剥がす
+    if image_b64.startswith("data:"):
+        try:
+            image_b64 = image_b64.split(",", 1)[1]
+        except Exception:
+            return jsonify({"error": "bad_data_url"}), 400
+
+    from base64 import b64decode
+    try:
+        image_bytes = b64decode(image_b64)
+    except Exception:
+        return jsonify({"error": "bad_base64"}), 400
+    if len(image_bytes) > 2_500_000:  # 2.5MB 上限
+        return jsonify({"error": "image_too_large"}), 413
+    if len(image_bytes) < 200:
+        return jsonify({"error": "image_too_small"}), 400
+
+    user_prompt = (
+        f"街歩き中の写真です。場所: {stop_name or '街角'}（{area_name or '日本の街'}）。\n"
+        "特徴を一文（20〜60文字）で描写してください。固有名詞を勝手に追加せず、"
+        "見えるものを具体的に。商標やキャラクター名は使わないでください。\n"
+        'JSON で返答: {"description": "..."}'
+    )
+    try:
+        config = genai_types.GenerateContentConfig(
+            temperature=0.6,
+            max_output_tokens=2048,
+            response_mime_type="application/json",
+            response_schema=genai_types.Schema(
+                type=genai_types.Type.OBJECT,
+                required=["description"],
+                properties={"description": genai_types.Schema(type=genai_types.Type.STRING)},
+            ),
+        )
+        try:
+            config.thinking_config = genai_types.ThinkingConfig(thinking_budget=0)
+        except Exception:
+            pass
+
+        response = gemini_client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=[
+                genai_types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+                user_prompt,
+            ],
+            config=config,
+        )
+        text = (response.text or "").strip()
+        if not text:
+            return jsonify({"error": "empty_response"}), 502
+        result = json.loads(text)
+        desc = str(result.get("description", ""))[:200]
+        return jsonify({"description": desc})
+    except Exception as e:
+        logger.exception("describe_photo failed")
+        return jsonify({"error": "server_error", "message": str(e)[:200]}), 502
+
+
 @app.route("/api/generate-narrative", methods=["POST"])
 def generate_narrative():
     """ランダム生成コースに名前と物語を付与する。"""
