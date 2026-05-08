@@ -3456,6 +3456,38 @@ ${trkPts}
       showToast(`✅ ミッション達成: ${labels[key] || key}`, 'success', 2500);
     }
   }
+  // ===== Recommendation banner on home =====
+  function renderRecommendationBanner() {
+    const banner = $('#reco-banner');
+    if (!banner) return;
+    if (state.mode !== 'course') {
+      banner.hidden = true;
+      return;
+    }
+    // 既に発見済み or 完走済みなら表示しない（毎回出ると邪魔）
+    const reco = getRecommendedCourse();
+    if (!reco) { banner.hidden = true; return; }
+    // ユーザーが今のセッションで既にこれを開いてたらスキップ
+    if (state._recoShownId === reco.id && state._recoShownAt && Date.now() - state._recoShownAt < 60_000) {
+      return;
+    }
+    state._recoShownId = reco.id;
+    state._recoShownAt = Date.now();
+
+    banner.hidden = false;
+    $('#reco-emoji').textContent = reco.themeIcon || reco.areaIcon || '🌳';
+    $('#reco-title').textContent = tField(reco, 'name');
+    const minutes = reco.estimatedMin ? `約${reco.estimatedMin}分` : '';
+    $('#reco-meta').textContent = `${reco.areaIcon || ''} ${tField(reco, 'areaName')} ・ ${minutes} ・ ${reco.stops.length}スポット`;
+    const card = $('#reco-card');
+    if (card) {
+      card.onclick = () => {
+        applyRoute(courseToRoute(reco));
+        showToast(`✨ 「${tField(reco, 'name')}」を地図に設定しました`, 'success', 3000);
+      };
+    }
+  }
+
   function renderMissions() {
     const widget = $('#missions-widget');
     const list = $('#missions-list');
@@ -4197,6 +4229,9 @@ ${trkPts}
 
     // ミッションUI 初期描画
     try { renderMissions(); } catch {}
+
+    // レコメンド初期描画
+    try { renderRecommendationBanner(); } catch {}
 
     // 所要時間フィルタ
     state.filterDuration = state.filterDuration || 'all';

@@ -4081,6 +4081,73 @@ button:focus-visible,
 .notify-status.granted { color: #16a34a; font-weight: 700; }
 .notify-status.denied { color: #ef4444; font-weight: 700; }
 
+/* ===== Smart recommendation banner ===== */
+.reco-banner {
+  background: linear-gradient(135deg, #ec407a 0%, #ab47bc 100%);
+  border-radius: 14px;
+  padding: 14px;
+  margin: 12px 0 16px;
+  color: white;
+  box-shadow: 0 6px 20px rgba(171, 71, 188, 0.25);
+}
+.reco-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+.reco-badge {
+  font-size: 10px;
+  background: rgba(255,255,255,0.2);
+  padding: 2px 8px;
+  border-radius: 100px;
+}
+.reco-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255,255,255,0.15);
+  border: 0;
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.reco-card:hover { background: rgba(255,255,255,0.25); }
+.reco-emoji {
+  font-size: 32px;
+  width: 48px; height: 48px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.18);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.reco-body { flex: 1; min-width: 0; }
+.reco-title {
+  font-weight: 800;
+  font-size: 14px;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.reco-meta {
+  font-size: 12px;
+  opacity: 0.85;
+}
+.reco-arrow {
+  font-size: 22px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
 /* ===== Daily missions widget ===== */
 .missions-widget {
   background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);

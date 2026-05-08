@@ -625,6 +625,154 @@ window.YORIMICHI_COURSES = [
     ]
   },
 
+  // ============== 原宿・表参道エリア ==============
+
+  {
+    id: 'meiji_classic',
+    name: '原宿表参道 王道・神宮の杜とけやき並木',
+    name_en: 'Harajuku-Omotesando Classic: Sacred Forest & Zelkova Avenue',
+    area: 'meiji',
+    areaName: '原宿表参道',
+    areaName_en: 'Harajuku-Omotesando',
+    areaIcon: '🌸',
+    themeIcon: '🌳',
+    rarity: 'sr',
+    description: '都心の聖域・明治神宮の杜から、ファッションの聖地・表参道のけやき並木へ。江戸と現代が交差する東京の王道散歩。',
+    description_en: "From the sacred forest of Meiji Shrine to the zelkova-lined Omotesando boulevard. A walk where ancient Edo meets modern Tokyo fashion.",
+    travelMode: 'walk',
+    estimatedMin: 90,
+    budget: '¥1,500-3,500',
+    tags: ['定番', '神社', 'ファッション', '緑'],
+    origin: { lat: 35.6705, lng: 139.7027, name: '原宿駅', shortLabel: '原宿駅' },
+    dest:   { lat: 35.6627, lng: 139.7128, name: '表参道駅', shortLabel: '表参道駅' },
+    stops: [
+      {
+        lat: 35.6764, lng: 139.6993, name: '明治神宮', name_en: 'Meiji Shrine', cat: 'shrine', emoji: '⛩️',
+        photoBg: 'linear-gradient(135deg, #2e7d32 0%, #66bb6a 100%)',
+        bestTime: '7:00-17:00', budget: '無料', stayMin: 40,
+        tags: ['神社', '杜', 'パワースポット'],
+        desc: '都心とは思えない深い杜に囲まれた神社。鳥居をくぐると別世界。'
+      },
+      {
+        lat: 35.6712, lng: 139.7032, name: '代々木公園', name_en: 'Yoyogi Park', cat: 'park', emoji: '🌳',
+        photoBg: 'linear-gradient(135deg, #66bb6a 0%, #2e7d32 100%)',
+        bestTime: '6:00-19:00', budget: '無料', stayMin: 25,
+        tags: ['公園', '広場', 'ピクニック'],
+        desc: '都心最大級の緑地。週末はストリートパフォーマーで賑わう。'
+      },
+      {
+        lat: 35.6700, lng: 139.7038, name: '竹下通り', name_en: 'Takeshita Street', cat: 'shop', emoji: '🛍️',
+        photoBg: 'linear-gradient(135deg, #ec407a 0%, #ab47bc 100%)',
+        bestTime: '11:00-19:00', budget: '¥500-2,000',
+        stayMin: 20,
+        tags: ['若者', '原宿カルチャー', '食べ歩き'],
+        desc: '原宿カルチャーの中心地。クレープ・カラフル雑貨・古着で寄り道。'
+      },
+      {
+        lat: 35.6651, lng: 139.7106, name: '表参道けやき並木', name_en: 'Omotesando Zelkova Avenue', cat: 'viewpoint', emoji: '🌳',
+        photoBg: 'linear-gradient(135deg, #8d6e63 0%, #4caf50 100%)',
+        bestTime: '10:00-18:00', budget: '無料', stayMin: 20,
+        tags: ['並木道', 'シャンゼリゼ通り風', '建築'],
+        desc: '都心のシャンゼリゼ通り。けやき並木と現代建築の調和。'
+      },
+    ]
+  },
+
+  // ============== 鎌倉エリア ==============
+
+  {
+    id: 'kamakura_classic',
+    name: '鎌倉 王道・八幡宮と大仏の道',
+    name_en: 'Kamakura Classic: Hachimangu Shrine & the Great Buddha',
+    area: 'kamakura',
+    areaName: '鎌倉',
+    areaName_en: 'Kamakura',
+    areaIcon: '🏯',
+    themeIcon: '🏯',
+    rarity: 'sr',
+    description: '鎌倉幕府開府の地を、源頼朝の鶴岡八幡宮から日本を代表する大仏まで歩く。武家文化と海風の道。',
+    description_en: "Walk from Tsurugaoka Hachimangu Shrine, the spiritual heart of Minamoto no Yoritomo's shogunate, to the iconic Great Buddha. Samurai culture meets sea breeze.",
+    travelMode: 'walk',
+    estimatedMin: 110,
+    budget: '¥2,000-4,000',
+    tags: ['歴史', '神社', '大仏', '海'],
+    origin: { lat: 35.3192, lng: 139.5500, name: '鎌倉駅', shortLabel: '鎌倉駅' },
+    dest:   { lat: 35.3097, lng: 139.5359, name: '長谷駅', shortLabel: '長谷駅' },
+    stops: [
+      {
+        lat: 35.3261, lng: 139.5564, name: '鶴岡八幡宮', name_en: 'Tsurugaoka Hachimangu', cat: 'shrine', emoji: '⛩️',
+        photoBg: 'linear-gradient(135deg, #c62828 0%, #b71c1c 100%)',
+        bestTime: '8:00-17:00', budget: '無料', stayMin: 30,
+        tags: ['歴史', '武家', 'パワースポット'],
+        desc: '源頼朝が鎌倉幕府の中心に据えた古社。大石段が壮観。'
+      },
+      {
+        lat: 35.3216, lng: 139.5535, name: '小町通り', name_en: 'Komachi Street', cat: 'shop', emoji: '🛍️',
+        photoBg: 'linear-gradient(135deg, #d84315 0%, #ff8a65 100%)',
+        bestTime: '10:00-18:00', budget: '¥500-2,000', stayMin: 30,
+        tags: ['食べ歩き', '土産', '商店街'],
+        desc: '鎌倉駅から八幡宮へ続く食べ歩き商店街。和スイーツ・しらす丼。'
+      },
+      {
+        lat: 35.3164, lng: 139.5360, name: '高徳院（鎌倉大仏）', name_en: 'Kotoku-in (Great Buddha)', cat: 'temple', emoji: '🏯',
+        photoBg: 'linear-gradient(135deg, #6d4c41 0%, #4caf50 100%)',
+        bestTime: '8:00-17:00', budget: '¥300', stayMin: 30,
+        tags: ['国宝', '大仏', '撮影スポット'],
+        desc: '高さ約11mの青銅大仏。胎内拝観も可能（追加料金）。'
+      },
+      {
+        lat: 35.3097, lng: 139.5345, name: '由比ヶ浜', name_en: 'Yuigahama Beach', cat: 'viewpoint', emoji: '🌊',
+        photoBg: 'linear-gradient(135deg, #4fc3f7 0%, #ffd54f 100%)',
+        bestTime: '15:00-18:00', budget: '無料', stayMin: 30,
+        tags: ['海', '夕日', '波音'],
+        desc: '鎌倉を代表する海岸。江ノ電の音と海風で武家文化散歩を締めくくる。'
+      },
+    ]
+  },
+
+  {
+    id: 'kamakura_temple',
+    name: '【限定】古都鎌倉・苔と禅の北鎌倉',
+    name_en: '[Limited] Ancient Kamakura: Moss & Zen of Kita-Kamakura',
+    area: 'kamakura',
+    areaName: '鎌倉',
+    areaName_en: 'Kamakura',
+    areaIcon: '🏯',
+    themeIcon: '🍃',
+    rarity: 'legendary',
+    description: '北鎌倉の禅寺をめぐる伝説のコース。苔の絨毯、紫陽花の名所、禅の精神を肌で感じる早朝散歩。',
+    description_en: "A legendary course through the Zen temples of Kita-Kamakura. Moss carpets, hydrangea gardens, and the spirit of Zen Buddhism in early morning.",
+    travelMode: 'walk',
+    estimatedMin: 120,
+    budget: '¥1,500-3,000',
+    tags: ['上級者向け', '禅', '苔', '早朝限定'],
+    origin: { lat: 35.3375, lng: 139.5455, name: '北鎌倉駅', shortLabel: '北鎌倉駅' },
+    dest:   { lat: 35.3261, lng: 139.5564, name: '鶴岡八幡宮', shortLabel: '鶴岡八幡宮' },
+    stops: [
+      {
+        lat: 35.3375, lng: 139.5455, name: '円覚寺', name_en: 'Engaku-ji', cat: 'temple', emoji: '🏯',
+        photoBg: 'linear-gradient(135deg, #4caf50 0%, #1b5e20 100%)',
+        bestTime: '8:00-16:30', budget: '¥500', stayMin: 30,
+        tags: ['禅', '国宝', '紫陽花'],
+        desc: '臨済宗の大本山。北条時宗が開いた禅寺、舎利殿は国宝。'
+      },
+      {
+        lat: 35.3329, lng: 139.5468, name: '建長寺', name_en: 'Kencho-ji', cat: 'temple', emoji: '🏯',
+        photoBg: 'linear-gradient(135deg, #5d4037 0%, #6d4c41 100%)',
+        bestTime: '8:30-16:30', budget: '¥500', stayMin: 30,
+        tags: ['鎌倉五山', '禅'],
+        desc: '日本最初の禅寺。鎌倉五山第一位の格式。三門の風格は圧巻。'
+      },
+      {
+        lat: 35.3287, lng: 139.5510, name: '明月院', name_en: 'Meigetsu-in', cat: 'temple', emoji: '🌷',
+        photoBg: 'linear-gradient(135deg, #5e35b1 0%, #1976d2 100%)',
+        bestTime: '9:00-16:00', budget: '¥500', stayMin: 25,
+        tags: ['紫陽花', '禅', '丸窓'],
+        desc: '通称「あじさい寺」。本堂の丸窓から見る庭が名物。'
+      },
+    ]
+  },
+
 ];
 
 window.YORIMICHI_REGIONS = [
@@ -639,6 +787,7 @@ window.YORIMICHI_AREAS = [
   { id: 'yanesen',   name: '谷根千',     name_en: 'Yanesen',    icon: '🏮', enabled: true,  region: 'tokyo' },
   { id: 'jimbocho',  name: '神保町',     name_en: 'Jimbocho',   icon: '📚', enabled: true,  region: 'tokyo' },
   { id: 'asakusa',   name: '浅草',       name_en: 'Asakusa',    icon: '🎎', enabled: true,  region: 'tokyo' },
-  { id: 'meiji',     name: '原宿表参道', name_en: 'Harajuku-Omotesando', icon: '🌸', enabled: false, comingSoon: true, region: 'tokyo' },
+  { id: 'meiji',     name: '原宿表参道', name_en: 'Harajuku-Omotesando', icon: '🌸', enabled: true, region: 'tokyo' },
+  { id: 'kamakura',  name: '鎌倉',       name_en: 'Kamakura',   icon: '🏯', enabled: true, region: 'tokyo' },
   { id: 'shimokita', name: '下北沢',     name_en: 'Shimokitazawa', icon: '🎸', enabled: false, comingSoon: true, region: 'tokyo' },
 ];

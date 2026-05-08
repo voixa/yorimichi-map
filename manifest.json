@@ -1,39 +1,90 @@
 {
   "name": "街歩きガチャ",
   "short_name": "街歩きガチャ",
-  "description": "あと◯分あったら、どこ寄る？ 街の散歩コースをガチャで引く地図サービス。",
+  "description": "街の散歩コースをガチャで引いて、GPSスタンプラリーで遊べる地図サービス。AIが毎回ユニークなコースを生成。",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "portrait",
   "theme_color": "#ff7e3d",
   "background_color": "#fafaf7",
   "lang": "ja",
+  "dir": "ltr",
+  "categories": ["travel", "navigation", "lifestyle", "entertainment"],
   "icons": [
     {
       "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%23ff7e3d'/%3E%3Ctext x='50%25' y='52%25' font-size='130' text-anchor='middle' dominant-baseline='central'%3E👣%3C/text%3E%3C/svg%3E",
       "sizes": "192x192",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%23ff7e3d'/%3E%3Ctext x='50%25' y='52%25' font-size='340' text-anchor='middle' dominant-baseline='central'%3E👣%3C/text%3E%3C/svg%3E",
       "sizes": "512x512",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%23ff7e3d'/%3E%3Ctext x='50%25' y='52%25' font-size='110' text-anchor='middle' dominant-baseline='central' fill='white'%3E👣%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23ff7e3d'/%3E%3Ctext x='50%25' y='52%25' font-size='280' text-anchor='middle' dominant-baseline='central' fill='white'%3E👣%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./og.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "./og.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "街歩きガチャ — ガチャでコースを引いて街歩き"
     }
   ],
   "shortcuts": [
     {
       "name": "ガチャを引く",
       "short_name": "ガチャ",
+      "description": "今すぐコースガチャを引く",
       "url": "./?gacha=1",
-      "icons": [{ "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Ctext y='80' font-size='80'%3E🎰%3C/text%3E%3C/svg%3E", "sizes": "96x96" }]
+      "icons": [{ "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' fill='%23fff8e1' rx='20'/%3E%3Ctext x='50%25' y='52%25' font-size='60' text-anchor='middle' dominant-baseline='central'%3E🎰%3C/text%3E%3C/svg%3E", "sizes": "96x96" }]
     },
     {
       "name": "コース図鑑",
       "short_name": "図鑑",
+      "description": "発見済みコースのコレクション",
       "url": "./?collection=1",
-      "icons": [{ "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Ctext y='80' font-size='80'%3E📖%3C/text%3E%3C/svg%3E", "sizes": "96x96" }]
+      "icons": [{ "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' fill='%23fff8e1' rx='20'/%3E%3Ctext x='50%25' y='52%25' font-size='60' text-anchor='middle' dominant-baseline='central'%3E📖%3C/text%3E%3C/svg%3E", "sizes": "96x96" }]
+    },
+    {
+      "name": "プロフィール",
+      "short_name": "Me",
+      "description": "実績・履歴・設定",
+      "url": "./?profile=1",
+      "icons": [{ "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' fill='%23fff8e1' rx='20'/%3E%3Ctext x='50%25' y='52%25' font-size='60' text-anchor='middle' dominant-baseline='central'%3E👤%3C/text%3E%3C/svg%3E", "sizes": "96x96" }]
     }
-  ]
+  ],
+  "share_target": {
+    "action": "./",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "related_applications": [],
+  "prefer_related_applications": false
 }
