@@ -782,6 +782,101 @@ window.YORIMICHI_COURSES = [
     ]
   },
 
+  // ============== 京都・祇園エリア ==============
+
+  {
+    id: 'gion_classic',
+    name: '祇園・東山 王道・八坂と石畳の路地',
+    name_en: 'Gion-Higashiyama Classic: Yasaka & Cobblestone Alleys',
+    area: 'gion',
+    areaName: '祇園・東山',
+    areaName_en: 'Gion-Higashiyama',
+    areaIcon: '🍵',
+    themeIcon: '🏯',
+    rarity: 'sr',
+    description: '京都の代表的な観光エリア。八坂神社から二年坂・三年坂の石畳を抜け、清水寺へと続く王道散歩。京町家と苔むす石垣の風景。',
+    description_en: "Kyoto's most iconic walking area. From Yasaka Shrine, through the cobblestone slopes of Nineizaka and Sanneizaka, to Kiyomizu-dera. Old townhouses and mossy stone walls.",
+    travelMode: 'walk',
+    estimatedMin: 100,
+    budget: '¥2,000-4,000',
+    tags: ['京都王道', '神社', '石畳', '町家'],
+    origin: { lat: 35.0036, lng: 135.7785, name: '祇園四条駅', shortLabel: '祇園四条駅' },
+    dest:   { lat: 34.9949, lng: 135.7853, name: '清水寺', shortLabel: '清水寺' },
+    stops: [
+      {
+        lat: 35.0034, lng: 135.7787, name: '八坂神社', name_en: 'Yasaka Shrine', cat: 'shrine', emoji: '⛩️',
+        photoBg: 'linear-gradient(135deg, #c62828 0%, #b71c1c 100%)',
+        bestTime: '7:00-19:00', budget: '無料', stayMin: 25,
+        tags: ['神社', '祇園祭', '夜灯籠'],
+        desc: '祇園のシンボル。朱塗りの西楼門と境内の灯籠が印象的。'
+      },
+      {
+        lat: 35.0011, lng: 135.7805, name: '花見小路', name_en: 'Hanamikoji Street', cat: 'viewpoint', emoji: '🏯',
+        photoBg: 'linear-gradient(135deg, #6d4c41 0%, #4e342e 100%)',
+        bestTime: '10:00-17:00', budget: '無料', stayMin: 20,
+        tags: ['町家', '京情緒', '撮影スポット'],
+        desc: '祇園を代表する石畳の通り。茶屋と料亭の格子戸が連なる。'
+      },
+      {
+        lat: 34.9985, lng: 135.7821, name: '二年坂・三年坂', name_en: 'Ninenzaka & Sannenzaka', cat: 'viewpoint', emoji: '🏯',
+        photoBg: 'linear-gradient(135deg, #8d6e63 0%, #5d4037 100%)',
+        bestTime: '8:00-17:00', budget: '無料', stayMin: 25,
+        tags: ['石畳', '坂道', '伝建地区'],
+        desc: '清水寺へ続く伝統的建造物群保存地区。和雑貨店・甘味処が並ぶ。'
+      },
+      {
+        lat: 34.9949, lng: 135.7853, name: '清水寺', name_en: 'Kiyomizu-dera', cat: 'temple', emoji: '🏯',
+        photoBg: 'linear-gradient(135deg, #d84315 0%, #bf360c 100%)',
+        bestTime: '6:00-18:00', budget: '¥400', stayMin: 30,
+        tags: ['国宝', '舞台', '世界遺産'],
+        desc: '京都を代表する寺院。「清水の舞台」からの眺めは別格。'
+      },
+    ]
+  },
+
+  {
+    id: 'fushimi_inari',
+    name: '【限定】伏見稲荷・千本鳥居の早朝',
+    name_en: '[Limited] Fushimi Inari: Early Morning Through Thousand Torii',
+    area: 'fushimi',
+    areaName: '伏見',
+    areaName_en: 'Fushimi',
+    areaIcon: '⛩️',
+    themeIcon: '🌅',
+    rarity: 'legendary',
+    description: '日本一の千本鳥居を観光客が来る前の静寂な早朝に歩く伝説のコース。朱の鳥居が朝日に照らされる光景は息を呑む美しさ。',
+    description_en: "Walk through Japan's iconic thousand torii at Fushimi Inari before the tourists arrive. A legendary course where vermilion gates glow in the early morning sun.",
+    travelMode: 'walk',
+    estimatedMin: 110,
+    budget: '¥1,000-2,500（要早起き）',
+    tags: ['早朝限定', '世界遺産', '鳥居', '上級者向け'],
+    origin: { lat: 34.9671, lng: 135.7727, name: '伏見稲荷駅', shortLabel: '伏見稲荷駅' },
+    dest:   { lat: 34.9670, lng: 135.7806, name: '稲荷山頂上', shortLabel: '稲荷山頂上' },
+    stops: [
+      {
+        lat: 34.9676, lng: 135.7727, name: '伏見稲荷大社 楼門', name_en: 'Fushimi Inari Romon Gate', cat: 'shrine', emoji: '⛩️',
+        photoBg: 'linear-gradient(135deg, #ff6f00 0%, #c62828 100%)',
+        bestTime: '5:30-7:00', budget: '無料', stayMin: 20,
+        tags: ['朱塗り', '楼門', '早朝'],
+        desc: '日本全国に約3万社あるお稲荷様の総本宮。朱塗りの楼門が圧巻。'
+      },
+      {
+        lat: 34.9681, lng: 135.7740, name: '千本鳥居（入口）', name_en: 'Senbon Torii (Entrance)', cat: 'shrine', emoji: '⛩️',
+        photoBg: 'linear-gradient(135deg, #d84315 0%, #ff6f00 100%)',
+        bestTime: '5:30-7:30', budget: '無料', stayMin: 30,
+        tags: ['世界的名所', '撮影スポット', '神秘的'],
+        desc: '世界中から人が集まる名所。早朝なら独り占め、奉納者の名が刻まれた鳥居の連なりは圧巻。'
+      },
+      {
+        lat: 34.9670, lng: 135.7806, name: '稲荷山中腹（四ツ辻）', name_en: 'Inari Mountain Yotsutsuji', cat: 'viewpoint', emoji: '🌅',
+        photoBg: 'linear-gradient(135deg, #ff8a65 0%, #ffd54f 100%)',
+        bestTime: '6:30-8:00', budget: '無料', stayMin: 30,
+        tags: ['眺望', '京都市街', '休憩所'],
+        desc: '稲荷山の中腹四ツ辻からは京都市街が一望。茶店の甘酒で一息。'
+      },
+    ]
+  },
+
   {
     id: 'kamakura_temple',
     name: '【限定】古都鎌倉・苔と禅の北鎌倉',
@@ -829,7 +924,7 @@ window.YORIMICHI_COURSES = [
 
 window.YORIMICHI_REGIONS = [
   { id: 'tokyo',   country: 'JP', name: '東京',           name_en: 'Tokyo',   icon: '🗼', enabled: true,  centerLat: 35.6812, centerLng: 139.7671 },
-  { id: 'kyoto',   country: 'JP', name: '京都',           name_en: 'Kyoto',   icon: '🍵', enabled: false, comingSoon: true, centerLat: 35.0116, centerLng: 135.7681 },
+  { id: 'kyoto',   country: 'JP', name: '京都',           name_en: 'Kyoto',   icon: '🍵', enabled: true, centerLat: 35.0116, centerLng: 135.7681 },
   { id: 'osaka',   country: 'JP', name: '大阪',           name_en: 'Osaka',   icon: '🐙', enabled: false, comingSoon: true, centerLat: 34.6937, centerLng: 135.5023 },
   { id: 'venezia', country: 'IT', name: 'ヴェネツィア', name_en: 'Venezia', icon: '🛶', enabled: false, comingSoon: true, centerLat: 45.4408, centerLng: 12.3155 },
 ];
@@ -842,4 +937,6 @@ window.YORIMICHI_AREAS = [
   { id: 'meiji',     name: '原宿表参道', name_en: 'Harajuku-Omotesando', icon: '🌸', enabled: true, region: 'tokyo' },
   { id: 'kamakura',  name: '鎌倉',       name_en: 'Kamakura',   icon: '🏯', enabled: true, region: 'tokyo' },
   { id: 'shimokita', name: '下北沢',     name_en: 'Shimokitazawa', icon: '🎸', enabled: true, region: 'tokyo' },
+  { id: 'gion',      name: '祇園・東山', name_en: 'Gion-Higashiyama', icon: '🍵', enabled: true, region: 'kyoto' },
+  { id: 'fushimi',   name: '伏見',       name_en: 'Fushimi',       icon: '⛩️', enabled: true, region: 'kyoto' },
 ];

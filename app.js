@@ -3074,7 +3074,7 @@
 
     // Confetti for top rarities
     if (route.rarity === 'legendary') {
-      fireConfetti(120, ['#ff5722', '#ffd700', '#e91e63', '#9c27b0', '#00bcd4']);
+      fireConfetti(120, 'legendary', { shapes: ['rect', 'circle', 'star'] });
     } else if (route.rarity === 'sr') {
       fireConfetti(60, ['#ff9800', '#ffc107', '#ff5722']);
     }
@@ -3137,14 +3137,28 @@
     saveStateToHash();
   }
 
-  function fireConfetti(count, colors) {
+  // Confetti palette presets（用途別）
+  const CONFETTI_PRESETS = {
+    success:   ['#16a34a', '#ffd700', '#3b82f6'],
+    legendary: ['#ffd700', '#ff9800', '#9c27b0', '#ec4899', '#3b82f6', '#ffffff'],
+    rare:      ['#3b82f6', '#9c27b0', '#ffd700'],
+    cherry:    ['#ec4899', '#f48fb1', '#ffffff', '#ffd700'],
+    autumn:    ['#d84315', '#ff9800', '#ffd700', '#8d6e63'],
+  };
+
+  function fireConfetti(count, colors, opts = {}) {
     const container = $('#confetti');
+    if (!container) return;
     container.hidden = false;
-    container.innerHTML = '';
+    if (!opts.append) container.innerHTML = '';
+    const cols = (typeof colors === 'string') ? CONFETTI_PRESETS[colors] : colors;
+    const palette = cols || CONFETTI_PRESETS.success;
+    const shapes = opts.shapes || ['rect', 'circle', 'star'];
     for (let i = 0; i < count; i++) {
       const piece = document.createElement('div');
-      piece.className = 'confetti-piece';
-      const c = colors[i % colors.length];
+      const shape = shapes[Math.floor(Math.random() * shapes.length)];
+      piece.className = 'confetti-piece confetti-' + shape;
+      const c = palette[i % palette.length];
       piece.style.setProperty('--c', c);
       piece.style.setProperty('--r', (Math.random() * 360) + 'deg');
       piece.style.setProperty('--d', (2 + Math.random() * 2) + 's');
@@ -3152,7 +3166,12 @@
       piece.style.animationDelay = (Math.random() * 0.5) + 's';
       container.appendChild(piece);
     }
-    setTimeout(() => { container.hidden = true; container.innerHTML = ''; }, 4500);
+    setTimeout(() => {
+      if (!opts.append) {
+        container.hidden = true;
+        container.innerHTML = '';
+      }
+    }, 4500);
   }
 
   // ---------- Shop ----------
@@ -5559,7 +5578,7 @@ ${trkPts}
     // Reset progress for re-walk
     state.completedStops[courseId] = new Set();
     saveCompletion();
-    fireConfetti(150, ['#ffd700', '#16a34a', '#ff7e3d', '#ec4899', '#3b82f6']);
+    fireConfetti(150, ['#ffd700', '#16a34a', '#ff7e3d', '#ec4899', '#3b82f6'], { shapes: ['rect', 'circle'] });
     speak('コース完走、おめでとうございます！');
     // Bonus coins for completion
     gacha.coins += COMPLETION_BONUS;
@@ -5590,7 +5609,7 @@ ${trkPts}
       </div>
     `;
     document.body.appendChild(burst);
-    fireConfetti(300, ['#ffd700', '#ff7e3d', '#ec4899', '#9c27b0', '#3b82f6', '#16a34a']);
+    fireConfetti(300, 'legendary', { shapes: ['rect', 'circle', 'star'] });
     speak('全コース発見コンプリート！おめでとう！');
     burst.querySelector('.cb-close').onclick = () => burst.remove();
     setTimeout(() => { if (burst.parentElement) burst.remove(); }, 6000);

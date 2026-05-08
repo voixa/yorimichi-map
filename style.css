@@ -3152,6 +3152,23 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
   animation: confetti-fall var(--d, 3s) linear forwards;
   transform: rotate(var(--r, 0deg));
 }
+.confetti-piece.confetti-circle {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.confetti-piece.confetti-star {
+  background: transparent;
+  width: 14px;
+  height: 14px;
+  position: absolute;
+  font-size: 14px;
+  line-height: 1;
+}
+.confetti-piece.confetti-star::before {
+  content: '⭐';
+  font-size: 14px;
+}
 @keyframes confetti-fall {
   to { transform: translateY(110vh) rotate(720deg); }
 }
