@@ -4172,6 +4172,111 @@ button:focus-visible,
   }
 }
 
+/* ===== Dark mode polish for new components ===== */
+[data-theme="dark"] .skel-line,
+[data-theme="dark"] .skel-thumb {
+  background-color: rgba(255,255,255,0.05);
+}
+[data-theme="dark"] .reco-banner {
+  background: linear-gradient(135deg, #6a1b9a 0%, #4a148c 100%);
+}
+[data-theme="dark"] .weather-banner {
+  background: linear-gradient(135deg, #0277bd 0%, #01579b 100%);
+}
+[data-theme="dark"] .weather-banner.warm {
+  background: linear-gradient(135deg, #e65100 0%, #bf360c 100%);
+}
+[data-theme="dark"] .weather-banner.rain {
+  background: linear-gradient(135deg, #455a64 0%, #263238 100%);
+}
+[data-theme="dark"] .weather-banner.cold {
+  background: linear-gradient(135deg, #283593 0%, #1a237e 100%);
+}
+[data-theme="dark"] .daily-tip {
+  background: rgba(255, 213, 79, 0.05);
+  border-left-color: #ffd54f;
+}
+[data-theme="dark"] .pricing-card {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text);
+}
+[data-theme="dark"] .pricing-card.premium {
+  background: linear-gradient(135deg, #3e3520 0%, #4a3f25 100%);
+  color: var(--text);
+}
+[data-theme="dark"] .pricing-name { color: var(--text); }
+[data-theme="dark"] .pricing-features li { color: var(--text); }
+[data-theme="dark"] .lp-faq-item summary { color: var(--text); }
+[data-theme="dark"] .lp-faq-item p { color: var(--text-muted); }
+[data-theme="dark"] .testimonial { background: var(--surface-2); color: var(--text); }
+[data-theme="dark"] .stat-card { background: var(--surface-2); }
+[data-theme="dark"] .stat-num { color: #ff9966; }
+[data-theme="dark"] .b2b-logo-slot {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.5);
+}
+[data-theme="dark"] .live-ticker {
+  background: rgba(255, 126, 61, 0.15);
+  color: #ffb380;
+  border-color: #ff7e3d;
+}
+
+/* ===== Print stylesheet (証明書印刷用) ===== */
+@media print {
+  /* 印刷時は地図・パネル・ヘッダー等を隠す */
+  .app-header,
+  .panel,
+  #map-container,
+  .modal-backdrop,
+  .toast,
+  .pwa-install-banner,
+  .update-banner,
+  .walk-hud,
+  .reco-banner,
+  .missions-widget,
+  .weather-banner,
+  .daily-tip,
+  .layout > *:not(.cert-modal-print) {
+    display: none !important;
+  }
+  /* 証明書モーダルの中身だけ印刷 */
+  .modal-backdrop:not([hidden]) {
+    display: block !important;
+    position: static !important;
+    background: white !important;
+    padding: 0 !important;
+  }
+  .modal-backdrop:not([hidden]) .modal {
+    box-shadow: none !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 20px !important;
+  }
+  .modal-close,
+  .cert-actions,
+  .btn-cert-download,
+  #cert-gpx,
+  .next-suggestion {
+    display: none !important;
+  }
+  .certificate {
+    page-break-inside: avoid;
+    border: 4px double #d4af37 !important;
+    padding: 30px !important;
+    text-align: center !important;
+    background: white !important;
+    color: black !important;
+  }
+  body { background: white !important; color: black !important; }
+  /* 印刷時は色を強制（インクの節約解除） */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
 /* ===== Notification section ===== */
 .notify-section {
   background: var(--surface-2);

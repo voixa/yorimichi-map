@@ -3603,8 +3603,80 @@ ${trkPts}
     const gpsHi = $('#settings-gps-hi');
     if (gpsHi) gpsHi.addEventListener('change', () => persist('yorimichi-gps-hi', gpsHi.checked ? '1' : '0'));
 
+    const heatmapCb = $('#settings-heatmap');
+    if (heatmapCb) {
+      try { heatmapCb.checked = localStorage.getItem('yorimichi-heatmap') === '1'; } catch {}
+      heatmapCb.addEventListener('change', () => {
+        persist('yorimichi-heatmap', heatmapCb.checked ? '1' : '0');
+        if (heatmapCb.checked) showVisitedHeatmap();
+        else hideVisitedHeatmap();
+      });
+    }
+
     const notifyBtn = $('#settings-notify-btn');
     if (notifyBtn) notifyBtn.addEventListener('click', toggleNotifications);
+  }
+
+  // ===== Visited spots heatmap (map overlay) =====
+  // 過去に訪問した全スポットの座標を localStorage の completedStops + walkHistory から集計
+  // Leaflet circleMarker で薄いオレンジ円を描画
+  let _heatmapLayer = null;
+
+  function getAllVisitedCoords() {
+    const coords = [];
+    const seenKeys = new Set();
+    const allCourses = window.YORIMICHI_COURSES || [];
+    for (const [courseId, visited] of Object.entries(state.completedStops || {})) {
+      const course = allCourses.find(c => c.id === courseId);
+      if (!course) continue;
+      const visitedSet = visited instanceof Set ? visited : new Set(visited || []);
+      visitedSet.forEach(idx => {
+        const stop = course.stops[idx];
+        if (!stop || stop.lat == null || stop.lng == null) return;
+        const key = `${stop.lat.toFixed(4)},${stop.lng.toFixed(4)}`;
+        if (seenKeys.has(key)) return;
+        seenKeys.add(key);
+        coords.push({ lat: stop.lat, lng: stop.lng, name: stop.name });
+      });
+    }
+    return coords;
+  }
+
+  function showVisitedHeatmap() {
+    if (!state.map || typeof L === 'undefined') return;
+    if (_heatmapLayer) {
+      try { state.map.removeLayer(_heatmapLayer); } catch {}
+      _heatmapLayer = null;
+    }
+    const coords = getAllVisitedCoords();
+    if (coords.length === 0) return;
+    const group = L.layerGroup();
+    coords.forEach(c => {
+      const marker = L.circleMarker([c.lat, c.lng], {
+        radius: 8,
+        fillColor: '#ff7e3d',
+        fillOpacity: 0.5,
+        color: '#ff4500',
+        weight: 1,
+        opacity: 0.7,
+      });
+      marker.bindTooltip(`✓ ${c.name}`, { direction: 'top' });
+      group.addLayer(marker);
+    });
+    _heatmapLayer = group;
+    state.map.addLayer(_heatmapLayer);
+  }
+
+  function hideVisitedHeatmap() {
+    if (_heatmapLayer && state.map) {
+      try { state.map.removeLayer(_heatmapLayer); } catch {}
+      _heatmapLayer = null;
+    }
+  }
+
+  function toggleVisitedHeatmap() {
+    if (_heatmapLayer) hideVisitedHeatmap();
+    else showVisitedHeatmap();
   }
 
   // ===== Daily tip rotation =====
