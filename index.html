@@ -151,6 +151,13 @@
         <!-- populated by JS -->
       </div>
 
+      <div class="profile-section-title">🔔 通知設定</div>
+      <div class="notify-section">
+        <p class="notify-desc">朝・夕方に「今日の街歩き」リマインダーを受け取ります（ブラウザ通知）。</p>
+        <button class="btn-secondary" id="notify-toggle" type="button">通知をオンにする</button>
+        <p class="notify-status" id="notify-status">未設定</p>
+      </div>
+
       <div class="profile-section-title">🎁 友達を招待</div>
       <div class="invite-section">
         <p class="invite-desc">招待した友達がガチャを引くと <strong>あなた・友達ともに +15コイン</strong>。</p>
@@ -209,6 +216,17 @@
           <div class="hs-item">
             <span class="hs-num" id="hs-streak">0</span>
             <span class="hs-label">🔥連続</span>
+          </div>
+        </section>
+
+        <!-- Daily missions widget -->
+        <section class="missions-widget" id="missions-widget" hidden>
+          <div class="missions-header">
+            <span>🎯 今日のミッション</span>
+            <span class="missions-bonus">+コインボーナス</span>
+          </div>
+          <div class="missions-list" id="missions-list">
+            <!-- populated by JS -->
           </div>
         </section>
 
@@ -715,6 +733,26 @@
 
   <!-- 散歩中の写真撮影用（モバイルカメラ起動） -->
   <input type="file" id="walk-photo-input" accept="image/*" capture="environment" style="display:none" />
+
+  <!-- ============ Course Rating Modal ============ -->
+  <div class="modal-backdrop" id="rating-modal" hidden>
+    <div class="modal rating-modal" role="dialog" aria-label="コース評価" aria-modal="true">
+      <button class="modal-close" id="rating-skip" type="button" aria-label="あとで">✕</button>
+      <h2 class="modal-title">🏅 完走おめでとう！</h2>
+      <p class="rating-sub" id="rating-course-name">—</p>
+      <p class="rating-prompt">このコースはいかがでしたか？</p>
+      <div class="rating-stars" id="rating-stars" role="radiogroup" aria-label="星評価">
+        <button class="rating-star" data-value="1" aria-label="1星" type="button">☆</button>
+        <button class="rating-star" data-value="2" aria-label="2星" type="button">☆</button>
+        <button class="rating-star" data-value="3" aria-label="3星" type="button">☆</button>
+        <button class="rating-star" data-value="4" aria-label="4星" type="button">☆</button>
+        <button class="rating-star" data-value="5" aria-label="5星" type="button">☆</button>
+      </div>
+      <textarea class="rating-comment" id="rating-comment" placeholder="感想やおすすめポイント（任意）" maxlength="200"></textarea>
+      <button class="btn-primary rating-submit" id="rating-submit" type="button" disabled>評価を送信</button>
+      <p class="rating-fine">送信内容は匿名で品質改善にのみ利用されます</p>
+    </div>
+  </div>
 
   <!-- ============ Walk Mode HUD ============ -->
   <!-- 散歩中に画面下に表示される大きな情報パネル（モバイル最適化） -->

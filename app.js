@@ -15,6 +15,69 @@
   const APP_NAME = 'YorimichiMap/0.1 (https://github.com/seiji/yorimichi-map; learning project)';
 
   // ============================================================
+  // Global error reporting (silent → /api/errors)
+  // ============================================================
+  // window.onerror / onunhandledrejection を捕捉してバックエンドに送る
+  // 個人情報は送らず、message / stack / source / user_id のみ
+  const _errorReportEndpoint = 'https://yorimichi-api-1028920472559.asia-northeast1.run.app/api/errors';
+  let _errorReportCount = 0;
+  function reportClientError(payload) {
+    if (_errorReportCount > 10) return; // 同一セッションで10回まで
+    _errorReportCount += 1;
+    try {
+      let userId = '';
+      try { userId = localStorage.getItem('yorimichi-user-id') || ''; } catch (e) {}
+      const body = JSON.stringify({ ...payload, user_id: userId });
+      // sendBeacon でページ離脱時も送れるようにする
+      if (navigator.sendBeacon) {
+        const blob = new Blob([body], { type: 'application/json' });
+        navigator.sendBeacon(_errorReportEndpoint, blob);
+      } else {
+        fetch(_errorReportEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+          keepalive: true,
+        }).catch(() => {});
+      }
+    } catch (e) {
+      // 報告失敗時に無限ループしないよう何もしない
+    }
+  }
+  window.addEventListener('error', (e) => {
+    reportClientError({
+      message: String(e.message || 'error'),
+      source: String(e.filename || ''),
+      line: e.lineno,
+      col: e.colno,
+      stack: e.error && e.error.stack ? String(e.error.stack).slice(0, 2000) : '',
+    });
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    const reason = e.reason;
+    reportClientError({
+      message: 'unhandledrejection: ' + String(reason && reason.message ? reason.message : reason),
+      stack: reason && reason.stack ? String(reason.stack).slice(0, 2000) : '',
+    });
+  });
+
+  // 致命的エラー時に表示するフォールバックUI
+  function showFatalErrorBanner(message) {
+    if (document.getElementById('fatal-error-banner')) return;
+    const banner = document.createElement('div');
+    banner.id = 'fatal-error-banner';
+    banner.style.cssText =
+      'position:fixed;top:0;left:0;right:0;background:#ef4444;color:white;padding:12px 16px;' +
+      'z-index:10000;font-size:14px;font-weight:600;text-align:center;' +
+      'box-shadow:0 4px 12px rgba(0,0,0,0.2);';
+    banner.innerHTML =
+      `⚠️ ${message || '一時的なエラーが発生しました'} ` +
+      `<button style="margin-left:8px;padding:6px 12px;border-radius:8px;border:0;background:white;color:#ef4444;font-weight:700;cursor:pointer">🔄 再読み込み</button>`;
+    banner.querySelector('button').onclick = () => location.reload();
+    document.body.appendChild(banner);
+  }
+
+  // ============================================================
   // i18n (basic)
   // ============================================================
   const I18N = {
@@ -2471,6 +2534,8 @@
     setTimeout(checkNewBadges, 1500);
     // 招待ボーナス（初ガチャ時のみ）
     setTimeout(maybeGrantInviteeBonus, 2000);
+    // ミッション「ガチャを1回引く」
+    try { markMissionDone('gacha'); } catch {}
   }
 
   function updateSessionStreak() {
@@ -3076,6 +3141,238 @@
     }
   }
 
+  // ---------- Daily missions ----------
+  const MISSIONS_KEY = 'yorimichi-missions';
+
+  function getResetDateForMissions() {
+    return (new Date()).toDateString();
+  }
+
+  function getMissionsState() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(MISSIONS_KEY) || '{}');
+      const today = getResetDateForMissions();
+      if (raw.date !== today) {
+        return { date: today, done: { gacha: false, walk: false, photo: false }, claimedBonus: false };
+      }
+      return { date: today, done: raw.done || {}, claimedBonus: !!raw.claimedBonus };
+    } catch {
+      return { date: getResetDateForMissions(), done: {}, claimedBonus: false };
+    }
+  }
+  function saveMissionsState(s) {
+    try { localStorage.setItem(MISSIONS_KEY, JSON.stringify(s)); } catch {}
+  }
+  function markMissionDone(key) {
+    const s = getMissionsState();
+    if (s.done[key]) return;
+    s.done[key] = true;
+    saveMissionsState(s);
+    renderMissions();
+    // 全達成で +5 ボーナス
+    if (!s.claimedBonus && s.done.gacha && s.done.walk && s.done.photo) {
+      s.claimedBonus = true;
+      saveMissionsState(s);
+      gacha.coins += 5;
+      gachaSave();
+      gachaUpdateUI();
+      showToast('🎯 今日のミッション全達成！+5🪙ボーナス', 'success', 5000);
+    } else {
+      const labels = { gacha: 'ガチャ1回', walk: '1スポット完走', photo: '写真撮影' };
+      showToast(`✅ ミッション達成: ${labels[key] || key}`, 'success', 2500);
+    }
+  }
+  function renderMissions() {
+    const widget = $('#missions-widget');
+    const list = $('#missions-list');
+    if (!widget || !list) return;
+    const s = getMissionsState();
+    const items = [
+      { key: 'gacha', label: '🎰 ガチャを1回引く', coins: 1, done: !!s.done.gacha },
+      { key: 'walk',  label: '🚶 1スポット完走', coins: 2, done: !!s.done.walk },
+      { key: 'photo', label: '📸 写真を1枚撮影', coins: 1, done: !!s.done.photo },
+    ];
+    list.innerHTML = items.map(it => `
+      <div class="mission-item ${it.done ? 'done' : ''}">
+        <span>${it.label}</span>
+        <span class="mission-coin">+${it.coins}🪙</span>
+      </div>
+    `).join('');
+    widget.hidden = false;
+  }
+
+  // ---------- Browser notifications ----------
+  const NOTIFY_KEY = 'yorimichi-notify-pref';
+
+  function getNotifyPref() {
+    try { return JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}'); } catch { return {}; }
+  }
+  function setNotifyPref(p) {
+    try { localStorage.setItem(NOTIFY_KEY, JSON.stringify(p)); } catch {}
+  }
+
+  function updateNotifyUI() {
+    const btn = $('#notify-toggle');
+    const status = $('#notify-status');
+    if (!btn || !status) return;
+    if (!('Notification' in window)) {
+      btn.disabled = true;
+      btn.textContent = 'このブラウザは未対応';
+      status.textContent = '';
+      return;
+    }
+    const perm = Notification.permission;
+    const pref = getNotifyPref();
+    if (perm === 'granted' && pref.enabled) {
+      btn.textContent = '通知をオフにする';
+      status.textContent = '✓ オン（朝9時・夕方17時にリマインダー）';
+      status.className = 'notify-status granted';
+    } else if (perm === 'denied') {
+      btn.textContent = 'ブラウザ設定で許可してください';
+      btn.disabled = true;
+      status.textContent = '✕ ブロック中';
+      status.className = 'notify-status denied';
+    } else {
+      btn.textContent = '通知をオンにする';
+      status.textContent = '未設定';
+      status.className = 'notify-status';
+    }
+  }
+
+  async function toggleNotifications() {
+    if (!('Notification' in window)) return;
+    const pref = getNotifyPref();
+    if (Notification.permission === 'granted' && pref.enabled) {
+      // オフにする
+      pref.enabled = false;
+      setNotifyPref(pref);
+      updateNotifyUI();
+      showToast('通知をオフにしました', 'info', 2500);
+      return;
+    }
+    if (Notification.permission === 'default') {
+      const result = await Notification.requestPermission();
+      if (result !== 'granted') {
+        updateNotifyUI();
+        return;
+      }
+    }
+    if (Notification.permission === 'granted') {
+      pref.enabled = true;
+      pref.lastFireDate = '';
+      setNotifyPref(pref);
+      updateNotifyUI();
+      showToast('🔔 通知をオンにしました', 'success', 3000);
+      // テスト通知
+      try {
+        new Notification('街歩きガチャ', {
+          body: '通知が有効になりました 👣 今日の散歩、ご一緒に',
+          icon: '/og.png',
+        });
+      } catch {}
+    }
+  }
+
+  function maybeFireDailyReminder() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+    const pref = getNotifyPref();
+    if (!pref.enabled) return;
+    const now = new Date();
+    const hour = now.getHours();
+    const todayStr = now.toDateString();
+    // 朝9-11時 or 夕方17-19時の枠で1日2回まで
+    let slot = null;
+    if (hour >= 9 && hour < 11) slot = 'morning';
+    else if (hour >= 17 && hour < 19) slot = 'evening';
+    if (!slot) return;
+    const fired = pref.fired || {};
+    const key = `${todayStr}-${slot}`;
+    if (fired[key]) return;
+    fired[key] = true;
+    pref.fired = fired;
+    setNotifyPref(pref);
+    const messages = {
+      morning: ['☀️ 朝の散歩、ガチャから始めよう', '🌳 おはよう！今日の街歩きコースは？'],
+      evening: ['🌅 夕焼けタイム。今日の散歩しよう', '🚶 帰り道、ちょっと寄り道してみない？'],
+    };
+    const msg = messages[slot][Math.floor(Math.random() * messages[slot].length)];
+    try {
+      new Notification('街歩きガチャ', { body: msg, icon: '/og.png' });
+    } catch {}
+  }
+
+  // ---------- Course rating ----------
+  let _ratingTarget = null; // { courseId, courseName }
+  function showRatingModal(course) {
+    if (!course || !course.id) return;
+    // 既に評価済みなら出さない
+    let rated = {};
+    try { rated = JSON.parse(localStorage.getItem('yorimichi-rated-courses') || '{}'); } catch {}
+    if (rated[course.id]) return;
+    _ratingTarget = { courseId: course.id, courseName: tField(course, 'name') };
+    const modal = $('#rating-modal');
+    if (!modal) return;
+    $('#rating-course-name').textContent = _ratingTarget.courseName;
+    $('#rating-comment').value = '';
+    $$('.rating-star').forEach(s => s.classList.remove('active'));
+    $('#rating-submit').disabled = true;
+    modal.hidden = false;
+  }
+  function setupRatingListeners() {
+    let selectedRating = 0;
+    $$('.rating-star').forEach(star => {
+      star.addEventListener('click', () => {
+        selectedRating = parseInt(star.dataset.value, 10);
+        $$('.rating-star').forEach(s => {
+          const v = parseInt(s.dataset.value, 10);
+          s.classList.toggle('active', v <= selectedRating);
+          s.textContent = v <= selectedRating ? '★' : '☆';
+        });
+        $('#rating-submit').disabled = false;
+      });
+    });
+    const skip = $('#rating-skip');
+    if (skip) skip.addEventListener('click', () => { $('#rating-modal').hidden = true; });
+    const submit = $('#rating-submit');
+    if (submit) submit.addEventListener('click', async () => {
+      if (selectedRating < 1 || !_ratingTarget) return;
+      const comment = ($('#rating-comment').value || '').slice(0, 200);
+      const userId = (typeof getOrCreateUserId === 'function') ? getOrCreateUserId() : '';
+      try {
+        await fetch(`${API_BASE}/api/course-rating`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            course_id: _ratingTarget.courseId,
+            rating: selectedRating,
+            comment,
+          }),
+          keepalive: true,
+        });
+      } catch (e) { console.warn('rating send failed', e); }
+      // 重複送信防止
+      try {
+        const rated = JSON.parse(localStorage.getItem('yorimichi-rated-courses') || '{}');
+        rated[_ratingTarget.courseId] = { r: selectedRating, t: Date.now() };
+        localStorage.setItem('yorimichi-rated-courses', JSON.stringify(rated));
+      } catch {}
+      showToast(`⭐ ${selectedRating}星の評価をありがとう！`, 'success', 3000);
+      // ボーナスコイン: 評価で +1 (1日1回まで)
+      const today = (new Date()).toDateString();
+      let bonusKey = 'yorimichi-rating-bonus-day';
+      if (localStorage.getItem(bonusKey) !== today) {
+        gacha.coins += 1;
+        gachaSave();
+        gachaUpdateUI();
+        localStorage.setItem(bonusKey, today);
+      }
+      $('#rating-modal').hidden = true;
+      selectedRating = 0;
+    });
+  }
+
   // ---------- Subscription (Premium) ----------
   // localStorage cache のキー
   const PREMIUM_CACHE_KEY = 'yorimichi-premium';
@@ -3587,6 +3884,19 @@
         startStripeCheckout(packId);
       });
     });
+    // 評価モーダル
+    setupRatingListeners();
+
+    // 通知トグル
+    const notifyBtn = $('#notify-toggle');
+    if (notifyBtn) notifyBtn.addEventListener('click', toggleNotifications);
+    updateNotifyUI();
+    // 起動時にデイリーリマインダー判定
+    try { maybeFireDailyReminder(); } catch {}
+
+    // ミッションUI 初期描画
+    try { renderMissions(); } catch {}
+
     // テーマチップ（route / stroll モード）
     $$('.theme-chip').forEach(chip => {
       chip.addEventListener('click', () => {
@@ -4348,6 +4658,8 @@
         saveCoursePhoto(courseId, targetIdx, dataUrl);
         const stopName = state.selected[targetIdx]?.name || 'スポット';
         showToast(`✅ ${stopName} で1枚保存しました`, 'success', 3000);
+        // ミッション「写真を1枚撮影」
+        try { markMissionDone('photo'); } catch {}
       } catch (err) {
         console.error(err);
         showToast('写真の保存に失敗しました', 'error', 3000);
@@ -4443,6 +4755,8 @@
     if (visited.has(idx)) return;
     visited.add(idx);
     saveCompletion();
+    // ミッション「1スポット完走」
+    try { markMissionDone('walk'); } catch {}
 
     const stop = state.selected[idx];
     showStampBurst(stop);
@@ -4497,6 +4811,8 @@
       if (course) showCertificate(course);
       else showToast('🏅 完走おめでとう！', 'success', 4000);
       checkNewBadges();
+      // 評価モーダルを少し遅らせて出す（証明書を見終えた頃）
+      if (course) setTimeout(() => showRatingModal(course), 6000);
     }, 1500);
   }
 
@@ -5495,9 +5811,21 @@ ${hashtag}`;
     }
   }
 
+  function safeInit() {
+    Promise.resolve()
+      .then(() => init())
+      .catch((err) => {
+        console.error('init failed', err);
+        reportClientError({
+          message: 'init_failed: ' + String(err && err.message ? err.message : err),
+          stack: err && err.stack ? String(err.stack).slice(0, 2000) : '',
+        });
+        showFatalErrorBanner('初期化中にエラーが発生しました');
+      });
+  }
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', safeInit);
   } else {
-    init();
+    safeInit();
   }
 })();

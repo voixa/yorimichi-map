@@ -3735,6 +3735,130 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
 }
 .invite-link-row .btn-secondary { white-space: nowrap; padding: 8px 14px; }
 
+/* ===== Course Rating modal ===== */
+.rating-modal { max-width: 420px; text-align: center; }
+.rating-sub {
+  font-size: 14px; color: var(--text-muted);
+  margin: 4px 0 16px;
+}
+.rating-prompt {
+  font-size: 15px; font-weight: 600; margin-bottom: 12px;
+}
+.rating-stars {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.rating-star {
+  background: none;
+  border: 0;
+  font-size: 36px;
+  color: #cbd5e1;
+  cursor: pointer;
+  padding: 4px 6px;
+  transition: color 0.15s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.rating-star:hover { color: #ffd700; transform: scale(1.1); }
+.rating-star.active { color: #ffd700; }
+.rating-comment {
+  width: 100%;
+  min-height: 70px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+  resize: vertical;
+  margin-bottom: 12px;
+}
+.rating-submit {
+  width: 100%;
+  margin-bottom: 8px;
+}
+.rating-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+.rating-fine { font-size: 11px; color: var(--text-muted); margin: 0; }
+
+/* ===== Notification section ===== */
+.notify-section {
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+.notify-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0 0 10px;
+  line-height: 1.6;
+}
+.notify-status {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 8px 0 0;
+}
+.notify-status.granted { color: #16a34a; font-weight: 700; }
+.notify-status.denied { color: #ef4444; font-weight: 700; }
+
+/* ===== Daily missions widget ===== */
+.missions-widget {
+  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+  border: 2px solid #d4af37;
+  border-radius: 14px;
+  padding: 14px;
+  margin: 12px 0 16px;
+  box-shadow: 0 6px 16px rgba(212, 175, 55, 0.15);
+}
+[data-theme="dark"] .missions-widget {
+  background: linear-gradient(135deg, #3e3520 0%, #4a3f25 100%);
+}
+.missions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 800;
+  font-size: 14px;
+  color: #5a3a00;
+  margin-bottom: 10px;
+}
+[data-theme="dark"] .missions-header { color: #ffd700; }
+.missions-bonus {
+  font-size: 11px;
+  background: #d4af37;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 100px;
+  font-weight: 700;
+}
+.missions-list { display: flex; flex-direction: column; gap: 6px; }
+.mission-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.6);
+  border-radius: 8px;
+  color: #5a3a00;
+}
+[data-theme="dark"] .mission-item {
+  background: rgba(0,0,0,0.25);
+  color: var(--text);
+}
+.mission-item.done {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+.mission-coin {
+  font-weight: 800;
+  color: #b71c1c;
+}
+[data-theme="dark"] .mission-coin { color: #ff8a65; }
+.mission-item.done .mission-coin::before { content: '✓ '; color: #16a34a; text-decoration: none; }
+
 /* ===== Subscription Card ===== */
 .subscription-card {
   margin-top: 24px;

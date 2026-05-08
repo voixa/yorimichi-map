@@ -278,6 +278,48 @@ def checkout():
         return jsonify({"error": "server_error"}), 500
 
 
+# ----- エラー収集（軽量・PII保護） -----
+# 個人情報を保存しないため、user_id 以外は受け取らない設計
+@app.route("/api/errors", methods=["POST"])
+def report_error():
+    """フロントの未処理エラーをサーバー側ログに残す"""
+    data = request.get_json(silent=True) or {}
+    user_id = (data.get("user_id") or "anon")[:64]
+    msg = (data.get("message") or "")[:500]
+    src = (data.get("source") or "")[:200]
+    line = data.get("line")
+    col = data.get("col")
+    stack = (data.get("stack") or "")[:2000]
+    ua = (request.headers.get("user-agent") or "")[:200]
+    logger.error(
+        "client_error user=%s ua=%r msg=%r src=%r line=%s col=%s stack=%r",
+        user_id, ua, msg, src, line, col, stack
+    )
+    return jsonify({"ok": True}), 200
+
+
+# ----- コース評価 -----
+@app.route("/api/course-rating", methods=["POST"])
+def course_rating():
+    """完走後のユーザー評価（1-5）と任意コメント"""
+    data = request.get_json(silent=True) or {}
+    user_id = (data.get("user_id") or "anon")[:64]
+    course_id = (data.get("course_id") or "")[:80]
+    try:
+        rating = int(data.get("rating") or 0)
+    except Exception:
+        rating = 0
+    if not (1 <= rating <= 5):
+        return jsonify({"error": "invalid_rating"}), 400
+    comment = (data.get("comment") or "")[:500]
+    duration = data.get("duration_min")
+    logger.info(
+        "rating user=%s course=%s rating=%d comment=%r dur=%s",
+        user_id, course_id, rating, comment, duration
+    )
+    return jsonify({"ok": True}), 200
+
+
 @app.route("/api/subscribe", methods=["POST"])
 def subscribe():
     """月額サブスク用 Checkout Session を作成"""
