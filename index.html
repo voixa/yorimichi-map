@@ -887,9 +887,14 @@
               <span>もう一回</span>
             </button>
           </div>
-          <button class="btn-result-share" id="result-share" type="button">
-            <span>📤</span><span>このコースをシェア</span>
-          </button>
+          <div class="result-share-row">
+            <div class="result-share-label">📤 引いたコースをシェア</div>
+            <div class="result-share-buttons">
+              <button class="btn-share-x" id="result-share-x" type="button">𝕏 で投稿</button>
+              <button class="btn-share-line" id="result-share-line" type="button">LINEで送る</button>
+              <button class="btn-share-copy" id="result-share-copy" type="button">🔗 URL</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1226,6 +1231,7 @@
     <div class="walk-hud-actions">
       <button class="walk-hud-btn" id="walk-hud-voice" type="button" aria-label="音声ナビ切替">🔊</button>
       <button class="walk-hud-btn" id="walk-hud-photo" type="button" aria-label="写真を撮る">📸</button>
+      <button class="walk-hud-btn" id="walk-hud-share" type="button" aria-label="このコースをシェア">📤</button>
       <button class="walk-hud-btn" id="walk-hud-checkin" type="button" aria-label="手動チェックイン">✓</button>
       <button class="walk-hud-btn" id="walk-hud-pause" type="button" aria-label="一時停止">⏸</button>
       <button class="walk-hud-btn walk-hud-end" id="walk-hud-end" type="button" aria-label="ウォーク終了">⏹</button>

@@ -5956,21 +5956,141 @@ body:has(.walk-hud:not([hidden])) .leaflet-bottom.leaflet-right {
 .cert-actions {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 6px;
+  gap: 8px;
+  margin-top: 12px;
 }
 .cert-actions button {
-  padding: 10px;
+  padding: 14px 8px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform var(--t-fast), box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.cert-actions button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+}
+.cert-actions button:active { transform: scale(0.96); }
+.btn-share-x { background: #000; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
+.btn-share-line { background: #06c755; color: white; box-shadow: 0 4px 12px rgba(6, 199, 85, 0.3); }
+.btn-share-copy { background: var(--surface-2); color: var(--text); border: 1.5px solid var(--border); }
+
+/* ===== Share sheet (universal) ===== */
+.share-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 9500;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: ssOverlayIn 0.2s ease-out;
+}
+@keyframes ssOverlayIn { from { opacity: 0; } to { opacity: 1; } }
+.share-sheet {
+  background: var(--surface);
+  width: 100%;
+  max-width: 420px;
+  border-radius: 20px 20px 0 0;
+  padding: 12px 20px 24px;
+  box-shadow: 0 -8px 32px rgba(0,0,0,0.3);
+  animation: ssIn 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes ssIn {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.share-sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 100px;
+  margin: 0 auto 12px;
+}
+.share-sheet-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 6px;
+  text-align: center;
+}
+.share-sheet-course {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+.share-sheet-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.share-sheet-btn {
+  width: 100%;
+  padding: 14px;
+  border: 0;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+.share-sheet-btn:active { transform: scale(0.97); }
+.share-sheet-btn.share-x { background: #000; color: white; }
+.share-sheet-btn.share-line { background: #06c755; color: white; }
+.share-sheet-btn.share-copy { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+.share-sheet-btn.share-native { background: var(--brand); color: white; }
+.share-sheet-close {
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ===== Gacha result share row (3 buttons) ===== */
+.result-share-row {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.result-share-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 8px;
+}
+.result-share-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+.result-share-buttons button {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 6px;
   font-weight: 700;
   font-size: 12px;
   cursor: pointer;
-  transition: transform var(--t-fast);
+  font-family: inherit;
+  transition: transform 0.12s, box-shadow 0.12s;
+  -webkit-tap-highlight-color: transparent;
 }
-.cert-actions button:hover { transform: translateY(-1px); }
-.btn-share-x { background: #000; color: white; }
-.btn-share-line { background: #06c755; color: white; }
-.btn-share-copy { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+.result-share-buttons button:active { transform: scale(0.96); }
+.result-share-buttons button:hover { transform: translateY(-1px); }
+.result-share-buttons .btn-share-x { background: #000; color: white; }
+.result-share-buttons .btn-share-line { background: #06c755; color: white; }
+.result-share-buttons .btn-share-copy { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
 
 .btn-cert-download {
   width: 100%;

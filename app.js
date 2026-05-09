@@ -3110,7 +3110,39 @@
       showStage('select');
     };
 
-    // Share result（curated course はディープリンクで共有）
+    // Share result: X / LINE / Copy の3ボタン
+    const buildText = () => route.isCurated ? buildCourseShareText(route) : (route.title + ' を引いた！\n' + location.origin);
+    const buildUrl = () => route.isCurated && route.id ? getCourseShareUrl(route.id) : location.origin;
+
+    const shareXBtn = $('#result-share-x');
+    if (shareXBtn) {
+      shareXBtn.onclick = () => {
+        const text = buildText();
+        const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+        window.open(url, '_blank', 'noopener');
+      };
+    }
+    const shareLineBtn = $('#result-share-line');
+    if (shareLineBtn) {
+      shareLineBtn.onclick = () => {
+        const text = buildText();
+        const url = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`;
+        window.open(url, '_blank', 'noopener');
+      };
+    }
+    const shareCopyBtn = $('#result-share-copy');
+    if (shareCopyBtn) {
+      shareCopyBtn.onclick = async () => {
+        const text = buildText() + '\n' + buildUrl();
+        try {
+          await navigator.clipboard.writeText(text);
+          showToast('🔗 リンク・テキストをコピーしました', 'success', 2500);
+        } catch {
+          showToast('コピーできませんでした', 'error', 2500);
+        }
+      };
+    }
+    // Backward compat: 旧 #result-share
     const shareBtn = $('#result-share');
     if (shareBtn) {
       shareBtn.onclick = () => {
@@ -4110,6 +4142,53 @@ ${trkPts}
     const name = tField(course, 'name');
     const meta = `${course.areaIcon || ''} ${tField(course, 'areaName')} ・ 約${course.estimatedMin}分`;
     return `🎰「${name}」を引いた！\n${meta}\n\n一緒に歩こう👣\n${url}\n\n#街歩きガチャ`;
+  }
+
+  // 統一シェアシート: X / LINE / Copy / システム共有 を出す軽量モーダル
+  function showShareSheet(course) {
+    if (document.querySelector('.share-sheet-overlay')) return;
+    const text = buildCourseShareText(course);
+    const url = getCourseShareUrl(course.id);
+    const overlay = document.createElement('div');
+    overlay.className = 'share-sheet-overlay';
+    overlay.innerHTML = `
+      <div class="share-sheet">
+        <div class="share-sheet-handle"></div>
+        <div class="share-sheet-title">📤 このコースをシェア</div>
+        <div class="share-sheet-course">${escapeHtml(tField(course, 'name'))}</div>
+        <div class="share-sheet-buttons">
+          <button class="share-sheet-btn share-x" data-action="x">𝕏 で投稿</button>
+          <button class="share-sheet-btn share-line" data-action="line">LINEで送る</button>
+          <button class="share-sheet-btn share-copy" data-action="copy">🔗 リンクコピー</button>
+          ${navigator.share ? '<button class="share-sheet-btn share-native" data-action="native">📱 他のアプリで共有</button>' : ''}
+        </div>
+        <button class="share-sheet-close" data-action="close">閉じる</button>
+      </div>
+    `;
+    overlay.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button');
+      const action = btn?.dataset.action;
+      if (!action && e.target !== overlay) return;
+      if (action === 'x') {
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+      } else if (action === 'line') {
+        window.open(`https://line.me/R/msg/text/?${encodeURIComponent(text)}`, '_blank', 'noopener');
+      } else if (action === 'copy') {
+        try {
+          await navigator.clipboard.writeText(text + '\n' + url);
+          showToast('🔗 コピーしました', 'success', 2500);
+        } catch {
+          showToast('コピーできませんでした', 'error', 2500);
+        }
+      } else if (action === 'native' && navigator.share) {
+        try {
+          await navigator.share({ title: tField(course, 'name'), text, url });
+        } catch {}
+      }
+      // すべて閉じる
+      overlay.remove();
+    });
+    document.body.appendChild(overlay);
   }
 
   async function shareCourseImmediate(course) {
@@ -8009,6 +8088,19 @@ ${hashtag}`;
     if (hudPhoto) hudPhoto.addEventListener('click', () => {
       // Phase 2 で実装。今はファイル選択にフォールバック
       capturePhotoForCurrentStop();
+    });
+
+    // Walk中シェアボタン
+    const hudShare = $('#walk-hud-share');
+    if (hudShare) hudShare.addEventListener('click', () => {
+      if (!state.activeWalk) return;
+      const courseId = state.activeWalk.courseId;
+      const course = (window.YORIMICHI_COURSES || []).find(c => c.id === courseId);
+      if (!course) {
+        showToast('シェアできるコース情報がありません', 'info', 2500);
+        return;
+      }
+      showShareSheet(course);
     });
     const voiceBtn = $('#walk-voice-toggle');
     if (voiceBtn) {
