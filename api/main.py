@@ -702,6 +702,100 @@ def spot_guide():
         return jsonify({"error": "server_error"}), 502
 
 
+@app.route("/api/pre-walk-briefing", methods=["POST"])
+def pre_walk_briefing():
+    """コース・天気・時間帯から、出発前のひとことアドバイスを生成"""
+    if not gemini_client:
+        return jsonify({"error": "ai_disabled"}), 503
+    data = request.get_json(silent=True) or {}
+    course_name = (data.get("course_name") or "").strip()[:80]
+    area = (data.get("area") or "").strip()[:40]
+    estimated_min = int(data.get("estimated_min") or 0)
+    stops = data.get("stops") or []
+    if not isinstance(stops, list):
+        stops = []
+    stops = [str(s)[:60] for s in stops][:8]
+    weather_code = data.get("weather_code")
+    temp = data.get("temp")
+    hour = int(data.get("hour") or 12)
+
+    if not course_name or not stops:
+        return jsonify({"error": "insufficient_input"}), 400
+
+    # 時間帯
+    if hour < 5: time_hint = "深夜"
+    elif hour < 9: time_hint = "早朝"
+    elif hour < 12: time_hint = "午前中"
+    elif hour < 15: time_hint = "昼下がり"
+    elif hour < 18: time_hint = "夕方"
+    else: time_hint = "夜"
+
+    # 天気
+    weather_hint = ""
+    if isinstance(weather_code, int):
+        if weather_code == 0: weather_hint = "快晴"
+        elif 1 <= weather_code <= 3: weather_hint = "曇り"
+        elif 51 <= weather_code <= 67: weather_hint = "雨"
+        elif 71 <= weather_code <= 77: weather_hint = "雪"
+    temp_hint = ""
+    if isinstance(temp, (int, float)):
+        temp_hint = f"気温{int(temp)}度"
+
+    prompt = (
+        "あなたは散歩のガイド。これから散歩に出る人に、出発前の短いアドバイスを書きます。\n"
+        "\n"
+        f"【コース情報】\n"
+        f"- コース名: {course_name}\n"
+        f"- エリア: {area}\n"
+        f"- 所要時間: 約{estimated_min}分\n"
+        f"- 訪問予定: {' → '.join(stops[:5])}\n"
+        f"- 天気: {weather_hint or '不明'} {temp_hint}\n"
+        f"- 出発時刻: {time_hint}\n"
+        "\n"
+        "【出力】60-100字の出発前ブリーフィング。以下を盛り込む：\n"
+        "1. 天気・気温に応じた服装/持ち物の助言（例：軽い羽織り、傘、水分）\n"
+        "2. 最初に向かうスポットの楽しみ方ヒント（一般論で固有名詞の創作はしない）\n"
+        "3. ポジティブで簡潔な励まし\n"
+        "\n"
+        "【ルール】\n"
+        "- 訪問予定のスポット名は最初の1件だけそのまま使ってOK\n"
+        "- 入力にない事実・固有名詞は書かない（実在しない歴史背景、店舗情報など）\n"
+        "- 「〜です・ます」調で親しみやすく\n"
+        "- 商標・著名人・ジブリ・ポケモン等は使わない\n"
+        "\n"
+        'JSON: {"briefing": "..."}'
+    )
+    try:
+        config_kwargs = dict(
+            temperature=0.7,
+            max_output_tokens=1024,
+            response_mime_type="application/json",
+            response_schema=genai_types.Schema(
+                type=genai_types.Type.OBJECT,
+                required=["briefing"],
+                properties={"briefing": genai_types.Schema(type=genai_types.Type.STRING)},
+            ),
+        )
+        try:
+            config_kwargs["thinking_config"] = genai_types.ThinkingConfig(thinking_budget=0)
+        except Exception:
+            pass
+        config = genai_types.GenerateContentConfig(**config_kwargs)
+        response = gemini_client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=config,
+        )
+        text = (response.text or "").strip()
+        if not text:
+            return jsonify({"error": "empty"}), 502
+        result = json.loads(text)
+        return jsonify({"briefing": str(result.get("briefing", ""))[:200]})
+    except Exception as e:
+        logger.exception("pre_walk_briefing failed")
+        return jsonify({"error": "server_error"}), 502
+
+
 @app.route("/api/describe-photo", methods=["POST"])
 def describe_photo():
     """ユーザーが撮影した写真を Gemini が一文で描写する。"""

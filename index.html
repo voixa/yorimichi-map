@@ -291,6 +291,21 @@
         <!-- ====== ホームタブ（再編：優先度順） ====== -->
         <div class="tab-panel" data-tab-panel="home">
 
+        <!-- 📅 今日のサマリーカード（経験者向け・最上部・welcome-card と排他） -->
+        <section class="today-summary" id="today-summary" hidden>
+          <div class="today-summary-header">
+            <span class="today-summary-icon" id="today-summary-icon">🌤</span>
+            <div>
+              <div class="today-summary-label">今日のあなた</div>
+              <div class="today-summary-greeting" id="today-summary-greeting">—</div>
+            </div>
+            <div class="today-summary-streak" id="today-summary-streak" hidden>🔥 0</div>
+          </div>
+          <div class="today-summary-grid" id="today-summary-grid">
+            <!-- populated by JS -->
+          </div>
+        </section>
+
         <!-- 🆕 初回ユーザー向けウェルカムカード（完走0回時のみ） -->
         <section class="welcome-card" id="welcome-card" hidden>
           <div class="welcome-emoji">🥚</div>

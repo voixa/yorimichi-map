@@ -2159,31 +2159,74 @@
   }
 
   function loadStreak() {
+    let freezesAvail = 0; // 月の使えるフリーズ残数（最大2）
+    let freezesUsedThisMonth = 0;
+    let lastMonth = '';
+    let usedFreezeToday = false;
     try {
       const raw = localStorage.getItem('yorimichi-streak');
       if (raw) {
         const s = JSON.parse(raw);
         state.loginStreak = s.streak || 0;
         state.lastLoginDate = s.lastDate || '';
+        freezesUsedThisMonth = s.freezesUsedThisMonth || 0;
+        lastMonth = s.lastMonth || '';
       }
     } catch (e) {}
     const today = getResetDate();
-    if (state.lastLoginDate === today) return; // already counted today
-    // Compute yesterday
+    const thisMonth = today.slice(0, 7);
+    // 月が変わったらフリーズリセット
+    if (lastMonth !== thisMonth) {
+      freezesUsedThisMonth = 0;
+    }
+    freezesAvail = Math.max(0, 2 - freezesUsedThisMonth);
+    state.streakFreezesAvail = freezesAvail;
+
+    if (state.lastLoginDate === today) {
+      // 今日すでにカウント済み
+      try {
+        localStorage.setItem('yorimichi-streak', JSON.stringify({
+          streak: state.loginStreak, lastDate: today,
+          freezesUsedThisMonth, lastMonth: thisMonth,
+        }));
+      } catch {}
+      return;
+    }
+    // 連続判定: 直前の lastLoginDate からの日数を計算
     const t = new Date(today + 'T00:00:00');
-    t.setDate(t.getDate() - 1);
-    const yesterday = t.toISOString().slice(0, 10);
-    if (state.lastLoginDate === yesterday) {
+    let daysSince = -1;
+    if (state.lastLoginDate) {
+      const last = new Date(state.lastLoginDate + 'T00:00:00');
+      daysSince = Math.round((t - last) / (1000 * 60 * 60 * 24));
+    }
+    if (daysSince === 1) {
+      // 連続 OK
       state.loginStreak += 1;
+    } else if (daysSince === 2 && freezesAvail >= 1) {
+      // 1日空けたが、フリーズで救済
+      state.loginStreak += 1;
+      freezesUsedThisMonth += 1;
+      usedFreezeToday = true;
+      setTimeout(() => {
+        showToast(`❄️ ストリーク保護で連続記録を維持しました（残り${2 - freezesUsedThisMonth}/月）`, 'success', 4500);
+      }, 1500);
     } else if (state.lastLoginDate) {
+      // 途絶
       state.loginStreak = 1;
     } else {
       state.loginStreak = 1;
     }
     state.lastLoginDate = today;
     try {
-      localStorage.setItem('yorimichi-streak', JSON.stringify({ streak: state.loginStreak, lastDate: today }));
+      localStorage.setItem('yorimichi-streak', JSON.stringify({
+        streak: state.loginStreak,
+        lastDate: today,
+        freezesUsedThisMonth,
+        lastMonth: thisMonth,
+      }));
     } catch (e) {}
+    state.streakFreezesAvail = Math.max(0, 2 - freezesUsedThisMonth);
+    state.usedStreakFreezeToday = usedFreezeToday;
   }
 
   function loadCompletion() {
@@ -3332,6 +3375,18 @@
     updateCompareBadge();
     fitToEndpoints();
     saveStateToHash();
+
+    // 🌤 出発前ブリーフィング（curated コースのみ・非同期）
+    if (route.isCurated && route.courseId) {
+      const course = (window.YORIMICHI_COURSES || []).find(c => c.id === route.courseId);
+      if (course) {
+        showPreWalkBriefingBanner('loading', course);
+        fetchPreWalkBriefing(course).then(briefing => {
+          if (briefing) showPreWalkBriefingBanner(briefing, course);
+          else hidePreWalkBriefingBanner();
+        }).catch(() => hidePreWalkBriefingBanner());
+      }
+    }
 
     // 🚶 ルート適用後は「歩き始める」へ自動誘導（全ユーザー対象）
     setTimeout(() => {
@@ -5383,6 +5438,73 @@ ${trkPts}
     </svg>`;
   }
 
+  // 📅 今日のサマリーカード（経験者ホーム上部）
+  function renderTodaySummary() {
+    const card = $('#today-summary');
+    if (!card) return;
+    // 完走0回ならウェルカムカードに任せる
+    if (state.completedCourses.size === 0) { card.hidden = true; return; }
+    const today = getResetDate();
+    const history = state.walkHistory || [];
+    const todayWalks = history.filter(h => h.date === today);
+    const todayCompleted = todayWalks.filter(h => h.completed).length;
+    // 今週（直近7日）
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    const weekWalks = history.filter(h => (h.date || '') >= cutoffStr);
+    const weekCount = weekWalks.length;
+    // 時間帯ベースの挨拶
+    const hour = (new Date()).getHours();
+    let greeting, icon;
+    if (hour < 5) { greeting = '深夜のさんぽも乙ですね'; icon = '🌙'; }
+    else if (hour < 9) { greeting = 'おはようございます！'; icon = '☀️'; }
+    else if (hour < 12) { greeting = '今日はどこを歩きますか？'; icon = '🌤'; }
+    else if (hour < 15) { greeting = '昼下がりの散歩はいかが？'; icon = '🌞'; }
+    else if (hour < 18) { greeting = '夕暮れ前のひととき'; icon = '🌅'; }
+    else if (hour < 21) { greeting = '今日もおつかれさまでした'; icon = '🌆'; }
+    else { greeting = '夜の街を散歩しませんか？'; icon = '🌃'; }
+
+    // 動的グリッド
+    const items = [];
+    if (todayCompleted > 0) {
+      items.push({ num: todayCompleted, label: '今日の完走', cls: 'highlight' });
+    } else if (todayWalks.length > 0) {
+      items.push({ num: todayWalks.length, label: '今日の進行中', cls: 'highlight' });
+    } else {
+      items.push({ num: '—', label: '今日まだ歩いていません', cls: 'muted' });
+    }
+    items.push({ num: weekCount, label: '直近7日', cls: '' });
+    // 累計時間
+    const totalMin = parseInt(localStorage.getItem('yorimichi-total-walk-min') || '0', 10) || 0;
+    const hStr = totalMin >= 60 ? `${Math.floor(totalMin / 60)}h` : `${totalMin}m`;
+    items.push({ num: hStr, label: '累計時間', cls: '' });
+
+    $('#today-summary-icon').textContent = icon;
+    $('#today-summary-greeting').textContent = greeting;
+    const streakEl = $('#today-summary-streak');
+    if (streakEl) {
+      if (state.loginStreak >= 2) {
+        const freezes = state.streakFreezesAvail || 0;
+        const freezeIcon = freezes > 0 ? ` ❄️${freezes}` : '';
+        streakEl.textContent = `🔥 ${state.loginStreak}日連続${freezeIcon}`;
+        streakEl.title = `ストリーク保護: 月${freezes}回利用可能`;
+        streakEl.hidden = false;
+      } else {
+        streakEl.hidden = true;
+      }
+    }
+    const grid = $('#today-summary-grid');
+    if (grid) {
+      grid.innerHTML = items.map(it => `
+        <div class="today-summary-cell ${it.cls}">
+          <div class="today-summary-num">${escapeHtml(String(it.num))}</div>
+          <div class="today-summary-label-sm">${escapeHtml(it.label)}</div>
+        </div>
+      `).join('');
+    }
+    card.hidden = false;
+  }
+
   function renderFeaturedCard() {
     const card = $('#featured-card');
     if (!card) return;
@@ -6713,6 +6835,7 @@ ${trkPts}
     try { renderDailyTip(); } catch {}
     try { setupDailyTipButton(); } catch {}
     try { renderFeaturedCard(); } catch {}
+    try { renderTodaySummary(); } catch {}
     try { renderStatusBar(); } catch {}
     // 📍 GPS取得後に近場コースを推薦（非同期、失敗しても無視）
     setTimeout(() => { renderNearbyBanner().catch(() => {}); }, 1500);
@@ -6803,6 +6926,7 @@ ${trkPts}
       try { localStorage.setItem(MAIN_TAB_KEY, name); } catch {}
       // タブ切替時に該当タブの内容を更新
       if (name === 'home') {
+        try { renderTodaySummary(); } catch {}
         try { renderWelcomeCard(); } catch {}
         try { renderStreakBadge(); } catch {}
         try { renderFeaturedCard(); } catch {}
@@ -9115,6 +9239,87 @@ ${route.themeIcon} ${route.themeName} ・ ${route.stops.length}スポット ・ 
       const x = picker.querySelector('[data-share="x"]');
       if (x) x.focus();
     }, 50);
+  }
+
+  // 🌤 出発前ブリーフィングのバナー表示
+  function showPreWalkBriefingBanner(briefing, course) {
+    let bar = document.getElementById('pre-walk-briefing');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'pre-walk-briefing';
+      bar.className = 'pre-walk-briefing';
+      // summary-section の直前に挿入
+      const ss = document.getElementById('summary-section');
+      if (ss && ss.parentNode) {
+        ss.parentNode.insertBefore(bar, ss);
+      } else {
+        document.body.appendChild(bar);
+      }
+    }
+    if (briefing === 'loading') {
+      bar.innerHTML = `
+        <div class="pwb-icon">🌤</div>
+        <div class="pwb-body">
+          <div class="pwb-label">AI が出発前のアドバイスを準備中...</div>
+          <div class="pwb-text loading-shimmer">考え中...</div>
+        </div>
+      `;
+    } else {
+      bar.innerHTML = `
+        <div class="pwb-icon">🌤</div>
+        <div class="pwb-body">
+          <div class="pwb-label">出発前のひとことアドバイス</div>
+          <div class="pwb-text">${escapeHtml(briefing)}</div>
+        </div>
+        <button class="pwb-close" type="button" aria-label="閉じる">✕</button>
+      `;
+      bar.querySelector('.pwb-close').addEventListener('click', () => {
+        hidePreWalkBriefingBanner();
+      });
+    }
+    bar.hidden = false;
+  }
+  function hidePreWalkBriefingBanner() {
+    const bar = document.getElementById('pre-walk-briefing');
+    if (bar) bar.hidden = true;
+  }
+
+  // 🌤 出発前ブリーフィング取得
+  async function fetchPreWalkBriefing(course) {
+    if (!course || !course.stops) return null;
+    let weatherCode = null, temp = null;
+    try {
+      const w = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY) || 'null');
+      if (w && Date.now() - w.fetchedAt < WEATHER_CACHE_TTL_MS) {
+        weatherCode = w.code;
+        temp = w.temp;
+      }
+    } catch {}
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);
+      const res = await fetch(`${API_BASE}/api/pre-walk-briefing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          course_name: tField(course, 'name'),
+          area: tField(course, 'areaName'),
+          estimated_min: course.estimatedMin || 0,
+          stops: course.stops.map(s => s.name).filter(Boolean),
+          weather_code: weatherCode,
+          temp,
+          hour: (new Date()).getHours(),
+        }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data?.briefing || null;
+    } catch (e) {
+      console.warn('pre-walk briefing fetch failed', e);
+      return null;
+    }
   }
 
   async function fetchWalkReport(course, durationMin, photosTaken) {

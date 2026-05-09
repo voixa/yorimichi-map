@@ -6250,6 +6250,159 @@ body.map-fullscreen #map-container {
 .status-tip-btn:hover { background: var(--surface); }
 
 /* ===== Featured card (merged reco + today-pick) ===== */
+/* 🌤 Pre-walk briefing banner (after applying course) */
+.pre-walk-briefing {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: linear-gradient(135deg, #e0f2fe 0%, #ddd6fe 100%);
+  border-left: 4px solid #6c63ff;
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin: 8px 0 12px;
+  position: relative;
+}
+[data-theme="dark"] .pre-walk-briefing {
+  background: linear-gradient(135deg, rgba(108, 99, 255, 0.15) 0%, rgba(168, 85, 247, 0.12) 100%);
+}
+.pre-walk-briefing[hidden] { display: none; }
+.pwb-icon {
+  font-size: 22px;
+  width: 36px;
+  height: 36px;
+  background: white;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  box-shadow: 0 3px 8px rgba(108, 99, 255, 0.2);
+}
+[data-theme="dark"] .pwb-icon { background: rgba(255,255,255,0.1); }
+.pwb-body { flex: 1; min-width: 0; }
+.pwb-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: #6c63ff;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+[data-theme="dark"] .pwb-label { color: #a5b4fc; }
+.pwb-text {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.6;
+  font-family: "Hiragino Mincho ProN", serif;
+}
+.pwb-text.loading-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(108, 99, 255, 0.3), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.pwb-close {
+  background: none;
+  border: 0;
+  font-size: 16px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+/* 📅 Today summary card (returning user, top of home) */
+.today-summary {
+  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+  border-radius: 18px;
+  padding: 14px 16px;
+  margin: 8px 0 12px;
+  box-shadow: 0 6px 18px rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+[data-theme="dark"] .today-summary {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.06) 100%);
+  border-color: rgba(212, 175, 55, 0.25);
+}
+.today-summary-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.today-summary-icon {
+  font-size: 32px;
+  width: 48px;
+  height: 48px;
+  background: white;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+}
+[data-theme="dark"] .today-summary-icon { background: rgba(255,255,255,0.1); }
+.today-summary-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: #5a3a00;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+[data-theme="dark"] .today-summary-label { color: #ffe082; }
+.today-summary-greeting {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  margin-top: 2px;
+}
+.today-summary-streak {
+  background: linear-gradient(135deg, #ff7e3d, #ff4081);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 4px 10px rgba(255, 64, 129, 0.3);
+}
+.today-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.today-summary-cell {
+  background: rgba(255,255,255,0.65);
+  border-radius: 12px;
+  padding: 10px 6px;
+  text-align: center;
+}
+[data-theme="dark"] .today-summary-cell { background: rgba(255,255,255,0.05); }
+.today-summary-cell.highlight {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: white;
+}
+.today-summary-cell.muted { opacity: 0.7; }
+.today-summary-num {
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.2;
+  color: var(--text);
+}
+.today-summary-cell.highlight .today-summary-num { color: white; }
+.today-summary-cell.muted .today-summary-num { font-size: 14px; color: var(--text-muted); }
+.today-summary-label-sm {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-top: 2px;
+}
+.today-summary-cell.highlight .today-summary-label-sm { color: rgba(255,255,255,0.9); }
+
 /* 📍 Nearby banner (GPS-based) */
 .nearby-banner {
   background: linear-gradient(135deg, #1976d2 0%, #00897b 100%);
