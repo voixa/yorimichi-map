@@ -314,6 +314,12 @@
           </button>
         </section>
 
+        <!-- 🔥 連続記録バッジ（ある時だけ目立つ） -->
+        <section class="streak-badge" id="streak-badge-home" hidden>
+          <span class="streak-flame">🔥</span>
+          <span class="streak-text" id="streak-text-home">—</span>
+        </section>
+
         <!-- 🆕 統合ステータスバー（天気・Tip・ライブを1行に） -->
         <section class="status-bar" id="status-bar" hidden>
           <span class="status-item" id="status-weather" hidden>
@@ -418,10 +424,19 @@
         </section>
 
         <!-- Mode tabs + 説明 -->
-        <div class="mode-tabs three" role="tablist" aria-label="モード">
-          <button class="mode-tab active" id="tab-course" role="tab" aria-selected="true" type="button">📖 既存コース</button>
-          <button class="mode-tab" id="tab-route" role="tab" aria-selected="false" type="button">🎯 自由ルート</button>
-          <button class="mode-tab" id="tab-stroll" role="tab" aria-selected="false" type="button">🌿 散歩</button>
+        <div class="mode-tabs three v2" role="tablist" aria-label="モード">
+          <button class="mode-tab active" id="tab-course" role="tab" aria-selected="true" type="button">
+            <span class="mode-tab-icon">📖</span>
+            <span class="mode-tab-label">既存</span>
+          </button>
+          <button class="mode-tab" id="tab-route" role="tab" aria-selected="false" type="button">
+            <span class="mode-tab-icon">🎯</span>
+            <span class="mode-tab-label">自由</span>
+          </button>
+          <button class="mode-tab" id="tab-stroll" role="tab" aria-selected="false" type="button">
+            <span class="mode-tab-icon">🌿</span>
+            <span class="mode-tab-label">散歩</span>
+          </button>
         </div>
         <p class="mode-desc" id="mode-desc">📖 キュレーション済みコース21本から運命の一本を引く</p>
 
@@ -594,8 +609,11 @@
           <div class="empty-state" id="empty-state">
             <div class="empty-state-polished">
               <div class="es-icon">🎰</div>
-              <div class="es-title">準備完了</div>
-              <div class="es-desc">出発地と目的地を設定して、ガチャを回すか<br>「寄り道候補を探す」ボタンで候補を見つけましょう。</div>
+              <div class="es-title">まだ候補がありません</div>
+              <div class="es-desc">
+                上の <strong>🎰 ガチャを引く</strong> ボタンから始めるのが一番早い！<br>
+                <small>もしくは「寄り道候補を探す」で個別検索できます。</small>
+              </div>
             </div>
           </div>
         </section>

@@ -448,6 +448,24 @@ kbd {
   box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 0 2px rgba(255, 126, 61, 0.3);
 }
 
+/* v2: emoji大きめ・縦並び */
+.mode-tabs.v2 .mode-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  font-size: 11px;
+}
+.mode-tabs.v2 .mode-tab-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+.mode-tabs.v2 .mode-tab-label {
+  font-size: 12px;
+  font-weight: 700;
+}
+
 /* ---------- Sections ---------- */
 .section-label {
   display: flex;
@@ -4601,6 +4619,19 @@ button:focus-visible,
   white-space: nowrap;
 }
 
+/* マイタブへの誘導アニメ（完走後） */
+.main-tab.me-pulse {
+  animation: mePulse 1.5s ease-in-out 3;
+}
+@keyframes mePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 126, 61, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(255, 126, 61, 0);
+  }
+}
+
 /* ===== Main tabs (top of panel) ===== */
 .main-tabs {
   display: flex;
@@ -4874,6 +4905,36 @@ button:focus-visible,
   font-size: 11px;
   color: var(--text-muted);
   margin: 0;
+}
+
+/* ===== Streak badge ===== */
+.streak-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: linear-gradient(90deg, #ff6b00 0%, #ff9800 100%);
+  border-radius: 100px;
+  margin: 8px 0;
+  color: white;
+  font-weight: 800;
+  font-size: 13px;
+  box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3);
+  animation: streakPulse 2s ease-in-out infinite;
+  width: fit-content;
+}
+@keyframes streakPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+.streak-flame {
+  font-size: 18px;
+  animation: flameJump 1s ease-in-out infinite;
+  display: inline-block;
+}
+@keyframes flameJump {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-2px) rotate(2deg); }
 }
 
 /* ===== Compact status bar (weather + live + tip in 1 row) ===== */
@@ -5305,16 +5366,46 @@ button:focus-visible,
   font-weight: 700;
 }
 .missions-list { display: flex; flex-direction: column; gap: 6px; }
+.missions-progress {
+  background: rgba(255,255,255,0.5);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+[data-theme="dark"] .missions-progress { background: rgba(0,0,0,0.2); }
+.missions-progress-bar {
+  height: 6px;
+  background: rgba(0,0,0,0.08);
+  border-radius: 100px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+[data-theme="dark"] .missions-progress-bar { background: rgba(255,255,255,0.08); }
+.missions-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffd700, #ff9800);
+  transition: width 0.5s ease;
+}
+.missions-progress-text {
+  font-size: 11px;
+  color: #5a3a00;
+  font-weight: 700;
+}
+[data-theme="dark"] .missions-progress-text { color: #ffd54f; }
 .mission-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
   font-size: 13px;
   padding: 8px 10px;
   background: rgba(255,255,255,0.6);
   border-radius: 8px;
   color: #5a3a00;
 }
+.mission-check { font-size: 14px; flex-shrink: 0; }
+.mission-icon { font-size: 18px; flex-shrink: 0; }
+.mission-label { flex: 1; }
+.mission-item.done .mission-label { text-decoration: line-through; opacity: 0.6; }
 [data-theme="dark"] .mission-item {
   background: rgba(0,0,0,0.25);
   color: var(--text);

@@ -3580,6 +3580,20 @@ ${trkPts}
           </div>
         `;
       }
+      // ロック中バッジのプレビュー
+      const lockedCount = badgeDefs.length - earned.length;
+      if (lockedCount > 0) {
+        html += `
+          <div class="me-locked-preview" style="width:100%; margin-top:10px; padding:10px; background:var(--surface-2); border-radius:8px;">
+            <div style="font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:6px;">🔒 残り${lockedCount}個のバッジ</div>
+            <div style="display:flex; gap:4px; flex-wrap:wrap;">
+              ${badgeDefs.filter(b => b.current < b.threshold).slice(0, 6).map(b =>
+                `<span class="me-badge-pill" style="opacity:0.4; filter:grayscale(0.5);" title="${escapeHtml(b.name)} - ${b.current}/${b.threshold}">${escapeHtml(b.name.split(' ')[0])}???</span>`
+              ).join('')}
+            </div>
+          </div>
+        `;
+      }
 
       if (html === '' && s.completed === 0) {
         // 完走0時の励ましメッセージ
@@ -4320,6 +4334,20 @@ ${trkPts}
     setInterval(fetchAndRenderPopularRanking, 5 * 60_000);
   }
 
+  // 連続記録バッジ
+  function renderStreakBadge() {
+    const badge = $('#streak-badge-home');
+    const text = $('#streak-text-home');
+    if (!badge || !text) return;
+    const streak = state.loginStreak || 0;
+    if (streak < 2) {
+      badge.hidden = true;
+      return;
+    }
+    text.textContent = `連続${streak}日 ・ がんばってる！`;
+    badge.hidden = false;
+  }
+
   // 初回ユーザー向けウェルカムカード制御
   function renderWelcomeCard() {
     const card = $('#welcome-card');
@@ -4595,13 +4623,23 @@ ${trkPts}
     if (!widget || !list) return;
     const s = getMissionsState();
     const items = [
-      { key: 'gacha', label: '🎰 ガチャを1回引く', coins: 1, done: !!s.done.gacha },
-      { key: 'walk',  label: '🚶 1スポット完走', coins: 2, done: !!s.done.walk },
-      { key: 'photo', label: '📸 写真を1枚撮影', coins: 1, done: !!s.done.photo },
+      { key: 'gacha', label: 'ガチャを1回引く',   icon: '🎰', coins: 1, done: !!s.done.gacha },
+      { key: 'walk',  label: '1スポット完走',    icon: '🚶', coins: 2, done: !!s.done.walk },
+      { key: 'photo', label: '写真を1枚撮影',    icon: '📸', coins: 1, done: !!s.done.photo },
     ];
-    list.innerHTML = items.map(it => `
+    const doneCount = items.filter(i => i.done).length;
+    const totalCount = items.length;
+    const pct = Math.round((doneCount / totalCount) * 100);
+    list.innerHTML = `
+      <div class="missions-progress">
+        <div class="missions-progress-bar"><div class="missions-progress-fill" style="width: ${pct}%;"></div></div>
+        <div class="missions-progress-text">${doneCount}/${totalCount} 達成 ${doneCount === totalCount ? '🎉' : ''}</div>
+      </div>
+    ` + items.map(it => `
       <div class="mission-item ${it.done ? 'done' : ''}">
-        <span>${it.label}</span>
+        <span class="mission-check">${it.done ? '✅' : '⬜'}</span>
+        <span class="mission-icon">${it.icon}</span>
+        <span class="mission-label">${escapeHtml(it.label)}</span>
         <span class="mission-coin">+${it.coins}🪙</span>
       </div>
     `).join('');
@@ -5639,6 +5677,7 @@ ${trkPts}
       // タブ切替時に該当タブの内容を更新
       if (name === 'home') {
         try { renderWelcomeCard(); } catch {}
+        try { renderStreakBadge(); } catch {}
         try { renderFeaturedCard(); } catch {}
         try { renderMissions(); } catch {}
         try { renderStatusBar(); } catch {}
@@ -6808,6 +6847,14 @@ ${trkPts}
       if (course) setTimeout(() => showRatingModal(course), 6000);
       // 明日のリマインダー提案（通知許可があれば）
       if (course) setTimeout(() => maybeOfferTomorrowReminder(), 9000);
+      // 完走後 7秒でマイタブのバッジ進捗をハイライトしたいユーザーへ示唆
+      setTimeout(() => {
+        const meTab = document.querySelector('.main-tab[data-main-tab="me"]');
+        if (meTab && !meTab.classList.contains('me-pulse')) {
+          meTab.classList.add('me-pulse');
+          setTimeout(() => meTab.classList.remove('me-pulse'), 4500);
+        }
+      }, 7000);
     }, 1500);
   }
 
