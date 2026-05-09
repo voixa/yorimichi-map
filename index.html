@@ -265,7 +265,16 @@
 
       <div class="panel-inner">
 
-        <!-- Active walk resume banner (shown if previous walk was unfinished) -->
+        <!-- 🆕 Main tabs: ホーム / 探す / マイ -->
+        <nav class="main-tabs" role="tablist" aria-label="メインナビゲーション">
+          <button class="main-tab active" data-main-tab="home" role="tab" type="button">🏠 ホーム</button>
+          <button class="main-tab" data-main-tab="discover" role="tab" type="button">🎯 探す</button>
+          <button class="main-tab" data-main-tab="me" role="tab" type="button">👤 マイ</button>
+        </nav>
+
+        <!-- ====== ホームタブ ====== -->
+        <div class="tab-panel" data-tab-panel="home">
+
         <!-- Live counter ticker -->
         <section class="live-counter" id="live-counter" hidden>
           <span class="live-counter-dot"></span>
@@ -385,6 +394,11 @@
             <span class="today-cta">引く</span>
           </button>
         </section>
+
+        </div><!-- /tab-panel home -->
+
+        <!-- ====== 探すタブ ====== -->
+        <div class="tab-panel" data-tab-panel="discover" hidden>
 
         <!-- Mode tabs -->
         <div class="mode-tabs three" role="tablist" aria-label="モード">
@@ -567,6 +581,50 @@
             </div>
           </div>
         </section>
+
+        </div><!-- /tab-panel discover -->
+
+        <!-- ====== マイタブ ====== -->
+        <div class="tab-panel" data-tab-panel="me" hidden>
+          <section class="me-header">
+            <div class="me-avatar" id="me-avatar">🥚</div>
+            <div class="me-title" id="me-title">散歩はじめ</div>
+            <div class="me-level" id="me-level">Lv.1</div>
+          </section>
+
+          <div class="me-stats" id="me-stats">
+            <!-- populated by JS -->
+          </div>
+
+          <div class="me-shortcuts">
+            <button class="me-shortcut" id="ms-profile" type="button">
+              <span class="ms-emoji">👤</span>
+              <span class="ms-label">プロフィール<br><small style="color:var(--text-muted);font-weight:500;">レベル・バッジ</small></span>
+            </button>
+            <button class="me-shortcut" id="ms-walk-log" type="button">
+              <span class="ms-emoji">📜</span>
+              <span class="ms-label">散歩履歴<br><small style="color:var(--text-muted);font-weight:500;">過去の歩き</small></span>
+            </button>
+            <button class="me-shortcut" id="ms-album" type="button">
+              <span class="ms-emoji">📷</span>
+              <span class="ms-label">写真アルバム<br><small style="color:var(--text-muted);font-weight:500;">撮影した写真</small></span>
+            </button>
+            <button class="me-shortcut" id="ms-collection" type="button">
+              <span class="ms-emoji">📖</span>
+              <span class="ms-label">コース図鑑<br><small style="color:var(--text-muted);font-weight:500;">発見済み</small></span>
+            </button>
+            <button class="me-shortcut" id="ms-settings" type="button">
+              <span class="ms-emoji">⚙️</span>
+              <span class="ms-label">設定<br><small style="color:var(--text-muted);font-weight:500;">テーマ・音声</small></span>
+            </button>
+            <button class="me-shortcut" id="ms-help" type="button">
+              <span class="ms-emoji">❓</span>
+              <span class="ms-label">ヘルプ<br><small style="color:var(--text-muted);font-weight:500;">FAQ・お問い合わせ</small></span>
+            </button>
+          </div>
+        </div><!-- /tab-panel me -->
+
+        <!-- ====== 全タブ共通: 進行中の散歩状態 ====== -->
 
         <!-- Selected route summary -->
         <section class="summary-section" id="summary-section" hidden aria-label="選んだコース">

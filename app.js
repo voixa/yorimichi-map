@@ -3459,6 +3459,43 @@ ${trkPts}
     return { totalMin, completed, discovered, totalStamps, mostCourse, mostCourseCount: mostCount, mostArea: mostAreaObj };
   }
 
+  // ===== Me tab render =====
+  function renderMeTab() {
+    const xp = computeXP();
+    const { current } = computeLevel(xp);
+    const avatar = $('#me-avatar');
+    const title = $('#me-title');
+    const level = $('#me-level');
+    if (avatar) avatar.textContent = current.emoji;
+    if (title) title.textContent = current.title;
+    if (level) level.textContent = `Lv.${current.lv} ・ ${xp} XP`;
+
+    const grid = $('#me-stats');
+    if (!grid) return;
+    const s = getLifetimeStats();
+    const hours = Math.floor(s.totalMin / 60);
+    const mins = s.totalMin % 60;
+    const timeLabel = hours > 0 ? `${hours}h${mins > 0 ? ' ' + mins + 'm' : ''}` : `${mins}m`;
+    grid.innerHTML = `
+      <div class="me-stat">
+        <div class="me-stat-num">${s.completed}</div>
+        <div class="me-stat-label">完走コース</div>
+      </div>
+      <div class="me-stat">
+        <div class="me-stat-num">${s.totalStamps}</div>
+        <div class="me-stat-label">獲得スタンプ</div>
+      </div>
+      <div class="me-stat">
+        <div class="me-stat-num">${timeLabel}</div>
+        <div class="me-stat-label">累計散歩時間</div>
+      </div>
+      <div class="me-stat">
+        <div class="me-stat-num">🔥${state.loginStreak || 0}</div>
+        <div class="me-stat-label">連続日数</div>
+      </div>
+    `;
+  }
+
   function renderLifetimeStats() {
     const el = $('#lifetime-stats');
     if (!el) return;
@@ -4152,6 +4189,7 @@ ${trkPts}
           if (course) {
             applyRoute(courseToRoute(course));
             showToast(`✨ 「${tField(course, 'name')}」を地図に設定`, 'success', 3000);
+            document.querySelector('.main-tab[data-main-tab="discover"]')?.click();
           }
         });
       });
@@ -4174,6 +4212,9 @@ ${trkPts}
 
   async function quickStart() {
     try {
+      // 探すタブに切替（DOM経由でclick）
+      const discoverTab = document.querySelector('.main-tab[data-main-tab="discover"]');
+      if (discoverTab) discoverTab.click();
       // Course mode に強制セット
       if (state.mode !== 'course' && typeof setMode === 'function') {
         setMode('course');
@@ -4335,6 +4376,8 @@ ${trkPts}
       card.onclick = () => {
         applyRoute(courseToRoute(reco));
         showToast(`✨ 「${tField(reco, 'name')}」を地図に設定しました`, 'success', 3000);
+        // 探すタブに自動切替（地図 + 歩行ボタンが見える）
+        document.querySelector('.main-tab[data-main-tab="discover"]')?.click();
       };
     }
   }
@@ -5329,6 +5372,50 @@ ${trkPts}
     // Quick Start ボタン
     const quickBtn = $('#quickstart-btn');
     if (quickBtn) quickBtn.addEventListener('click', quickStart);
+
+    // 🆕 メインタブ切替（ホーム / 探す / マイ）
+    const MAIN_TAB_KEY = 'yorimichi-main-tab';
+    function setMainTab(name) {
+      $$('.main-tab').forEach(t => {
+        const isActive = t.dataset.mainTab === name;
+        t.classList.toggle('active', isActive);
+        t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+      $$('.tab-panel').forEach(p => {
+        p.hidden = (p.dataset.tabPanel !== name);
+      });
+      try { localStorage.setItem(MAIN_TAB_KEY, name); } catch {}
+      // タブ切替時に該当タブの内容を更新
+      if (name === 'home') {
+        try { renderRecommendationBanner(); } catch {}
+        try { renderMissions(); } catch {}
+        try { renderWeatherBanner(); } catch {}
+      } else if (name === 'me') {
+        try { renderMeTab(); } catch {}
+      }
+    }
+    $$('.main-tab').forEach(tab => {
+      tab.addEventListener('click', () => setMainTab(tab.dataset.mainTab));
+    });
+    // 起動時の初期タブ復元
+    try {
+      const saved = localStorage.getItem(MAIN_TAB_KEY) || 'home';
+      setMainTab(saved);
+    } catch { setMainTab('home'); }
+
+    // マイタブのショートカット
+    $('#ms-profile')?.addEventListener('click', () => showProfile());
+    $('#ms-walk-log')?.addEventListener('click', () => {
+      renderWalkLog();
+      $('#walk-log-modal').hidden = false;
+    });
+    $('#ms-album')?.addEventListener('click', () => {
+      renderPhotoAlbum();
+      $('#photo-album-modal').hidden = false;
+    });
+    $('#ms-collection')?.addEventListener('click', () => showCollection());
+    $('#ms-settings')?.addEventListener('click', () => openSettingsModal());
+    $('#ms-help')?.addEventListener('click', () => { $('#help-modal').hidden = false; });
 
     // ライブアクティビティ
     try { startLiveActivity(); } catch {}

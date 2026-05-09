@@ -4593,6 +4593,128 @@ button:focus-visible,
   white-space: nowrap;
 }
 
+/* ===== Main tabs (top of panel) ===== */
+.main-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 4px;
+  margin: 8px 0 12px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.main-tab {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  padding: 10px 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.main-tab:hover { color: var(--text); }
+.main-tab.active {
+  background: var(--surface);
+  color: var(--brand);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+[data-theme="dark"] .main-tab.active {
+  background: var(--surface);
+  color: var(--brand);
+}
+.tab-panel { display: block; }
+.tab-panel[hidden] { display: none; }
+
+/* ===== Me tab ===== */
+.me-header {
+  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+  border-radius: 16px;
+  padding: 18px 16px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+[data-theme="dark"] .me-header {
+  background: linear-gradient(135deg, #3e3520 0%, #4a3f25 100%);
+}
+.me-avatar {
+  font-size: 56px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.me-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
+}
+.me-level {
+  display: inline-block;
+  background: linear-gradient(90deg, #ffd700, #ff9800);
+  color: #5a3a00;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 800;
+  margin-top: 4px;
+}
+.me-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.me-stat {
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+}
+.me-stat-num {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--brand);
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.me-stat-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+.me-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.me-shortcut {
+  background: var(--surface-2);
+  border: 0;
+  border-radius: 12px;
+  padding: 14px 10px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.12s, background 0.12s;
+}
+.me-shortcut:hover {
+  background: var(--brand-soft);
+  transform: translateY(-1px);
+}
+.me-shortcut .ms-emoji { font-size: 22px; }
+.me-shortcut .ms-label { line-height: 1.3; }
+
 /* ===== Quick Start Hero (1-tap full flow) ===== */
 .quickstart-hero {
   margin: 8px 0 12px;
