@@ -336,6 +336,16 @@
           <button class="status-tip-btn" id="status-tip-btn" type="button" aria-label="今日のヒント">💡</button>
         </section>
 
+        <!-- 📍 現在地に近いコース（GPS取得後に表示） -->
+        <section class="nearby-banner" id="nearby-banner" hidden>
+          <div class="nearby-header">
+            <span class="nearby-icon">📍</span>
+            <span class="nearby-title">ここから歩けるコース</span>
+            <span class="nearby-meta" id="nearby-meta"></span>
+          </div>
+          <div class="nearby-list" id="nearby-list"></div>
+        </section>
+
         <!-- 🥈 統合おすすめカード（reco + today-pick） -->
         <section class="featured-card" id="featured-card" hidden>
           <div class="featured-label" id="featured-label">✨ 今日のあなた向け</div>
@@ -1033,6 +1043,7 @@
       <button class="modal-close" id="walk-log-close" type="button" aria-label="閉じる">✕</button>
       <h2 class="modal-title">📜 散歩履歴</h2>
       <div class="walk-log-stats" id="walk-log-stats"></div>
+      <div class="walk-calendar" id="walk-calendar"></div>
       <div class="walk-log-list" id="walk-log-list">
         <!-- populated by JS -->
       </div>
@@ -1325,6 +1336,7 @@
           <span class="walk-report-icon">✍️</span>
           <span class="walk-report-label">AIによる今日の振り返り</span>
         </div>
+        <div class="walk-report-haiku" id="walk-report-haiku" hidden></div>
         <div class="walk-report-text" id="walk-report-text">—</div>
       </div>
 

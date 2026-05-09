@@ -3850,10 +3850,101 @@ ${trkPts}
     document.body.appendChild(overlay);
   }
 
+  // 月別アクティビティカレンダー描画（GitHub草スタイル）
+  function renderWalkCalendar() {
+    const cal = $('#walk-calendar');
+    if (!cal) return;
+    const history = state.walkHistory || [];
+    // 日付別にカウント
+    const dateCounts = {};
+    history.forEach(h => {
+      if (!h.date) return;
+      dateCounts[h.date] = (dateCounts[h.date] || 0) + 1;
+    });
+
+    // 直近12週間（84日）を6x14グリッドで表示
+    const today = new Date(getResetDate() + 'T00:00:00');
+    const days = 12 * 7; // 84
+    const cells = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const ymd = d.toISOString().slice(0, 10);
+      const count = dateCounts[ymd] || 0;
+      let lvl = 0;
+      if (count >= 3) lvl = 4;
+      else if (count >= 2) lvl = 3;
+      else if (count >= 1) lvl = 2;
+      const isToday = (ymd === getResetDate());
+      cells.push({ ymd, count, lvl, dow: d.getDay(), isToday, label: `${d.getMonth() + 1}/${d.getDate()}` });
+    }
+
+    // 列ごと（週単位）にレイアウト：cells は古い順、左から12週、各列7日（日〜土）
+    const weeks = [];
+    // 一番古いセルの曜日に応じて先頭をパディング
+    const firstDow = cells[0].dow;
+    const padded = Array(firstDow).fill(null).concat(cells);
+    while (padded.length % 7 !== 0) padded.push(null);
+    for (let i = 0; i < padded.length; i += 7) {
+      weeks.push(padded.slice(i, i + 7));
+    }
+
+    const recentDays = Object.keys(dateCounts).filter(d => {
+      const dt = new Date(d + 'T00:00:00');
+      const diffDays = (today - dt) / (1000 * 60 * 60 * 24);
+      return diffDays <= 84;
+    }).length;
+
+    cal.innerHTML = `
+      <div class="walk-cal-header">
+        <span class="walk-cal-title">📅 直近12週の歩いた日</span>
+        <span class="walk-cal-meta">${recentDays}日 / 84日</span>
+      </div>
+      <div class="walk-cal-grid">
+        ${weeks.map(week => `
+          <div class="walk-cal-col">
+            ${week.map(c => {
+              if (!c) return `<div class="walk-cal-cell empty"></div>`;
+              const cls = `walk-cal-cell lvl-${c.lvl}${c.isToday ? ' today' : ''}`;
+              const title = c.count > 0 ? `${c.label}: ${c.count}件` : `${c.label}: 歩いていない`;
+              return `<div class="${cls}" data-date="${c.ymd}" title="${title}"></div>`;
+            }).join('')}
+          </div>
+        `).join('')}
+      </div>
+      <div class="walk-cal-legend">
+        <span>少</span>
+        <span class="walk-cal-cell lvl-0"></span>
+        <span class="walk-cal-cell lvl-2"></span>
+        <span class="walk-cal-cell lvl-3"></span>
+        <span class="walk-cal-cell lvl-4"></span>
+        <span>多</span>
+      </div>
+    `;
+
+    // セルタップで該当日の履歴をトーストで表示
+    cal.querySelectorAll('.walk-cal-cell[data-date]').forEach(el => {
+      el.addEventListener('click', () => {
+        const ymd = el.getAttribute('data-date');
+        const items = (state.walkHistory || []).filter(h => h.date === ymd);
+        if (items.length === 0) {
+          showToast(`${ymd}: 歩いていません`, 'info', 2200);
+          return;
+        }
+        const names = items.map(h => {
+          const c = (window.YORIMICHI_COURSES || []).find(c => c.id === h.courseId);
+          return c ? tField(c, 'name') : '自由ルート';
+        }).join(' / ');
+        showToast(`${ymd}: ${items.length}件 ・ ${names}`, 'success', 3500);
+      });
+    });
+  }
+
   function renderWalkLog() {
     const list = $('#walk-log-list');
     const stats = $('#walk-log-stats');
     if (!list || !stats) return;
+    renderWalkCalendar();
     const history = (state.walkHistory || []).slice().reverse(); // 新しい順
 
     // 集計
@@ -4709,6 +4800,69 @@ ${trkPts}
       };
     }
     card.hidden = false;
+  }
+
+  // 📍 現在地に近い未完走コースを上位3件、ホームに表示
+  async function renderNearbyBanner() {
+    const banner = $('#nearby-banner');
+    const list = $('#nearby-list');
+    const meta = $('#nearby-meta');
+    if (!banner || !list) return;
+    let userLoc = null;
+    try {
+      userLoc = await getCurrentLocation();
+    } catch {
+      banner.hidden = true;
+      return;
+    }
+    const courses = (window.YORIMICHI_COURSES || []);
+    if (courses.length === 0) { banner.hidden = true; return; }
+
+    const ranked = courses
+      .map(c => {
+        const startLat = c.stops?.[0]?.lat;
+        const startLng = c.stops?.[0]?.lng;
+        if (startLat == null || startLng == null) return null;
+        const km = haversineKm(userLoc, { lat: startLat, lng: startLng });
+        return { course: c, km };
+      })
+      .filter(x => x && x.km <= 5)
+      .sort((a, b) => {
+        // 未完走優先 → 距離が近い順
+        const aDone = state.completedCourses.has(a.course.id) ? 1 : 0;
+        const bDone = state.completedCourses.has(b.course.id) ? 1 : 0;
+        if (aDone !== bDone) return aDone - bDone;
+        return a.km - b.km;
+      })
+      .slice(0, 3);
+
+    if (ranked.length === 0) { banner.hidden = true; return; }
+
+    if (meta) meta.textContent = `${ranked.length}件 / 5km圏内`;
+    list.innerHTML = ranked.map(({ course, km }) => {
+      const distLabel = km < 1 ? `${Math.round(km * 1000)}m` : `${km.toFixed(1)}km`;
+      const done = state.completedCourses.has(course.id);
+      return `
+        <button class="nearby-item${done ? ' nearby-done' : ''}" type="button" data-course-id="${escapeHtml(course.id)}">
+          <span class="nearby-item-emoji">${course.themeIcon || course.areaIcon || '🌳'}</span>
+          <span class="nearby-item-body">
+            <span class="nearby-item-name">${escapeHtml(tField(course, 'name'))}${done ? ' <span class="nearby-done-tag">完走済</span>' : ''}</span>
+            <span class="nearby-item-meta">${course.areaIcon || ''} ${escapeHtml(tField(course, 'areaName'))} ・ 約${course.estimatedMin || '?'}分</span>
+          </span>
+          <span class="nearby-item-dist">📏 ${distLabel}</span>
+        </button>
+      `;
+    }).join('');
+
+    list.querySelectorAll('.nearby-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const cid = el.getAttribute('data-course-id');
+        const c = courses.find(x => x.id === cid);
+        if (c) showCourseDetail(c);
+      });
+    });
+
+    banner.hidden = false;
   }
 
   async function renderWeatherBanner() {
@@ -5808,6 +5962,8 @@ ${trkPts}
     try { setupDailyTipButton(); } catch {}
     try { renderFeaturedCard(); } catch {}
     try { renderStatusBar(); } catch {}
+    // 📍 GPS取得後に近場コースを推薦（非同期、失敗しても無視）
+    setTimeout(() => { renderNearbyBanner().catch(() => {}); }, 1500);
 
     // Quick Start ボタン
     const quickBtn = $('#quickstart-btn');
@@ -7885,7 +8041,13 @@ ${route.themeIcon} ${route.themeName} ・ ${route.stops.length}スポット ・ 
       clearTimeout(timer);
       if (!res.ok) return null;
       const data = await res.json();
-      return data?.report || null;
+      if (!data) return null;
+      // 後方互換: report のみのときも対応
+      return {
+        report: data.report || data.essay || '',
+        haiku: data.haiku || '',
+        essay: data.essay || data.report || '',
+      };
     } catch (e) {
       console.warn('walk report fetch failed', e);
       return null;
@@ -7899,18 +8061,25 @@ ${route.themeIcon} ${route.themeName} ・ ${route.stops.length}スポット ・ 
     // ウォークレポートを非同期生成
     const reportEl = $('#walk-report');
     const reportText = $('#walk-report-text');
+    const haikuEl = $('#walk-report-haiku');
     if (reportEl && reportText) {
       reportEl.hidden = true;
       reportText.textContent = '';
+      if (haikuEl) { haikuEl.hidden = true; haikuEl.textContent = ''; }
       // 撮影写真数 + 開始からの経過時間概算
       const photos = getCoursePhotos(course.id);
       const photosCount = Object.keys(photos).length;
-      fetchWalkReport(course, course.estimatedMin, photosCount).then(report => {
-        if (report) {
-          reportText.textContent = report;
-          reportEl.hidden = false;
-          _lastWalkReport = report;
+      fetchWalkReport(course, course.estimatedMin, photosCount).then(result => {
+        if (!result) return;
+        const haiku = result.haiku || '';
+        const essay = result.essay || result.report || '';
+        if (haikuEl && haiku) {
+          haikuEl.textContent = `《 ${haiku} 》`;
+          haikuEl.hidden = false;
         }
+        reportText.textContent = essay;
+        reportEl.hidden = false;
+        _lastWalkReport = result.report || (haiku ? `《${haiku}》\n\n${essay}` : essay);
       });
     }
 

@@ -4259,6 +4259,64 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
 .wls-num { font-size: 22px; font-weight: 900; color: var(--brand); text-align: center; }
 .wls-label { font-size: 11px; color: var(--text-muted); text-align: center; font-weight: 600; }
 
+/* ===== Walk activity calendar (GitHub-style heatmap) ===== */
+.walk-calendar {
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 14px 12px;
+  margin-bottom: 16px;
+}
+.walk-cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.walk-cal-title { font-size: 12px; font-weight: 800; color: var(--text); }
+.walk-cal-meta { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+.walk-cal-grid {
+  display: flex;
+  gap: 3px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.walk-cal-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.walk-cal-cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: rgba(0,0,0,0.06);
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+.walk-cal-cell:hover { transform: scale(1.4); }
+.walk-cal-cell.empty { visibility: hidden; cursor: default; }
+.walk-cal-cell.lvl-0 { background: rgba(0,0,0,0.06); }
+.walk-cal-cell.lvl-2 { background: #ffd591; }
+.walk-cal-cell.lvl-3 { background: #ff9f5b; }
+.walk-cal-cell.lvl-4 { background: #ff7e3d; }
+.walk-cal-cell.today {
+  outline: 2px solid #ff4081;
+  outline-offset: 1px;
+}
+[data-theme="dark"] .walk-cal-cell.lvl-0 { background: rgba(255,255,255,0.08); }
+.walk-cal-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 10px;
+  color: var(--text-muted);
+  justify-content: flex-end;
+}
+.walk-cal-legend .walk-cal-cell { cursor: default; }
+.walk-cal-legend .walk-cal-cell:hover { transform: none; }
+
 .walk-log-list {
   max-height: 50vh;
   overflow-y: auto;
@@ -4670,6 +4728,25 @@ button:focus-visible,
   letter-spacing: 0.05em;
 }
 .walk-report-icon { font-size: 16px; }
+.walk-report-haiku {
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", serif;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: 0.08em;
+  color: #4a3b00;
+  background: linear-gradient(180deg, rgba(255,243,196,0.6), rgba(255,232,148,0.4));
+  border-radius: 10px;
+  padding: 14px 12px;
+  margin-bottom: 10px;
+  line-height: 1.6;
+  border: 1px dashed rgba(212, 175, 55, 0.5);
+}
+[data-theme="dark"] .walk-report-haiku {
+  color: #ffe58a;
+  background: linear-gradient(180deg, rgba(90,58,0,0.4), rgba(50,32,0,0.4));
+  border-color: rgba(212, 175, 55, 0.4);
+}
 .walk-report-text {
   font-size: 14px;
   line-height: 1.8;
@@ -5420,6 +5497,101 @@ body.map-fullscreen #map-container {
 .status-tip-btn:hover { background: var(--surface); }
 
 /* ===== Featured card (merged reco + today-pick) ===== */
+/* 📍 Nearby banner (GPS-based) */
+.nearby-banner {
+  background: linear-gradient(135deg, #1976d2 0%, #00897b 100%);
+  border-radius: 18px;
+  padding: 14px 16px;
+  margin: 12px 0;
+  color: white;
+  box-shadow: 0 8px 24px rgba(25, 118, 210, 0.3);
+}
+.nearby-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.nearby-icon { font-size: 18px; }
+.nearby-title { font-weight: 800; font-size: 14px; flex: 1; }
+.nearby-meta {
+  font-size: 11px;
+  opacity: 0.85;
+  background: rgba(255,255,255,0.2);
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-weight: 700;
+}
+.nearby-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.nearby-item {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.15);
+  color: white;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+  width: 100%;
+  font-family: inherit;
+}
+.nearby-item:hover { background: rgba(255,255,255,0.25); }
+.nearby-item:active { transform: scale(0.98); }
+.nearby-item.nearby-done { opacity: 0.7; }
+.nearby-item-emoji {
+  font-size: 22px;
+  width: 32px;
+  height: 32px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+.nearby-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.nearby-item-name {
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nearby-done-tag {
+  background: rgba(255,255,255,0.3);
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 100px;
+  margin-left: 4px;
+  font-weight: 700;
+}
+.nearby-item-meta {
+  font-size: 11px;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nearby-item-dist {
+  font-size: 11px;
+  font-weight: 800;
+  background: rgba(255,255,255,0.25);
+  padding: 4px 8px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+
 .featured-card {
   background: linear-gradient(135deg, #ec407a 0%, #ab47bc 50%, #5e35b1 100%);
   border-radius: 18px;

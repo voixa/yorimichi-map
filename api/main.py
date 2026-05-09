@@ -536,7 +536,7 @@ def walk_report():
         return jsonify({"error": "insufficient_input"}), 400
 
     prompt = (
-        f"あなたは散歩ライター。ユーザーが完走したコースを振り返る短い物語を書きます。\n"
+        f"あなたは散歩ライター。ユーザーが完走したコースを振り返る、俳句と短い物語を書きます。\n"
         f"\n"
         f"【入力データ - これらは実在の地名・店舗名です。そのまま使ってOKです】\n"
         f"- コース名: {course_name}\n"
@@ -546,28 +546,37 @@ def walk_report():
         f"- 写真撮影: {photos_taken}枚\n"
         f"- 時間帯: {time_hint}{weather_hint}\n"
         f"\n"
-        f"【ルール】\n"
-        f"- 110-160字の物語\n"
-        f"- 二人称「あなた」を使う\n"
-        f"- **訪問スポットを最低2件、文中にそのまま登場させる**\n"
-        f"  例: 「カヤバ珈琲で一息ついた」「夕やけだんだんの石段を下る」\n"
-        f"- スポット名を勝手に変えたり省略したりしない\n"
-        f"- ただし、入力にない固有名詞（実在しない建物・人名）は追加しない\n"
+        f"【出力する2つの要素】\n"
+        f"\n"
+        f"1. haiku（俳句）: 五七五（17音）の俳句1句。スポット名や季節感を盛り込む。\n"
+        f"   例: 「カヤバ珈琲 湯気の向こうに 桜散る」「夕やけだんだん 猫が見送る 春の暮れ」\n"
+        f"\n"
+        f"2. essay（物語）: 110-160字の散歩エッセイ。\n"
+        f"   - 二人称「あなた」を使う\n"
+        f"   - **訪問スポットを最低2件、文中にそのまま登場させる**\n"
+        f"     例: 「カヤバ珈琲で一息ついた」「夕やけだんだんの石段を下る」\n"
+        f"   - スポット名を勝手に変えたり省略したりしない\n"
+        f"\n"
+        f"【共通ルール】\n"
+        f"- 入力にない固有名詞（実在しない建物・人名）は追加しない\n"
         f"- 商標・著名人・ジブリ・ポケモン等は使わない\n"
         f"- 詩的だが過剰な比喩は避ける\n"
         f"\n"
-        f'JSON: {{"report": "..."}}'
+        f'JSON: {{"haiku": "...", "essay": "..."}}'
     )
 
     try:
         config_kwargs = dict(
-            temperature=0.85,
+            temperature=0.9,
             max_output_tokens=2048,
             response_mime_type="application/json",
             response_schema=genai_types.Schema(
                 type=genai_types.Type.OBJECT,
-                required=["report"],
-                properties={"report": genai_types.Schema(type=genai_types.Type.STRING)},
+                required=["haiku", "essay"],
+                properties={
+                    "haiku": genai_types.Schema(type=genai_types.Type.STRING),
+                    "essay": genai_types.Schema(type=genai_types.Type.STRING),
+                },
             ),
         )
         try:
@@ -584,7 +593,11 @@ def walk_report():
         if not text:
             return jsonify({"error": "empty"}), 502
         result = json.loads(text)
-        return jsonify({"report": str(result.get("report", ""))[:400]})
+        haiku = str(result.get("haiku", ""))[:80]
+        essay = str(result.get("essay", ""))[:400]
+        # 後方互換: report = haiku + essay の組み合わせ
+        report = (f"《{haiku}》\n\n{essay}" if haiku and essay else (haiku or essay))
+        return jsonify({"report": report, "haiku": haiku, "essay": essay})
     except Exception as e:
         logger.exception("walk_report failed")
         return jsonify({"error": "server_error"}), 502
