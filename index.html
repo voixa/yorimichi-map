@@ -679,6 +679,19 @@
             <!-- populated by JS -->
           </div>
 
+          <!-- 📊 詳細統計ダッシュボード -->
+          <details class="me-detail-stats" id="me-detail-stats">
+            <summary class="me-detail-summary">
+              <span>📊 もっと詳しく見る</span>
+              <span class="me-detail-arrow">▾</span>
+            </summary>
+            <div class="me-detail-body">
+              <div class="me-detail-section" id="me-monthly-chart"></div>
+              <div class="me-detail-section" id="me-dow-chart"></div>
+              <div class="me-detail-section" id="me-best-records"></div>
+            </div>
+          </details>
+
           <!-- ❤️ お気に入りコース -->
           <div class="me-section-title" id="me-favorites-title" hidden>❤️ お気に入りコース</div>
           <div class="me-favorites" id="me-favorites" hidden>
@@ -1301,6 +1314,7 @@
       <button class="walk-hud-btn" id="walk-hud-share" type="button" aria-label="このコースをシェア">📤</button>
       <button class="walk-hud-btn" id="walk-hud-checkin" type="button" aria-label="手動チェックイン">✓</button>
       <button class="walk-hud-btn" id="walk-hud-skip" type="button" aria-label="このスポットをスキップ">⏭</button>
+      <button class="walk-hud-btn" id="walk-hud-headup" type="button" aria-label="ヘッドアップ表示切替" title="進行方向を上に">🧭</button>
       <button class="walk-hud-btn" id="walk-hud-pause" type="button" aria-label="一時停止">⏸</button>
       <button class="walk-hud-btn walk-hud-end" id="walk-hud-end" type="button" aria-label="ウォーク終了">⏹</button>
     </div>

@@ -3635,7 +3635,132 @@ ${trkPts}
     return { totalMin, completed, discovered, totalStamps, mostCourse, mostCourseCount: mostCount, mostArea: mostAreaObj };
   }
 
+  // 📊 詳細統計：曜日・時間帯・月別・ベスト記録
+  function getDetailedStats() {
+    const history = state.walkHistory || [];
+    const dowCount = [0, 0, 0, 0, 0, 0, 0]; // 日〜土
+    const hourBands = { early: 0, morning: 0, noon: 0, afternoon: 0, evening: 0, night: 0 };
+    const monthCount = {}; // YYYY-MM
+    history.forEach(h => {
+      if (!h.date) return;
+      const d = new Date(h.date + 'T00:00:00');
+      if (!isNaN(d)) {
+        dowCount[d.getDay()]++;
+        const ym = h.date.slice(0, 7);
+        monthCount[ym] = (monthCount[ym] || 0) + 1;
+      }
+    });
+    // bestDay = 最も多い曜日
+    const dowNames = ['日', '月', '火', '水', '木', '金', '土'];
+    let bestDow = -1, bestDowN = 0;
+    dowCount.forEach((n, i) => { if (n > bestDowN) { bestDow = i; bestDowN = n; } });
+    // 最多スタンプ日（同じ日の history.stops 合計が最大）
+    const stampsByDate = {};
+    history.forEach(h => {
+      if (!h.date) return;
+      stampsByDate[h.date] = (stampsByDate[h.date] || 0) + (h.stops || 0);
+    });
+    let bestDay = null, bestDayStamps = 0;
+    for (const [d, n] of Object.entries(stampsByDate)) {
+      if (n > bestDayStamps) { bestDay = d; bestDayStamps = n; }
+    }
+    // 直近6ヶ月のグラフ用データ
+    const recentMonths = [];
+    const today = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = `${d.getMonth() + 1}月`;
+      recentMonths.push({ ym, label, count: monthCount[ym] || 0 });
+    }
+    return {
+      dowCount,
+      bestDow: bestDow >= 0 ? dowNames[bestDow] : null,
+      bestDowN,
+      bestDay,
+      bestDayStamps,
+      recentMonths,
+    };
+  }
+
   // ===== Me tab render =====
+  // 📊 詳細統計ダッシュボード（月別グラフ・曜日分布・ベスト記録）
+  function renderDetailedStats() {
+    const monthlyEl = $('#me-monthly-chart');
+    const dowEl = $('#me-dow-chart');
+    const bestEl = $('#me-best-records');
+    if (!monthlyEl || !dowEl || !bestEl) return;
+    const stats = getDetailedStats();
+    const history = state.walkHistory || [];
+    if (history.length === 0) {
+      monthlyEl.innerHTML = '';
+      dowEl.innerHTML = '';
+      bestEl.innerHTML = '';
+      return;
+    }
+    // 月別バーチャート
+    const maxMonth = Math.max(1, ...stats.recentMonths.map(m => m.count));
+    monthlyEl.innerHTML = `
+      <div class="me-stats-title">📅 直近6ヶ月の散歩回数</div>
+      <div class="me-month-bars">
+        ${stats.recentMonths.map(m => {
+          const h = Math.round((m.count / maxMonth) * 60);
+          return `
+            <div class="me-month-bar-col">
+              <div class="me-month-bar-num">${m.count}</div>
+              <div class="me-month-bar-track">
+                <div class="me-month-bar-fill" style="height:${h}px"></div>
+              </div>
+              <div class="me-month-bar-label">${m.label}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+    // 曜日分布
+    const maxDow = Math.max(1, ...stats.dowCount);
+    const dowNames = ['日', '月', '火', '水', '木', '金', '土'];
+    dowEl.innerHTML = `
+      <div class="me-stats-title">📊 曜日別の散歩回数</div>
+      <div class="me-dow-bars">
+        ${stats.dowCount.map((n, i) => {
+          const w = Math.round((n / maxDow) * 100);
+          const isWeekend = (i === 0 || i === 6);
+          return `
+            <div class="me-dow-row">
+              <div class="me-dow-label ${isWeekend ? 'weekend' : ''}">${dowNames[i]}</div>
+              <div class="me-dow-track"><div class="me-dow-fill" style="width:${w}%"></div></div>
+              <div class="me-dow-num">${n}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+    // ベスト記録
+    const lifetime = getLifetimeStats();
+    const records = [];
+    if (stats.bestDay) records.push({ icon: '🌟', label: '最多スタンプ日', value: `${stats.bestDay} (${stats.bestDayStamps}スタンプ)` });
+    if (stats.bestDow) records.push({ icon: '📅', label: 'よく歩く曜日', value: `${stats.bestDow}曜日 (${stats.bestDowN}回)` });
+    if (lifetime.mostCourse) records.push({ icon: '🏆', label: 'お気に入りコース', value: `${tField(lifetime.mostCourse, 'name')} (${lifetime.mostCourseCount}回)` });
+    if (lifetime.mostArea) records.push({ icon: '📍', label: 'よく歩くエリア', value: `${lifetime.mostArea.icon || ''} ${tField(lifetime.mostArea, 'name')}` });
+    if (records.length > 0) {
+      bestEl.innerHTML = `
+        <div class="me-stats-title">🏅 ベスト記録</div>
+        <div class="me-best-list">
+          ${records.map(r => `
+            <div class="me-best-row">
+              <span class="me-best-icon">${r.icon}</span>
+              <span class="me-best-label">${escapeHtml(r.label)}</span>
+              <span class="me-best-value">${escapeHtml(r.value)}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    } else {
+      bestEl.innerHTML = '';
+    }
+  }
+
   // ❤️ お気に入りコースのレンダリング
   function renderFavorites() {
     const titleEl = $('#me-favorites-title');
@@ -3739,6 +3864,9 @@ ${trkPts}
         <div class="me-stat-label">連続日数</div>
       </div>
     `;
+
+    // 📊 詳細統計ダッシュボード
+    renderDetailedStats();
 
     // ❤️ お気に入り
     renderFavorites();
@@ -5050,36 +5178,65 @@ ${trkPts}
     const courses = (window.YORIMICHI_COURSES || []);
     if (courses.length === 0) { banner.hidden = true; return; }
 
+    // 現在天気を考慮して屋内/屋外スコアを微調整
+    let weatherCode = null;
+    try {
+      const w = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY) || 'null');
+      if (w && Date.now() - w.fetchedAt < WEATHER_CACHE_TTL_MS) weatherCode = w.code;
+    } catch {}
+    const indoorPreferred = isIndoorPreferredWeather(weatherCode);
+    const INDOOR_CATS = new Set(['cafe', 'shop', 'museum', 'art', 'bakery']);
+
     const ranked = courses
       .map(c => {
         const startLat = c.stops?.[0]?.lat;
         const startLng = c.stops?.[0]?.lng;
         if (startLat == null || startLng == null) return null;
         const km = haversineKm(userLoc, { lat: startLat, lng: startLng });
-        return { course: c, km };
+        // 屋内比率
+        const stops = c.stops || [];
+        const indoorRatio = stops.length > 0 ? stops.filter(s => INDOOR_CATS.has(s.cat)).length / stops.length : 0;
+        return { course: c, km, indoorRatio };
       })
       .filter(x => x && x.km <= 5)
       .sort((a, b) => {
-        // 未完走優先 → 距離が近い順
+        // 未完走優先
         const aDone = state.completedCourses.has(a.course.id) ? 1 : 0;
         const bDone = state.completedCourses.has(b.course.id) ? 1 : 0;
         if (aDone !== bDone) return aDone - bDone;
+        // 雨天時は屋内多めを優先
+        if (indoorPreferred && Math.abs(a.indoorRatio - b.indoorRatio) > 0.15) {
+          return b.indoorRatio - a.indoorRatio;
+        }
         return a.km - b.km;
       })
       .slice(0, 3);
 
     if (ranked.length === 0) { banner.hidden = true; return; }
 
-    if (meta) meta.textContent = `${ranked.length}件 / 5km圏内`;
-    list.innerHTML = ranked.map(({ course, km }) => {
+    // 天気アイコン付きヘッダー
+    if (meta) {
+      let metaText = `${ranked.length}件 / 5km圏内`;
+      if (indoorPreferred) {
+        metaText = `☔ 雨向き ・ ${metaText}`;
+      } else if (weatherCode === 0) {
+        metaText = `☀️ 快晴 ・ ${metaText}`;
+      }
+      meta.textContent = metaText;
+    }
+    list.innerHTML = ranked.map(({ course, km, indoorRatio }) => {
       const distLabel = km < 1 ? `${Math.round(km * 1000)}m` : `${km.toFixed(1)}km`;
       const done = state.completedCourses.has(course.id);
       const thumb = buildCourseThumbSvg(course, { w: 60, h: 40, lightStroke: true });
+      // 雨の日は屋内多めバッジを表示
+      const indoorBadge = (indoorPreferred && indoorRatio >= 0.5)
+        ? '<span class="nearby-indoor-tag">☔ 屋内多め</span>'
+        : '';
       return `
         <button class="nearby-item${done ? ' nearby-done' : ''}" type="button" data-course-id="${escapeHtml(course.id)}">
           <span class="nearby-item-emoji">${course.themeIcon || course.areaIcon || '🌳'}</span>
           <span class="nearby-item-body">
-            <span class="nearby-item-name">${escapeHtml(tField(course, 'name'))}${done ? ' <span class="nearby-done-tag">完走済</span>' : ''}</span>
+            <span class="nearby-item-name">${escapeHtml(tField(course, 'name'))}${done ? ' <span class="nearby-done-tag">完走済</span>' : ''}${indoorBadge}</span>
             <span class="nearby-item-meta">${course.areaIcon || ''} ${escapeHtml(tField(course, 'areaName'))} ・ 約${course.estimatedMin || '?'}分</span>
           </span>
           <span class="nearby-item-thumb">${thumb}</span>
@@ -7648,17 +7805,74 @@ ${trkPts}
     // 常時表示バー
     try { updateActiveWalkBar(); } catch {}
   }
+
+  // 🧭 ヘッドアップ表示（地図を進行方向に回転）
+  function applyMapHeading() {
+    if (!state._headupEnabled) return;
+    const heading = state.activeWalk?._lastHeading;
+    if (heading == null || isNaN(heading)) return;
+    const mapEl = state.map?.getContainer();
+    if (!mapEl) return;
+    // tile を逆回転（北を進行方向に向ける = -heading 度回転）
+    const tilesPane = mapEl.querySelector('.leaflet-tile-pane');
+    const overlayPane = mapEl.querySelector('.leaflet-overlay-pane');
+    const markerPane = mapEl.querySelector('.leaflet-marker-pane');
+    [tilesPane, overlayPane, markerPane].forEach(p => {
+      if (p) p.style.transform = `${p.style.transform.replace(/rotate\([^)]+\)/g, '').trim()} rotate(${-heading}deg)`.trim();
+    });
+    // マーカーを再度水平に戻す（読みやすさのため）
+    if (markerPane) {
+      markerPane.querySelectorAll('.leaflet-marker-icon').forEach(m => {
+        // 既存 transform から rotate 削除
+        const t = m.style.transform || '';
+        const cleaned = t.replace(/rotate\([^)]+\)/g, '').trim();
+        m.style.transform = `${cleaned} rotate(${heading}deg)`;
+      });
+    }
+  }
+  function clearMapHeading() {
+    const mapEl = state.map?.getContainer();
+    if (!mapEl) return;
+    ['leaflet-tile-pane', 'leaflet-overlay-pane', 'leaflet-marker-pane'].forEach(cls => {
+      const p = mapEl.querySelector('.' + cls);
+      if (p) p.style.transform = p.style.transform.replace(/rotate\([^)]+\)/g, '').trim();
+    });
+    const markerPane = mapEl.querySelector('.leaflet-marker-pane');
+    if (markerPane) {
+      markerPane.querySelectorAll('.leaflet-marker-icon').forEach(m => {
+        m.style.transform = (m.style.transform || '').replace(/rotate\([^)]+\)/g, '').trim();
+      });
+    }
+  }
+  function toggleHeadup() {
+    state._headupEnabled = !state._headupEnabled;
+    const btn = document.getElementById('walk-hud-headup');
+    if (btn) {
+      btn.classList.toggle('active', state._headupEnabled);
+    }
+    if (state._headupEnabled) {
+      applyMapHeading();
+      showToast('🧭 ヘッドアップ表示ON（進行方向が上）', 'info', 2500);
+    } else {
+      clearMapHeading();
+      showToast('🧭 北固定モードに戻しました', 'info', 2500);
+    }
+  }
   function hideWalkHud() {
     const hud = $('#walk-hud');
     if (hud) hud.hidden = true;
     const recenter = $('#map-recenter-btn');
     if (recenter) recenter.hidden = true;
-    // 終了時は一時停止オーバーレイ + 常時バーも消す
+    // 終了時は一時停止オーバーレイ + 常時バーも消す + ヘッドアップ解除
     try { hidePauseOverlay(); } catch {}
     try {
       const bar = document.getElementById('active-walk-bar');
       if (bar) bar.hidden = true;
     } catch {}
+    if (state._headupEnabled) {
+      state._headupEnabled = false;
+      try { clearMapHeading(); } catch {}
+    }
   }
 
   // 🚶 アクティブウォークの常時表示バー更新
@@ -7797,6 +8011,21 @@ ${trkPts}
         }
       }
       aw._lastLoc = loc;
+      // ヘッドアップ表示の更新（進行方向）
+      let heading = pos.coords.heading;
+      // 移動が遅すぎる時 heading は NaN になる → 直前の位置との bearing を使う
+      if ((heading == null || isNaN(heading)) && aw._lastHeadingLoc) {
+        const bearingDeg = bearing([aw._lastHeadingLoc.lat, aw._lastHeadingLoc.lng], [loc.lat, loc.lng]);
+        if (!isNaN(bearingDeg)) heading = bearingDeg;
+      }
+      if (heading != null && !isNaN(heading)) {
+        aw._lastHeading = heading;
+        applyMapHeading();
+      }
+      // ヘッドアップ用の前回基準位置（5m毎に更新）
+      if (!aw._lastHeadingLoc || haversineKm(aw._lastHeadingLoc, loc) > 0.005) {
+        aw._lastHeadingLoc = loc;
+      }
     }
     // Update user marker
     if (!state.userMarker) {
@@ -9132,6 +9361,8 @@ ${hashtag}`;
     });
     const hudPause = $('#walk-hud-pause');
     if (hudPause) hudPause.addEventListener('click', togglePauseWalk);
+    const hudHeadup = $('#walk-hud-headup');
+    if (hudHeadup) hudHeadup.addEventListener('click', toggleHeadup);
 
     const hudVoice = $('#walk-hud-voice');
     if (hudVoice) {

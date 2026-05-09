@@ -5364,6 +5364,141 @@ body.map-fullscreen #map-container {
   letter-spacing: 0.05em;
 }
 
+/* 📊 Detailed stats dashboard */
+.me-detail-stats {
+  background: var(--surface-2);
+  border-radius: 12px;
+  margin: 8px 0 12px;
+  overflow: hidden;
+}
+.me-detail-summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--text);
+  user-select: none;
+}
+.me-detail-summary::-webkit-details-marker { display: none; }
+.me-detail-arrow {
+  font-size: 14px;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+.me-detail-stats[open] .me-detail-arrow { transform: rotate(180deg); }
+.me-detail-body {
+  padding: 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.me-stats-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  letter-spacing: 0.05em;
+}
+.me-month-bars {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  height: 100px;
+  align-items: end;
+}
+.me-month-bar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.me-month-bar-num {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--brand);
+  height: 14px;
+}
+.me-month-bar-track {
+  height: 60px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+}
+.me-month-bar-fill {
+  width: 80%;
+  background: linear-gradient(180deg, #ff7e3d, #ff4081);
+  border-radius: 4px 4px 0 0;
+  min-height: 2px;
+  transition: height 0.3s ease;
+}
+.me-month-bar-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+.me-dow-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.me-dow-row {
+  display: grid;
+  grid-template-columns: 24px 1fr 28px;
+  align-items: center;
+  gap: 8px;
+}
+.me-dow-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text);
+  text-align: center;
+}
+.me-dow-label.weekend { color: #dc2626; }
+.me-dow-track {
+  height: 12px;
+  background: rgba(0,0,0,0.06);
+  border-radius: 6px;
+  overflow: hidden;
+}
+[data-theme="dark"] .me-dow-track { background: rgba(255,255,255,0.08); }
+.me-dow-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff7e3d, #ff4081);
+  border-radius: 6px;
+  transition: width 0.4s ease;
+  min-width: 2px;
+}
+.me-dow-num {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-align: right;
+}
+.me-best-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.me-best-row {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--surface-1, white);
+  border-radius: 8px;
+  font-size: 12px;
+}
+[data-theme="dark"] .me-best-row { background: rgba(255,255,255,0.05); }
+.me-best-icon { font-size: 16px; text-align: center; }
+.me-best-label { color: var(--text-muted); font-weight: 600; }
+.me-best-value { font-weight: 800; color: var(--text); text-align: right; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 /* ❤️ Favorites in My tab */
 .me-favorites {
   display: flex;
@@ -5967,6 +6102,16 @@ body.map-fullscreen #map-container {
   border-radius: 100px;
   margin-left: 4px;
   font-weight: 700;
+}
+.nearby-indoor-tag {
+  background: linear-gradient(135deg, #06b6d4, #0ea5e9);
+  color: white;
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 100px;
+  margin-left: 4px;
+  font-weight: 800;
+  white-space: nowrap;
 }
 .nearby-item-meta {
   font-size: 11px;
@@ -6612,6 +6757,24 @@ body:has(.walk-hud:not([hidden])) .leaflet-bottom.leaflet-right {
 .walk-hud-elapsed { color: #fff; font-weight: 700; opacity: 0.85; }
 .walk-hud-totaldist { color: #ffb380; font-weight: 700; }
 .walk-hud-eta { color: #fcd34d; font-weight: 800; }
+
+/* Active state for headup toggle */
+.walk-hud-btn.active {
+  background: linear-gradient(135deg, #06b6d4, #0ea5e9);
+  color: white;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.4);
+}
+
+/* Smooth map rotation transitions */
+.leaflet-tile-pane,
+.leaflet-overlay-pane,
+.leaflet-marker-pane {
+  transition: transform 0.4s ease-out;
+  transform-origin: center center;
+}
+.leaflet-marker-icon {
+  transition: transform 0.4s ease-out;
+}
 
 /* 📝 Stop Memo Prompt */
 .memo-prompt-overlay {
