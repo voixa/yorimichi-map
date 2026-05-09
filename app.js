@@ -3160,6 +3160,19 @@
     } else if (route.rarity === 'sr') {
       fireConfetti(60, ['#ff9800', '#ffc107', '#ff5722']);
     }
+
+    // 🎓 Step 2: 結果確認後「このルートで行く」を pulse
+    if (isFirstRunUser()) {
+      setTimeout(() => {
+        showCoach({
+          target: '#result-add',
+          message: '👆 このコースを使って歩こう！押すと地図にセットされます',
+          hintKey: 'coach-step2-result-add',
+          arrow: 'down',
+          autoDismissMs: 15000,
+        });
+      }, 1500);
+    }
   }
 
   // Replace current selection with a route's stops
@@ -3217,6 +3230,25 @@
     updateCompareBadge();
     fitToEndpoints();
     saveStateToHash();
+
+    // 🎓 Step 3: ルート適用後「歩き始める」を pulse
+    if (isFirstRunUser()) {
+      setTimeout(() => {
+        const startBtn = $('#walk-start');
+        if (startBtn && !startBtn.hidden) {
+          // summary-section を画面に表示するためスクロール
+          const ss = $('#summary-section');
+          if (ss) ss.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          showCoach({
+            target: '#walk-start',
+            message: '🚶 準備完了！押して散歩を始めよう',
+            hintKey: 'coach-step3-walk-start',
+            arrow: 'down',
+            autoDismissMs: 18000,
+          });
+        }
+      }, 800);
+    }
   }
 
   // Confetti palette presets（用途別）
@@ -5724,6 +5756,20 @@ ${trkPts}
     if (welcomeBtn) welcomeBtn.addEventListener('click', quickStart);
     try { renderWelcomeCard(); } catch {}
 
+    // 🎓 Step 1: 初回ユーザーへの最初のコーチマーク
+    setTimeout(() => {
+      if (isFirstRunUser()) {
+        const target = $('#welcome-cta')?.offsetParent ? '#welcome-cta' : '#quickstart-btn';
+        showCoach({
+          target,
+          message: '👇 まずはここから！1タップでガチャを引いて散歩を始められます',
+          hintKey: 'coach-step1-quickstart',
+          arrow: 'up',
+          autoDismissMs: 12000,
+        });
+      }
+    }, 2500);
+
     // モードヘルプ
     const modeHelpBtn = $('#mode-help-btn');
     if (modeHelpBtn) modeHelpBtn.addEventListener('click', () => {
@@ -5928,6 +5974,7 @@ ${trkPts}
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         $$('.modal-backdrop').forEach(bd => bd.hidden = true);
+        try { clearCoach(); } catch {}
         return;
       }
       if (e.key === 'Tab') {
@@ -6474,6 +6521,27 @@ ${trkPts}
     // モバイル用 Walk HUD を表示
     showWalkHud();
 
+    // 🎓 Step 4: 散歩開始時に大きなトースト＋HUDボタン解説
+    if (isFirstRunUser() && !isCoachSeen('coach-step4-walk-start-hint')) {
+      markCoachSeen('coach-step4-walk-start-hint');
+      setTimeout(() => {
+        showToast('💡 50m以内に近づくと自動でスタンプGET。HUDの📸で写真、📤でシェア', 'success', 7000);
+      }, 1500);
+      // HUDの初回ハイライト
+      setTimeout(() => {
+        const hud = $('#walk-hud');
+        if (hud && !hud.hidden) {
+          showCoach({
+            target: '#walk-hud-photo',
+            message: '📸 各スポットで1枚撮ろう！完走証明書に組み込まれます',
+            hintKey: 'coach-step4-photo-hint',
+            arrow: 'down',
+            autoDismissMs: 10000,
+          });
+        }
+      }, 8500);
+    }
+
     // 経過時間を1秒ごとにticking
     if (state.activeWalk._tickTimer) clearInterval(state.activeWalk._tickTimer);
     state.activeWalk._tickTimer = setInterval(() => {
@@ -6709,6 +6777,124 @@ ${trkPts}
         break;
       }
     }
+  }
+
+  // ===== Coach Mark / Guided Tour =====
+  // 初回ユーザーが「次にどのボタンを押すか」迷わないよう、pulse + ヒントバブルで示す。
+  // 一度見せたら同じ hintKey は再表示しない。
+  const COACH_SEEN_KEY = 'yorimichi-coach-seen';
+  let _activeCoachBubble = null;
+  let _activeCoachTarget = null;
+
+  function getCoachSeen() {
+    try { return JSON.parse(localStorage.getItem(COACH_SEEN_KEY) || '[]'); } catch { return []; }
+  }
+  function isCoachSeen(key) {
+    return getCoachSeen().includes(key);
+  }
+  function markCoachSeen(key) {
+    try {
+      const seen = getCoachSeen();
+      if (!seen.includes(key)) {
+        seen.push(key);
+        localStorage.setItem(COACH_SEEN_KEY, JSON.stringify(seen));
+      }
+    } catch {}
+  }
+  function resetCoachSeen() {
+    try { localStorage.removeItem(COACH_SEEN_KEY); } catch {}
+  }
+
+  function clearCoach() {
+    if (_activeCoachTarget) {
+      _activeCoachTarget.classList.remove('coach-pulse');
+      _activeCoachTarget = null;
+    }
+    if (_activeCoachBubble) {
+      _activeCoachBubble.remove();
+      _activeCoachBubble = null;
+    }
+  }
+
+  /**
+   * showCoach({ target, message, hintKey, arrow, autoDismissMs })
+   * - target: CSS selector or Element
+   * - message: 表示文字列
+   * - hintKey: localStorage 重複防止キー
+   * - arrow: 'up' | 'down' | 'left' | 'right' (バブルから target への矢印方向)
+   */
+  function showCoach({ target, message, hintKey, arrow = 'up', autoDismissMs = 0 }) {
+    if (!hintKey || isCoachSeen(hintKey)) return;
+    const el = (typeof target === 'string') ? document.querySelector(target) : target;
+    if (!el || el.hidden) return;
+    // 前回のコーチをクリーン
+    clearCoach();
+    markCoachSeen(hintKey);
+
+    el.classList.add('coach-pulse');
+    _activeCoachTarget = el;
+
+    const bubble = document.createElement('div');
+    bubble.className = `coach-bubble arrow-${arrow}`;
+    bubble.innerHTML = `<span>${escapeHtml(message)}</span><button class="coach-bubble-close" aria-label="閉じる">×</button>`;
+    document.body.appendChild(bubble);
+    _activeCoachBubble = bubble;
+
+    // バブル位置を計算
+    const positionBubble = () => {
+      const rect = el.getBoundingClientRect();
+      const bubW = bubble.offsetWidth || 240;
+      const bubH = bubble.offsetHeight || 50;
+      let top, left;
+      switch (arrow) {
+        case 'up': // バブルが下、矢印が上
+          top = rect.bottom + 12;
+          left = Math.max(8, rect.left + rect.width / 2 - 30);
+          break;
+        case 'down': // バブルが上、矢印が下
+          top = rect.top - bubH - 12;
+          left = Math.max(8, rect.left + rect.width / 2 - 30);
+          break;
+        case 'left':
+          top = rect.top + rect.height / 2 - 16;
+          left = rect.right + 12;
+          break;
+        case 'right':
+          top = rect.top + rect.height / 2 - 16;
+          left = rect.left - bubW - 12;
+          break;
+        default:
+          top = rect.bottom + 12;
+          left = rect.left;
+      }
+      // 画面端で切れないよう調整
+      const viewW = window.innerWidth;
+      if (left + bubW > viewW - 8) left = viewW - bubW - 8;
+      if (left < 8) left = 8;
+      bubble.style.top = `${top + window.scrollY}px`;
+      bubble.style.left = `${left}px`;
+    };
+    requestAnimationFrame(positionBubble);
+
+    // 閉じるボタン
+    bubble.querySelector('.coach-bubble-close').addEventListener('click', clearCoach);
+    // target をクリックしたら自動で閉じる
+    const onTargetClick = () => {
+      el.removeEventListener('click', onTargetClick);
+      clearCoach();
+    };
+    el.addEventListener('click', onTargetClick, { once: true });
+    // 自動消滅
+    if (autoDismissMs > 0) {
+      setTimeout(() => {
+        if (_activeCoachBubble === bubble) clearCoach();
+      }, autoDismissMs);
+    }
+  }
+
+  /** 初回ユーザーかどうか（完走0かつガチャ2回未満） */
+  function isFirstRunUser() {
+    return state.completedCourses.size === 0 && (gacha.pulls || 0) < 2;
   }
 
   // ===== Photo capture during walks =====
@@ -8223,8 +8409,11 @@ ${hashtag}`;
     if (tutBtn) tutBtn.addEventListener('click', () => {
       $('#profile-modal').hidden = true;
       try { localStorage.removeItem('yorimichi-onboarded'); } catch (e) {}
+      // コーチマーク seen フラグもリセット → 再度ガイドが流れる
+      try { resetCoachSeen(); } catch {}
       $('#onboard-modal').hidden = false;
       setOnboardStep(1);
+      showToast('チュートリアルとガイドをリセットしました', 'info', 3000);
     });
     // Invite link
     setupInviteLink();

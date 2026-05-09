@@ -4681,6 +4681,91 @@ button:focus-visible,
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ===== Coach Mark / Guided Tour ===== */
+.coach-pulse {
+  position: relative;
+  animation: coachPulseScale 1.2s ease-in-out infinite;
+  z-index: 100;
+}
+.coach-pulse::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 3px solid #ff7e3d;
+  pointer-events: none;
+  animation: coachPulseRing 1.6s ease-out infinite;
+}
+@keyframes coachPulseScale {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+@keyframes coachPulseRing {
+  0% {
+    opacity: 1;
+    inset: 0;
+  }
+  100% {
+    opacity: 0;
+    inset: -16px;
+  }
+}
+
+/* Hint bubble */
+.coach-bubble {
+  position: fixed;
+  background: #1c1c1f;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  max-width: 280px;
+  z-index: 8500;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  pointer-events: auto;
+  animation: coachBubbleIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.coach-bubble::before {
+  content: '';
+  position: absolute;
+  border: 8px solid transparent;
+}
+.coach-bubble.arrow-up::before {
+  bottom: 100%;
+  left: 30px;
+  border-bottom-color: #1c1c1f;
+}
+.coach-bubble.arrow-down::before {
+  top: 100%;
+  left: 30px;
+  border-top-color: #1c1c1f;
+}
+.coach-bubble.arrow-left::before {
+  right: 100%;
+  top: 16px;
+  border-right-color: #1c1c1f;
+}
+.coach-bubble.arrow-right::before {
+  left: 100%;
+  top: 16px;
+  border-left-color: #1c1c1f;
+}
+.coach-bubble-close {
+  background: transparent;
+  border: 0;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  margin-left: 8px;
+  font-size: 14px;
+  padding: 0 4px;
+}
+.coach-bubble-close:hover { color: white; }
+@keyframes coachBubbleIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* マイタブへの誘導アニメ（完走後） */
 .main-tab.me-pulse {
   animation: mePulse 1.5s ease-in-out 3;
