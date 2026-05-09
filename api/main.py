@@ -516,6 +516,18 @@ def walk_report():
     photos_taken = int(data.get("photos_taken") or 0)
     weather_code = data.get("weather_code")
     hour = int(data.get("hour") or 12)
+    # 📝 ユーザーがチェックイン時に書いたメモ
+    user_memos = data.get("user_memos") or []
+    if not isinstance(user_memos, list):
+        user_memos = []
+    # サニタイズ
+    clean_memos = []
+    for m in user_memos[:6]:
+        if not isinstance(m, dict): continue
+        sn = str(m.get("stop_name") or "")[:60]
+        mm = str(m.get("memo") or "")[:120]
+        if sn and mm:
+            clean_memos.append({"stop_name": sn, "memo": mm})
 
     # 時間帯ヒント
     time_hint = "朝"
@@ -535,6 +547,17 @@ def walk_report():
     if not course_name or not visited_stops:
         return jsonify({"error": "insufficient_input"}), 400
 
+    # メモ部分を組み立て
+    memo_section = ""
+    if clean_memos:
+        memo_lines = "\n".join([f"  - {m['stop_name']}: 「{m['memo']}」" for m in clean_memos])
+        memo_section = (
+            f"\n"
+            f"【ユーザー本人が現地で書いたメモ - 一人称の生の感想】\n"
+            f"{memo_lines}\n"
+            f"※ このメモの感情・気づきを俳句とエッセイに必ず反映する。\n"
+        )
+
     prompt = (
         f"あなたは散歩ライター。ユーザーが完走したコースを振り返る、俳句と短い物語を書きます。\n"
         f"\n"
@@ -545,10 +568,12 @@ def walk_report():
         f"- 所要時間: 約{duration_min}分\n"
         f"- 写真撮影: {photos_taken}枚\n"
         f"- 時間帯: {time_hint}{weather_hint}\n"
+        f"{memo_section}"
         f"\n"
         f"【出力する2つの要素】\n"
         f"\n"
         f"1. haiku（俳句）: 五七五（17音）の俳句1句。スポット名や季節感を盛り込む。\n"
+        f"   メモがあれば、その感情・出来事を俳句の核にする。\n"
         f"   例: 「カヤバ珈琲 湯気の向こうに 桜散る」「夕やけだんだん 猫が見送る 春の暮れ」\n"
         f"\n"
         f"2. essay（物語）: 110-160字の散歩エッセイ。\n"
@@ -556,6 +581,7 @@ def walk_report():
         f"   - **訪問スポットを最低2件、文中にそのまま登場させる**\n"
         f"     例: 「カヤバ珈琲で一息ついた」「夕やけだんだんの石段を下る」\n"
         f"   - スポット名を勝手に変えたり省略したりしない\n"
+        f"   - メモがある場合、その内容を自然にエッセイに編み込む（「抹茶ラテが絶品だった」というメモなら「抹茶ラテの香りに足が止まる」のように）\n"
         f"\n"
         f"【共通ルール】\n"
         f"- 入力にない固有名詞（実在しない建物・人名）は追加しない\n"

@@ -4067,7 +4067,29 @@ ${trkPts}
     const stats = $('#walk-log-stats');
     if (!list || !stats) return;
     renderWalkCalendar();
-    const history = (state.walkHistory || []).slice().reverse(); // 新しい順
+    const filterMode = $('#walk-log-filter')?.value || 'all';
+    const sortMode = $('#walk-log-sort')?.value || 'newest';
+    let history = (state.walkHistory || []).slice();
+    // フィルタ
+    if (filterMode === 'completed') history = history.filter(h => h.completed);
+    else if (filterMode === 'incomplete') history = history.filter(h => !h.completed);
+    else if (filterMode === 'recent7' || filterMode === 'recent30') {
+      const days = filterMode === 'recent7' ? 7 : 30;
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - days);
+      const cutoffStr = cutoff.toISOString().slice(0, 10);
+      history = history.filter(h => (h.date || '') >= cutoffStr);
+    }
+    // ソート
+    if (sortMode === 'newest') history.reverse();
+    else if (sortMode === 'oldest') {} // already chronological
+    else if (sortMode === 'course') {
+      history.sort((a, b) => {
+        const ca = a.courseId || ''; const cb = b.courseId || '';
+        if (ca !== cb) return ca.localeCompare(cb);
+        return (b.date || '').localeCompare(a.date || '');
+      });
+    }
 
     // 集計
     const totalCompleted = history.filter(h => h.completed).length;
@@ -6062,6 +6084,9 @@ ${trkPts}
         <button class="btn-secondary" id="cd-walk-now" type="button">
           <span>⚡</span><span>すぐ歩く</span>
         </button>
+        <button class="btn-peek" id="cd-peek" type="button">
+          <span>👁</span><span>地図で覗く（適用しない）</span>
+        </button>
         <button class="btn-fav" id="cd-fav" type="button" aria-label="お気に入り">
           <span class="fav-icon">${isFavorite(course.id) ? '❤️' : '🤍'}</span>
           <span>${isFavorite(course.id) ? 'お気に入り済' : 'お気に入りに保存'}</span>
@@ -6097,10 +6122,93 @@ ${trkPts}
         if (icon) icon.textContent = nowFav ? '❤️' : '🤍';
         if (label) label.textContent = nowFav ? 'お気に入り済' : 'お気に入りに保存';
         showToast(nowFav ? `❤️ お気に入りに追加しました` : `お気に入りから外しました`, 'success', 2000);
-        // マイタブのお気に入り欄を更新
         try { renderFavorites(); } catch {}
       };
     }
+    // 👁 ピーク（地図で覗くだけ・state.selected を上書きしない）
+    const peekBtn = $('#cd-peek');
+    if (peekBtn) {
+      peekBtn.onclick = () => {
+        $('#course-detail-modal').hidden = true;
+        showCoursePeek(course);
+      };
+    }
+  }
+
+  // 👁 コースを「適用せず」地図にプレビュー表示
+  function showCoursePeek(course) {
+    if (!state.map || !course?.stops) return;
+    // 既存ピークを消す
+    clearCoursePeek();
+    state._peekLayer = state._peekLayer || L.layerGroup().addTo(state.map);
+    const stops = course.stops.filter(s => s.lat != null && s.lng != null);
+    // 経由ピン（小さめ・半透明）
+    stops.forEach((s, i) => {
+      const html = `
+        <span class="peek-poi-num">${i + 1}</span>
+        <span class="peek-poi-emo">${s.emoji || '📍'}</span>
+        <span class="peek-poi-label">${escapeHtml(s.name)}</span>
+      `;
+      const marker = L.marker([s.lat, s.lng], {
+        icon: makeIcon(html, 'peek-poi-marker', 36),
+        zIndexOffset: 200 + i,
+      });
+      state._peekLayer.addLayer(marker);
+    });
+    // ライン
+    if (stops.length >= 2) {
+      const line = L.polyline(stops.map(s => [s.lat, s.lng]), {
+        color: '#6c63ff',
+        weight: 4,
+        opacity: 0.7,
+        dashArray: '8, 6',
+      });
+      state._peekLayer.addLayer(line);
+    }
+    // ビューポート合わせ
+    const bounds = L.latLngBounds(stops.map(s => [s.lat, s.lng]));
+    state.map.fitBounds(bounds, { padding: [40, 40] });
+    // フローティングバー表示（覗き中・適用 or 解除ボタン付き）
+    showPeekBar(course);
+    // 全画面マップに切り替え（パネルを閉じる）
+    document.body.classList.add('map-fullscreen');
+    const fsBtn = document.getElementById('map-fullscreen-btn');
+    if (fsBtn) fsBtn.textContent = '⛔';
+    setTimeout(() => state.map.invalidateSize(), 350);
+  }
+  function clearCoursePeek() {
+    if (state._peekLayer) {
+      try { state._peekLayer.clearLayers(); } catch {}
+    }
+    hidePeekBar();
+  }
+  function showPeekBar(course) {
+    let bar = document.getElementById('peek-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'peek-bar';
+      bar.className = 'peek-bar';
+      document.body.appendChild(bar);
+    }
+    bar.innerHTML = `
+      <span class="peek-bar-label">👁 プレビュー中</span>
+      <span class="peek-bar-name">${escapeHtml(tField(course, 'name'))}</span>
+      <button class="peek-bar-apply" id="peek-bar-apply" type="button">このコースで行く</button>
+      <button class="peek-bar-close" id="peek-bar-close" type="button" aria-label="閉じる">×</button>
+    `;
+    bar.hidden = false;
+    document.getElementById('peek-bar-apply').onclick = () => {
+      clearCoursePeek();
+      applyRoute(courseToRoute(course));
+      showToast(`✨ 「${tField(course, 'name')}」を地図に設定しました`, 'success', 2500);
+    };
+    document.getElementById('peek-bar-close').onclick = () => {
+      clearCoursePeek();
+    };
+  }
+  function hidePeekBar() {
+    const bar = document.getElementById('peek-bar');
+    if (bar) bar.hidden = true;
   }
 
   function rerollPlans(type) {
@@ -8440,6 +8548,17 @@ ${route.themeIcon} ${route.themeName} ・ ${route.stops.length}スポット ・ 
       const w = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY) || 'null');
       if (w && Date.now() - w.fetchedAt < WEATHER_CACHE_TTL_MS) weatherCode = w.code;
     } catch {}
+    // 📝 ユーザーのスポットメモを収集して投入
+    const memos = getStopMemos(course.id);
+    const userMemos = Object.entries(memos)
+      .map(([k, v]) => {
+        const idx = parseInt(k, 10);
+        const stop = course.stops[idx];
+        if (!stop || !v?.memo) return null;
+        return { stop_name: stop.name, memo: String(v.memo).slice(0, 120) };
+      })
+      .filter(Boolean)
+      .slice(0, 6);
     try {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 12000);
@@ -8454,6 +8573,7 @@ ${route.themeIcon} ${route.themeName} ・ ${route.stops.length}スポット ・ 
           photos_taken: photosTaken,
           weather_code: weatherCode,
           hour: (new Date()).getHours(),
+          user_memos: userMemos,
         }),
         signal: ctrl.signal,
       });
@@ -9193,6 +9313,11 @@ ${hashtag}`;
     });
     const walkLogClose = $('#walk-log-close');
     if (walkLogClose) walkLogClose.addEventListener('click', () => { $('#walk-log-modal').hidden = true; });
+    // フィルタ/ソート連動
+    const wlFilter = $('#walk-log-filter');
+    const wlSort = $('#walk-log-sort');
+    if (wlFilter) wlFilter.addEventListener('change', () => renderWalkLog());
+    if (wlSort) wlSort.addEventListener('change', () => renderWalkLog());
 
     // 設定モーダル
     const settingsBtn = $('#show-settings');

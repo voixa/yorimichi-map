@@ -4359,6 +4359,29 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
 .walk-cal-legend .walk-cal-cell { cursor: default; }
 .walk-cal-legend .walk-cal-cell:hover { transform: none; }
 
+.walk-log-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.walk-log-select {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+}
+.walk-log-select:focus {
+  outline: none;
+  border-color: var(--brand);
+}
+
 .walk-log-list {
   max-height: 50vh;
   overflow-y: auto;
@@ -5419,6 +5442,139 @@ body.map-fullscreen #map-container {
   transition: background 0.1s ease, opacity 0.1s ease;
 }
 .me-fav-remove:hover { opacity: 1; background: rgba(0,0,0,0.1); }
+
+/* 👁 Peek button on course detail */
+.btn-peek {
+  grid-column: 1 / -1;
+  background: white;
+  color: #6c63ff;
+  border: 2px solid #6c63ff;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.15s ease;
+  font-family: inherit;
+}
+.btn-peek:hover { background: rgba(108, 99, 255, 0.06); }
+[data-theme="dark"] .btn-peek {
+  background: transparent;
+  border-color: #8b7fff;
+  color: #8b7fff;
+}
+
+/* Peek preview map markers */
+.peek-poi-marker {
+  width: 36px !important;
+  height: 36px !important;
+  background: rgba(108, 99, 255, 0.85);
+  border: 2px solid white;
+  border-radius: 50%;
+  position: relative;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+}
+.peek-poi-num {
+  position: absolute;
+  top: -6px; right: -6px;
+  background: white;
+  color: #6c63ff;
+  border: 1.5px solid #6c63ff;
+  border-radius: 50%;
+  width: 18px; height: 18px;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  z-index: 2;
+}
+.peek-poi-emo { font-size: 16px; filter: brightness(1.2); }
+.peek-poi-label {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 4px;
+  background: rgba(108, 99, 255, 0.95);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Peek bar (floating action bar during peek mode) */
+.peek-bar {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  background: rgba(108, 99, 255, 0.95);
+  color: white;
+  border-radius: 14px;
+  padding: 10px 14px;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 12px 30px rgba(108, 99, 255, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-family: inherit;
+}
+.peek-bar[hidden] { display: none !important; }
+.peek-bar-label {
+  font-size: 11px;
+  font-weight: 800;
+  background: rgba(255,255,255,0.2);
+  padding: 3px 8px;
+  border-radius: 100px;
+  flex-shrink: 0;
+}
+.peek-bar-name {
+  flex: 1;
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.peek-bar-apply {
+  background: white;
+  color: #6c63ff;
+  border: 0;
+  padding: 7px 14px;
+  font-weight: 800;
+  font-size: 12px;
+  border-radius: 100px;
+  cursor: pointer;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+.peek-bar-close {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
 
 /* Heart button on course detail */
 .btn-fav {

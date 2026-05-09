@@ -1077,6 +1077,20 @@
       <h2 class="modal-title">📜 散歩履歴</h2>
       <div class="walk-log-stats" id="walk-log-stats"></div>
       <div class="walk-calendar" id="walk-calendar"></div>
+      <div class="walk-log-controls">
+        <select id="walk-log-filter" class="walk-log-select">
+          <option value="all">すべて表示</option>
+          <option value="completed">🏅 完走のみ</option>
+          <option value="incomplete">🚶 途中のみ</option>
+          <option value="recent7">🗓 直近7日</option>
+          <option value="recent30">🗓 直近30日</option>
+        </select>
+        <select id="walk-log-sort" class="walk-log-select">
+          <option value="newest">新しい順</option>
+          <option value="oldest">古い順</option>
+          <option value="course">コース別</option>
+        </select>
+      </div>
       <div class="walk-log-list" id="walk-log-list">
         <!-- populated by JS -->
       </div>
