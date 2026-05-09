@@ -4430,6 +4430,72 @@ ${trkPts}
     }
   }
 
+  /**
+   * 完走後に「明日も同じ時間にリマインダーする？」提案
+   * 通知が拒否済みなら出さない
+   */
+  function maybeOfferTomorrowReminder() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'denied') return;
+    // 1日1回まで
+    const today = (new Date()).toDateString();
+    if (localStorage.getItem('yorimichi-tomorrow-offer-day') === today) return;
+    localStorage.setItem('yorimichi-tomorrow-offer-day', today);
+
+    if (document.getElementById('tomorrow-reminder-modal')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'tomorrow-reminder-modal';
+    overlay.className = 'modal-backdrop';
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    overlay.innerHTML = `
+      <div class="modal" style="max-width: 360px; text-align: center;">
+        <button class="modal-close" id="tr-close" type="button" aria-label="閉じる">✕</button>
+        <div style="font-size: 48px; margin-bottom: 8px;">⏰</div>
+        <h2 class="modal-title">明日も歩こう？</h2>
+        <p style="font-size: 14px; color: var(--text-muted); line-height: 1.7; margin-bottom: 16px;">
+          明日の <strong>${hh}:${mm}</strong> にリマインダー通知をお送りします。
+        </p>
+        <button class="btn-primary" id="tr-yes" type="button" style="width:100%; margin-bottom: 8px;">
+          🔔 リマインダーを設定
+        </button>
+        <button class="btn-secondary" id="tr-no" type="button" style="width:100%;">
+          結構です
+        </button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#tr-close').onclick = () => overlay.remove();
+    overlay.querySelector('#tr-no').onclick = () => overlay.remove();
+    overlay.querySelector('#tr-yes').onclick = async () => {
+      let perm = Notification.permission;
+      if (perm === 'default') {
+        perm = await Notification.requestPermission();
+      }
+      if (perm !== 'granted') {
+        showToast('通知が拒否されています。設定から有効化してください', 'warning', 4000);
+        overlay.remove();
+        return;
+      }
+      // 24時間後にトリガーする予約（タブが開いてる必要があるが、PWAに追加されてれば可）
+      const tomorrowMs = 24 * 60 * 60 * 1000;
+      try {
+        localStorage.setItem('yorimichi-tomorrow-reminder-at', String(Date.now() + tomorrowMs));
+      } catch {}
+      setTimeout(() => {
+        try {
+          new Notification('街歩きガチャ', {
+            body: '昨日の散歩はいかがでしたか？今日もぜひ 👣',
+            icon: '/og.png',
+          });
+        } catch {}
+      }, tomorrowMs);
+      showToast('🔔 明日のリマインダーを設定しました', 'success', 3500);
+      overlay.remove();
+    };
+  }
+
   function maybeFireDailyReminder() {
     if (!('Notification' in window)) return;
     if (Notification.permission !== 'granted') return;
@@ -6372,6 +6438,8 @@ ${trkPts}
       checkNewBadges();
       // 評価モーダルを少し遅らせて出す（証明書を見終えた頃）
       if (course) setTimeout(() => showRatingModal(course), 6000);
+      // 明日のリマインダー提案（通知許可があれば）
+      if (course) setTimeout(() => maybeOfferTomorrowReminder(), 9000);
     }, 1500);
   }
 
@@ -6405,6 +6473,9 @@ ${trkPts}
   }
 
   // ===== Instagram縦長シェア画像 (1080x1920) =====
+  // 直近のAIウォークレポートをキャッシュ（generateInstagramShareImage で使う）
+  let _lastWalkReport = '';
+
   async function generateInstagramShareImage(course) {
     const W = 1080;
     const H = 1920;
@@ -6518,6 +6589,25 @@ ${trkPts}
         ctx.fillStyle = '#1c1c1f';
         ctx.fillText(s.emoji || '📍', cx, cy + 40);
       });
+    }
+
+    // AI ウォークレポート（あれば）
+    if (_lastWalkReport) {
+      const reportY = (validPhotos.length > 0 ? 1280 : 1340);
+      const reportH = 200;
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      roundRect(ctx, 80, reportY, W - 160, reportH, 20);
+      ctx.fill();
+      // ✍️ ラベル
+      ctx.fillStyle = '#6c63ff';
+      ctx.font = 'bold 26px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('✍️ AIによる振り返り', 110, reportY + 38);
+      // 本文
+      ctx.fillStyle = '#1c1c1f';
+      ctx.font = '28px "Hiragino Mincho ProN", serif';
+      ctx.textAlign = 'left';
+      wrapText(ctx, _lastWalkReport, 110, reportY + 75, W - 220, 38);
     }
 
     // QRコード（招待リンク）
@@ -6741,21 +6831,37 @@ ${trkPts}
       });
     }
 
+    // AI ウォークレポート（あれば挿入）
+    if (_lastWalkReport) {
+      const rY = 1530;
+      ctx.fillStyle = 'rgba(255, 248, 225, 0.85)';
+      roundRect(ctx, 80, rY, canvas.width - 160, 130, 16);
+      ctx.fill();
+      ctx.fillStyle = '#6c63ff';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('✍️ AIによる振り返り', 100, rY + 36);
+      ctx.fillStyle = '#1c1c1f';
+      ctx.font = '24px "Hiragino Mincho ProN", serif';
+      wrapText(ctx, _lastWalkReport, 100, rY + 70, canvas.width - 200, 32);
+    }
+
     // Date
     const today = new Date();
     const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
     ctx.font = '32px sans-serif';
     ctx.fillStyle = '#6b6b72';
-    ctx.fillText(dateStr, canvas.width / 2, 1640);
+    ctx.textAlign = 'center';
+    ctx.fillText(dateStr, canvas.width / 2, _lastWalkReport ? 1700 : 1640);
 
     // Footer brand
     ctx.font = 'bold 56px sans-serif';
     ctx.fillStyle = '#ff7e3d';
-    ctx.fillText('👣 街歩きガチャ', canvas.width / 2, 1740);
+    ctx.fillText('👣 街歩きガチャ', canvas.width / 2, _lastWalkReport ? 1790 : 1740);
 
     ctx.font = '28px sans-serif';
     ctx.fillStyle = '#6b6b72';
-    ctx.fillText('あと◯分あったら、どこ寄る？', canvas.width / 2, 1790);
+    ctx.fillText('あと◯分あったら、どこ寄る？', canvas.width / 2, _lastWalkReport ? 1840 : 1790);
 
     // Download
     canvas.toBlob((blob) => {
@@ -6913,6 +7019,7 @@ ${route.themeIcon} ${route.themeName} ・ ${route.stops.length}スポット ・ 
         if (report) {
           reportText.textContent = report;
           reportEl.hidden = false;
+          _lastWalkReport = report;
         }
       });
     }

@@ -254,7 +254,27 @@
       } catch { return []; }
     }
 
+    function setMeta(prop, content) {
+      let m = document.querySelector(`meta[property="${prop}"]`) || document.querySelector(`meta[name="${prop}"]`);
+      if (!m) {
+        m = document.createElement('meta');
+        m.setAttribute('property', prop);
+        document.head.appendChild(m);
+      }
+      m.setAttribute('content', content);
+    }
+
     async function renderProfile(p) {
+      // 動的 OGP / Twitter Card 更新
+      const name = p.display_name || '散歩者';
+      const completed = p.completed_courses_count || 0;
+      const dynTitle = `${name} | Lv.${p.level || 1} ・ ${completed}コース完走 — 街歩きガチャ`;
+      const dynDesc = `${name}さんの街歩きの記録 ・ 完走${completed} ・ 累計${fmtMin(p.total_walk_min || 0)}`;
+      setMeta('og:title', dynTitle);
+      setMeta('og:description', dynDesc);
+      setMeta('twitter:title', dynTitle);
+      setMeta('twitter:description', dynDesc);
+      document.title = dynTitle;
       content.className = 'card';
       const badges = (p.badges || []).slice(0, 8);
       const completedIds = (p.completed_course_ids || []).slice(0, 20);
