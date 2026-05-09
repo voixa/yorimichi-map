@@ -3362,6 +3362,17 @@ ${trkPts}
     // 屋外向きカテゴリ（晴れの日にスコア+）
     const OUTDOOR_CATS = new Set(['park', 'viewpoint', 'shrine', 'temple']);
 
+    // 時間帯による好み判定
+    const hour = (new Date()).getHours();
+    let timeBand;
+    if (hour >= 4 && hour < 8) timeBand = 'dawn';        // 早朝
+    else if (hour >= 8 && hour < 11) timeBand = 'morning'; // 朝
+    else if (hour >= 11 && hour < 15) timeBand = 'midday'; // 昼
+    else if (hour >= 15 && hour < 18) timeBand = 'afternoon'; // 午後
+    else if (hour >= 18 && hour < 21) timeBand = 'evening'; // 夕方〜夜
+    else timeBand = 'night'; // 深夜
+    state._lastRecoTimeBand = timeBand;
+
     // スコアリング: 同じエリア/テーマなら点数増、既に発見済みなら少し減らす
     const ranked = candidates.map(c => {
       let score = 0;
@@ -3384,6 +3395,28 @@ ${trkPts}
         } else if (weatherCode === 0) {
           // 快晴
           score += outdoorRatio * 3;
+        }
+      }
+      // 時間帯適合: コースのタグ・時間制限を見て加減点
+      const tagSet = new Set((c.tags || []).map(t => String(t).toLowerCase()));
+      const courseName = (c.name || '') + (c.description || '');
+      if (timeBand === 'dawn') {
+        if (/早朝|朝5|朝6|dawn|misty|morning/i.test(courseName) || tagSet.has('早朝限定')) score += 6;
+        if (/夜景|ネオン|sunset|illumination/i.test(courseName)) score -= 4;
+      } else if (timeBand === 'morning') {
+        if (/朝|モーニング|morning/i.test(courseName) || tagSet.has('定番')) score += 3;
+      } else if (timeBand === 'afternoon') {
+        if (/夕焼け|サンセット|sunset|夕やけ/i.test(courseName) || tagSet.has('夕日')) score += 3;
+      } else if (timeBand === 'evening') {
+        if (/夕焼け|sunset|夜景|ネオン|illumination|路地裏/i.test(courseName) || tagSet.has('夕日') || tagSet.has('ネオン')) score += 5;
+        if (/早朝|朝5|朝6|dawn/i.test(courseName) || tagSet.has('早朝限定')) score -= 8;
+      } else if (timeBand === 'night') {
+        if (/夜景|ネオン|illumination/i.test(courseName)) score += 4;
+        if (/早朝|朝5|朝6|dawn|morning/i.test(courseName) || tagSet.has('早朝限定')) score -= 10;
+        // 夜は深夜営業少ないコースは減点（神社・公園系）
+        if (c.stops && c.stops.length > 0) {
+          const closedAtNightCount = c.stops.filter(s => OUTDOOR_CATS.has(s.cat)).length;
+          if (closedAtNightCount > c.stops.length * 0.5) score -= 2;
         }
       }
       // ランダムノイズ
@@ -4194,7 +4227,11 @@ ${trkPts}
     $('#reco-title').textContent = tField(reco, 'name');
     const minutes = reco.estimatedMin ? `約${reco.estimatedMin}分` : '';
     let metaPrefix = '';
-    if (state._lastRecoMeta?.indoorPreferred) metaPrefix = '☔ 雨でも楽しめる ・ ';
+    const tb = state._lastRecoTimeBand;
+    if (tb === 'dawn') metaPrefix = '🌅 早朝にぴったり ・ ';
+    else if (tb === 'evening') metaPrefix = '🌆 夕暮れ時に ・ ';
+    else if (tb === 'night') metaPrefix = '🌃 夜の散歩に ・ ';
+    else if (state._lastRecoMeta?.indoorPreferred) metaPrefix = '☔ 雨でも楽しめる ・ ';
     else if (state._lastRecoMeta?.weatherCode === 0) metaPrefix = '☀️ 快晴日和に ・ ';
     $('#reco-meta').textContent = `${metaPrefix}${reco.areaIcon || ''} ${tField(reco, 'areaName')} ・ ${minutes} ・ ${reco.stops.length}スポット`;
     const card = $('#reco-card');

@@ -100,6 +100,52 @@
       font-size: 11px;
       font-weight: 700;
     }
+    .completed-list {
+      list-style: none;
+      padding: 0;
+      margin: 12px 0 0;
+      text-align: left;
+    }
+    .completed-item {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 10px;
+      background: #fafaf7;
+      border-radius: 8px;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+    .completed-emoji {
+      font-size: 20px;
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: white;
+      flex-shrink: 0;
+    }
+    .completed-name {
+      flex: 1;
+      font-weight: 600;
+      color: #1c1c1f;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .completed-area {
+      font-size: 11px;
+      color: #6b6b72;
+      white-space: nowrap;
+    }
+    .section-label {
+      font-size: 12px;
+      color: #6b6b72;
+      margin-top: 16px;
+      font-weight: 700;
+      text-align: left;
+      padding-left: 4px;
+    }
     .cta {
       display: block;
       text-align: center;
@@ -191,9 +237,47 @@
       }
     }
 
-    function renderProfile(p) {
+    async function loadCourses() {
+      try {
+        const res = await fetch('/courses.js');
+        if (!res.ok) return [];
+        const text = await res.text();
+        // courses.js は window.YORIMICHI_COURSES = [...] でセット
+        // sandboxed eval は使わずに正規表現抽出
+        try {
+          // eslint-disable-next-line no-new-func
+          const fn = new Function('window', text);
+          const w = {};
+          fn(w);
+          return w.YORIMICHI_COURSES || [];
+        } catch { return []; }
+      } catch { return []; }
+    }
+
+    async function renderProfile(p) {
       content.className = 'card';
       const badges = (p.badges || []).slice(0, 8);
+      const completedIds = (p.completed_course_ids || []).slice(0, 20);
+      let completedHtml = '';
+      if (completedIds.length > 0) {
+        const allCourses = await loadCourses();
+        const items = completedIds
+          .map(id => allCourses.find(c => c.id === id))
+          .filter(Boolean)
+          .map(c => `
+            <li class="completed-item">
+              <div class="completed-emoji">${escape(c.themeIcon || c.areaIcon || '🌳')}</div>
+              <div class="completed-name">${escape(c.name || '')}</div>
+              <div class="completed-area">${escape(c.areaIcon || '')} ${escape(c.areaName || '')}</div>
+            </li>
+          `).join('');
+        if (items) {
+          completedHtml = `
+            <div class="section-label">🏅 完走したコース</div>
+            <ul class="completed-list">${items}</ul>
+          `;
+        }
+      }
       content.innerHTML = `
         <div class="avatar">🥚</div>
         <div class="display-name">${escape(p.display_name || '散歩者')}</div>
@@ -217,11 +301,12 @@
           </div>
         </div>
         ${badges.length > 0 ? `
-          <div style="font-size:12px;color:#6b6b72;margin-top:16px;font-weight:700;">獲得バッジ</div>
+          <div class="section-label">🏆 獲得バッジ</div>
           <div class="badges">
             ${badges.map(b => `<span class="badge-pill">${escape(b)}</span>`).join('')}
           </div>
         ` : ''}
+        ${completedHtml}
       `;
     }
 
