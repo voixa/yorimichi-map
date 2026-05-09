@@ -4632,6 +4632,90 @@ button:focus-visible,
 .tab-panel { display: block; }
 .tab-panel[hidden] { display: none; }
 
+/* ===== Me tab: XP progress bar ===== */
+.me-xp-bar {
+  height: 8px;
+  background: rgba(0,0,0,0.08);
+  border-radius: 100px;
+  overflow: hidden;
+  margin: 12px auto 4px;
+  max-width: 240px;
+}
+[data-theme="dark"] .me-xp-bar { background: rgba(255,255,255,0.08); }
+.me-xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffd700, #ff9800);
+  border-radius: 100px;
+  transition: width 0.6s ease;
+}
+.me-xp-text {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ===== Me tab: section titles + timeline + badges ===== */
+.me-section-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-muted);
+  margin: 16px 0 8px;
+  letter-spacing: 0.05em;
+}
+.me-timeline {
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 8px 4px;
+  margin-bottom: 8px;
+}
+.me-timeline-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.me-timeline-item:last-child { border-bottom: 0; }
+.me-tl-emoji {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.me-tl-body { flex: 1; min-width: 0; }
+.me-tl-label {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+}
+.me-tl-date { font-size: 11px; color: var(--text-muted); }
+.me-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.me-badge-pill {
+  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+  border: 1.5px solid #d4af37;
+  color: #5a3a00;
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 700;
+}
+[data-theme="dark"] .me-badge-pill {
+  background: linear-gradient(135deg, #3e3520 0%, #4a3f25 100%);
+  color: #ffd54f;
+}
+
 /* ===== Me tab ===== */
 .me-header {
   background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
@@ -4714,6 +4798,220 @@ button:focus-visible,
 }
 .me-shortcut .ms-emoji { font-size: 22px; }
 .me-shortcut .ms-label { line-height: 1.3; }
+
+/* ===== Compact status bar (weather + live + tip in 1 row) ===== */
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border-radius: 100px;
+  margin: 8px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+}
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.status-icon { font-size: 14px; flex-shrink: 0; }
+.status-text {
+  font-size: 12px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.status-divider {
+  width: 1px;
+  height: 14px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.status-divider:not(:has(+ .status-item:not([hidden]))),
+.status-bar:not(:has(.status-item:not([hidden]))) {
+  display: none;
+}
+.status-tip-btn {
+  background: transparent;
+  border: 0;
+  font-size: 16px;
+  cursor: pointer;
+  margin-left: auto;
+  padding: 4px;
+  border-radius: 6px;
+  color: var(--text);
+  flex-shrink: 0;
+}
+.status-tip-btn:hover { background: var(--surface); }
+
+/* ===== Featured card (merged reco + today-pick) ===== */
+.featured-card {
+  background: linear-gradient(135deg, #ec407a 0%, #ab47bc 50%, #5e35b1 100%);
+  border-radius: 18px;
+  padding: 16px;
+  margin: 12px 0;
+  color: white;
+  box-shadow: 0 8px 28px rgba(171, 71, 188, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+.featured-card::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -20%;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.15), transparent 70%);
+  pointer-events: none;
+}
+.featured-label {
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  letter-spacing: 0.05em;
+  position: relative;
+  z-index: 1;
+}
+.featured-pick {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  background: rgba(255,255,255,0.15);
+  border: 0;
+  border-radius: 12px;
+  color: white;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.15s, transform 0.15s;
+  position: relative;
+  z-index: 1;
+}
+.featured-pick:hover {
+  background: rgba(255,255,255,0.22);
+  transform: translateY(-1px);
+}
+.featured-emoji {
+  font-size: 36px;
+  width: 56px; height: 56px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.20);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.featured-body { flex: 1; min-width: 0; }
+.featured-title {
+  font-weight: 800;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 3px;
+}
+.featured-meta {
+  font-size: 12px;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.featured-cta {
+  background: white;
+  color: #ab47bc;
+  font-weight: 800;
+  padding: 8px 14px;
+  border-radius: 100px;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+/* ===== Home "more" expandable ===== */
+.home-more {
+  margin: 12px 0 8px;
+}
+.home-more-summary {
+  cursor: pointer;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  list-style: none;
+  color: var(--text);
+}
+.home-more-summary::-webkit-details-marker { display: none; }
+.home-more-summary::after {
+  content: '▼';
+  font-size: 10px;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+.home-more[open] .home-more-summary::after {
+  transform: rotate(180deg);
+}
+.home-more-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.home-more > section {
+  margin-top: 8px;
+}
+
+/* ===== Discover tab: large gacha CTA ===== */
+.discover-cta {
+  margin: 8px 0 12px;
+}
+.discover-cta-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #ff7e3d 0%, #ff4081 100%);
+  color: white;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 6px 20px rgba(255, 64, 129, 0.3);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.discover-cta-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(255, 64, 129, 0.4);
+}
+.discover-cta-btn:active { transform: scale(0.98); }
+.dcta-icon { font-size: 32px; flex-shrink: 0; }
+.dcta-body { flex: 1; min-width: 0; }
+.dcta-label { font-weight: 800; font-size: 15px; margin-bottom: 2px; }
+.dcta-sub { font-size: 12px; opacity: 0.9; }
+.dcta-arrow { font-size: 22px; font-weight: 900; flex-shrink: 0; }
+
+/* mode description */
+.mode-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 4px 0 12px;
+  padding: 0 8px;
+}
 
 /* ===== Quick Start Hero (1-tap full flow) ===== */
 .quickstart-hero {

@@ -3462,13 +3462,28 @@ ${trkPts}
   // ===== Me tab render =====
   function renderMeTab() {
     const xp = computeXP();
-    const { current } = computeLevel(xp);
+    const { current, next, progress } = computeLevel(xp);
     const avatar = $('#me-avatar');
     const title = $('#me-title');
     const level = $('#me-level');
     if (avatar) avatar.textContent = current.emoji;
     if (title) title.textContent = current.title;
-    if (level) level.textContent = `Lv.${current.lv} ・ ${xp} XP`;
+    if (level) level.textContent = `Lv.${current.lv}`;
+
+    // XP プログレスバー
+    const xpFill = $('#me-xp-fill');
+    const xpText = $('#me-xp-text');
+    if (xpFill) {
+      xpFill.style.width = `${Math.round((progress || 0) * 100)}%`;
+    }
+    if (xpText) {
+      if (next === current) {
+        xpText.textContent = `🎉 最大レベル到達 (${xp} XP)`;
+      } else {
+        const rest = (next.xp - xp);
+        xpText.textContent = `次のLv.${next.lv}まで ${rest} XP / Total ${xp} XP`;
+      }
+    }
 
     const grid = $('#me-stats');
     if (!grid) return;
@@ -3494,6 +3509,63 @@ ${trkPts}
         <div class="me-stat-label">連続日数</div>
       </div>
     `;
+
+    // 最近の活動タイムライン（直近3件）
+    const tlTitle = $('#me-activity-title');
+    const tlEl = $('#me-timeline');
+    if (tlTitle && tlEl) {
+      const history = (state.walkHistory || []).slice().reverse().slice(0, 3);
+      if (history.length === 0) {
+        tlTitle.hidden = true;
+        tlEl.hidden = true;
+      } else {
+        tlEl.innerHTML = history.map(h => {
+          const c = (window.YORIMICHI_COURSES || []).find(x => x.id === h.courseId);
+          const name = c ? tField(c, 'name') : '自由ルート';
+          const emoji = c?.themeIcon || c?.areaIcon || '🚶';
+          const status = h.completed ? '🏅' : '🚶';
+          return `
+            <div class="me-timeline-item">
+              <div class="me-tl-emoji">${emoji}</div>
+              <div class="me-tl-body">
+                <div class="me-tl-label">${escapeHtml(status + ' ' + name)}</div>
+                <div class="me-tl-date">${escapeHtml(h.date || '')}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+        tlTitle.hidden = false;
+        tlEl.hidden = false;
+      }
+    }
+
+    // バッジショーケース
+    const bgTitle = $('#me-badges-title');
+    const bgEl = $('#me-badges');
+    if (bgTitle && bgEl) {
+      // バッジ生成（簡易: 完走数・連続日数・発見数で判定）
+      const badges = [];
+      if (s.completed >= 1) badges.push('🥇 初完走');
+      if (s.completed >= 5) badges.push('🌟 5コース達成');
+      if (s.completed >= 10) badges.push('👑 10コース達成');
+      if (s.completed >= 20) badges.push('💎 20コース達成');
+      if (s.discovered >= 5) badges.push('🔍 5コース発見');
+      if (s.discovered >= 15) badges.push('🗺 15コース発見');
+      if ((state.loginStreak || 0) >= 7) badges.push('🔥 1週間連続');
+      if ((state.loginStreak || 0) >= 30) badges.push('💪 30日連続');
+      if (s.totalMin >= 60) badges.push('⏱ 1時間散歩');
+      if (s.totalMin >= 600) badges.push('🚀 10時間散歩');
+      if (gacha.pulls >= 50) badges.push('🎰 50連達成');
+
+      if (badges.length === 0) {
+        bgTitle.hidden = true;
+        bgEl.hidden = true;
+      } else {
+        bgEl.innerHTML = badges.map(b => `<span class="me-badge-pill">${escapeHtml(b)}</span>`).join('');
+        bgTitle.hidden = false;
+        bgEl.hidden = false;
+      }
+    }
   }
 
   function renderLifetimeStats() {
@@ -4130,6 +4202,9 @@ ${trkPts}
       const active30 = data.active_30min || 0;
       const pulls30 = data.pulls_30min || 0;
 
+      // 新ステータスバーに反映
+      try { renderStatusLive(active5, active30); } catch {}
+
       // 1人だけだと「自分だけ」感が出るので、表示閾値あり
       if (active30 < 1) {
         banner.hidden = true;
@@ -4321,6 +4396,89 @@ ${trkPts}
     } catch { return null; }
   }
 
+  // 統合ステータスバー：天気＋ライブ＋Tip
+  function renderStatusBar() {
+    const bar = $('#status-bar');
+    if (!bar) return;
+    let anyVisible = false;
+
+    // Weather
+    try {
+      const w = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY) || 'null');
+      if (w && Date.now() - w.fetchedAt < WEATHER_CACHE_TTL_MS) {
+        const desc = describeWeather(w.code);
+        const weatherEl = $('#status-weather');
+        if (weatherEl) {
+          $('#status-weather-icon').textContent = desc.icon;
+          const t = (typeof w.temp === 'number') ? `${Math.round(w.temp)}°C` : '';
+          $('#status-weather-text').textContent = `${desc.label}${t ? ' ' + t : ''}`;
+          weatherEl.hidden = false;
+          anyVisible = true;
+        }
+      }
+    } catch {}
+
+    bar.hidden = !anyVisible;
+  }
+
+  function renderStatusLive(active5, active30) {
+    const liveEl = $('#status-live');
+    if (!liveEl) return;
+    if (active30 < 1) { liveEl.hidden = true; return; }
+    let txt;
+    if (active5 >= 1) txt = `今 ${active5}人散歩中`;
+    else txt = `${active30}人が今日散歩`;
+    $('#status-live-text').textContent = txt;
+    liveEl.hidden = false;
+    const bar = $('#status-bar');
+    if (bar) bar.hidden = false;
+  }
+
+  // Daily tip ボタンクリックでツールチップ風表示
+  function setupDailyTipButton() {
+    const btn = $('#status-tip-btn');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      const today = new Date();
+      const dayKey = today.getFullYear() * 1000 + today.getMonth() * 50 + today.getDate();
+      const idx = dayKey % DAILY_TIPS.length;
+      showToast(`💡 ${DAILY_TIPS[idx]}`, 'info', 6000);
+    });
+  }
+
+  // 統合おすすめカード（reco-banner + today-pick の代替）
+  function renderFeaturedCard() {
+    const card = $('#featured-card');
+    if (!card) return;
+    const reco = getRecommendedCourse();
+    if (!reco) { card.hidden = true; return; }
+
+    // モードに応じてラベル変更
+    const tb = state._lastRecoTimeBand;
+    let label = '✨ 今日のあなた向け';
+    if (tb === 'dawn') label = '🌅 早朝にぴったりのコース';
+    else if (tb === 'evening') label = '🌆 夕暮れ時に歩きたい';
+    else if (tb === 'night') label = '🌃 夜の散歩に';
+    else if (state._lastRecoMeta?.indoorPreferred) label = '☔ 雨でも楽しめるコース';
+    else if (state._lastRecoMeta?.weatherCode === 0) label = '☀️ 快晴日和に';
+
+    $('#featured-label').textContent = label;
+    $('#featured-emoji').textContent = reco.themeIcon || reco.areaIcon || '🌳';
+    $('#featured-title').textContent = tField(reco, 'name');
+    const minutes = reco.estimatedMin ? `約${reco.estimatedMin}分` : '';
+    $('#featured-meta').textContent = `${reco.areaIcon || ''} ${tField(reco, 'areaName')} ・ ${minutes} ・ ${reco.stops.length}スポット`;
+
+    const btn = $('#featured-pick');
+    if (btn) {
+      btn.onclick = () => {
+        applyRoute(courseToRoute(reco));
+        showToast(`✨ 「${tField(reco, 'name')}」を地図に設定`, 'success', 3000);
+        document.querySelector('.main-tab[data-main-tab="discover"]')?.click();
+      };
+    }
+    card.hidden = false;
+  }
+
   async function renderWeatherBanner() {
     const banner = $('#weather-banner');
     if (!banner) return;
@@ -4339,6 +4497,8 @@ ${trkPts}
     const tempStr = (typeof w.temp === 'number') ? `${Math.round(w.temp)}°C` : '';
     $('#weather-meta').textContent = `${desc.label}${tempStr ? ' ・ ' + tempStr : ''}`;
     banner.hidden = false;
+    // 新ステータスバーにも反映
+    try { renderStatusBar(); } catch {}
   }
 
   // ===== Recommendation banner on home =====
@@ -5368,10 +5528,49 @@ ${trkPts}
 
     // 今日のTip
     try { renderDailyTip(); } catch {}
+    try { setupDailyTipButton(); } catch {}
+    try { renderFeaturedCard(); } catch {}
+    try { renderStatusBar(); } catch {}
 
     // Quick Start ボタン
     const quickBtn = $('#quickstart-btn');
     if (quickBtn) quickBtn.addEventListener('click', quickStart);
+
+    // 🆕 探すタブの巨大ガチャCTA
+    const discoverCtaBtn = $('#discover-cta-btn');
+    if (discoverCtaBtn) discoverCtaBtn.addEventListener('click', () => {
+      try { showGachaModal(); } catch {}
+    });
+    function updateDiscoverCta() {
+      const label = $('#dcta-label');
+      const sub = $('#dcta-sub');
+      const desc = $('#mode-desc');
+      if (!label || !sub) return;
+      if (state.mode === 'course') {
+        label.textContent = '🎰 コースガチャを引く';
+        sub.textContent = 'キュレーション済み21本から1本';
+        if (desc) desc.textContent = '📖 キュレーション済みコース21本から運命の一本を引く';
+      } else if (state.mode === 'route') {
+        label.textContent = '🎯 自由ルートガチャ';
+        sub.textContent = '出発地→目的地から AI生成';
+        if (desc) desc.textContent = '🎯 出発地と目的地を入れると AI が街歩きコースを動的生成';
+      } else if (state.mode === 'stroll') {
+        label.textContent = '🌿 散歩ガチャ';
+        sub.textContent = '出発地から気の向くまま';
+        if (desc) desc.textContent = '🌿 出発地のみ入れて、AIが周辺の散歩コースを生成';
+      }
+    }
+    // 既存の setMode が呼ばれた後に CTA も更新（observer 風）
+    const _origSetMode = (typeof setMode === 'function') ? setMode : null;
+    if (_origSetMode) {
+      window._setMode = _origSetMode; // backup
+    }
+    // setMode はクロージャ内なので直接書換えは不可。代わりにモード切替後にUI更新するhookは
+    // タブクリック時とapp初期化時に呼ぶ
+    [$('#tab-course'), $('#tab-route'), $('#tab-stroll')].forEach(t => {
+      if (t) t.addEventListener('click', () => setTimeout(updateDiscoverCta, 50));
+    });
+    updateDiscoverCta();
 
     // 🆕 メインタブ切替（ホーム / 探す / マイ）
     const MAIN_TAB_KEY = 'yorimichi-main-tab';
@@ -5387,8 +5586,10 @@ ${trkPts}
       try { localStorage.setItem(MAIN_TAB_KEY, name); } catch {}
       // タブ切替時に該当タブの内容を更新
       if (name === 'home') {
-        try { renderRecommendationBanner(); } catch {}
+        try { renderFeaturedCard(); } catch {}
         try { renderMissions(); } catch {}
+        try { renderStatusBar(); } catch {}
+        try { renderRecommendationBanner(); } catch {}
         try { renderWeatherBanner(); } catch {}
       } else if (name === 'me') {
         try { renderMeTab(); } catch {}

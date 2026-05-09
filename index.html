@@ -272,16 +272,21 @@
           <button class="main-tab" data-main-tab="me" role="tab" type="button">👤 マイ</button>
         </nav>
 
-        <!-- ====== ホームタブ ====== -->
+        <!-- ====== ホームタブ（再編：優先度順） ====== -->
         <div class="tab-panel" data-tab-panel="home">
 
-        <!-- Live counter ticker -->
-        <section class="live-counter" id="live-counter" hidden>
-          <span class="live-counter-dot"></span>
-          <span class="live-counter-text" id="live-counter-text">—</span>
+        <!-- 🥇 優先度1: 中断ウォーク（あれば最優先） -->
+        <section class="resume-banner" id="resume-banner" hidden>
+          <div class="resume-icon">🚶</div>
+          <div class="resume-body">
+            <div class="resume-title">前回のウォークが進行中</div>
+            <div class="resume-meta" id="resume-meta">—</div>
+          </div>
+          <button class="resume-btn" id="resume-btn" type="button">続きから</button>
+          <button class="resume-dismiss" id="resume-dismiss" type="button" aria-label="閉じる">✕</button>
         </section>
 
-        <!-- Quick Start hero (1-tap full flow) -->
+        <!-- 🥇 優先度2: クイックスタート（最大CTA） -->
         <section class="quickstart-hero" id="quickstart-hero">
           <button class="quickstart-btn" id="quickstart-btn" type="button">
             <span class="qs-icon">🎰</span>
@@ -293,82 +298,34 @@
           </button>
         </section>
 
-        <section class="resume-banner" id="resume-banner" hidden>
-          <div class="resume-icon">🚶</div>
-          <div class="resume-body">
-            <div class="resume-title">前回のウォークが進行中</div>
-            <div class="resume-meta" id="resume-meta">—</div>
-          </div>
-          <button class="resume-btn" id="resume-btn" type="button">続きから</button>
-          <button class="resume-dismiss" id="resume-dismiss" type="button" aria-label="閉じる">✕</button>
+        <!-- 🆕 統合ステータスバー（天気・Tip・ライブを1行に） -->
+        <section class="status-bar" id="status-bar" hidden>
+          <span class="status-item" id="status-weather" hidden>
+            <span class="status-icon" id="status-weather-icon">☀️</span>
+            <span class="status-text" id="status-weather-text">—</span>
+          </span>
+          <span class="status-divider"></span>
+          <span class="status-item" id="status-live" hidden>
+            <span class="status-icon live-counter-dot"></span>
+            <span class="status-text" id="status-live-text">—</span>
+          </span>
+          <button class="status-tip-btn" id="status-tip-btn" type="button" aria-label="今日のヒント">💡</button>
         </section>
 
-        <!-- Personal stats strip (course mode + has progress) -->
-        <section class="home-stats" id="home-stats" hidden>
-          <div class="hs-item">
-            <span class="hs-num" id="hs-completed">0</span>
-            <span class="hs-label">完走</span>
-          </div>
-          <div class="hs-item">
-            <span class="hs-num" id="hs-stamps">0</span>
-            <span class="hs-label">スタンプ</span>
-          </div>
-          <div class="hs-item">
-            <span class="hs-num" id="hs-discovered">0</span>
-            <span class="hs-label">発見</span>
-          </div>
-          <div class="hs-item">
-            <span class="hs-num" id="hs-streak">0</span>
-            <span class="hs-label">🔥連続</span>
-          </div>
-        </section>
-
-        <!-- Daily tip -->
-        <section class="daily-tip" id="daily-tip" hidden>
-          <span class="daily-tip-icon">💡</span>
-          <div class="daily-tip-body">
-            <div class="daily-tip-label">今日の散歩テクニック</div>
-            <div class="daily-tip-text" id="daily-tip-text">—</div>
-          </div>
-        </section>
-
-        <!-- Weather indicator -->
-        <section class="weather-banner" id="weather-banner" hidden>
-          <span class="weather-icon" id="weather-icon">☀️</span>
-          <div class="weather-body">
-            <div class="weather-msg" id="weather-msg">天気を取得中…</div>
-            <div class="weather-meta" id="weather-meta">—</div>
-          </div>
-        </section>
-
-        <!-- Popular courses ranking -->
-        <section class="popular-ranking" id="popular-ranking" hidden>
-          <div class="popular-header">
-            <span>📈 今週の人気コース</span>
-            <span class="popular-period">(7日間)</span>
-          </div>
-          <ol class="popular-list" id="popular-list">
-            <!-- populated by JS -->
-          </ol>
-        </section>
-
-        <!-- Smart recommendation banner -->
-        <section class="reco-banner" id="reco-banner" hidden>
-          <div class="reco-label">
-            <span>✨ あなた向け</span>
-            <span class="reco-badge">レコメンド</span>
-          </div>
-          <button class="reco-card" id="reco-card" type="button">
-            <span class="reco-emoji" id="reco-emoji">🌳</span>
-            <div class="reco-body">
-              <div class="reco-title" id="reco-title">—</div>
-              <div class="reco-meta" id="reco-meta">—</div>
+        <!-- 🥈 統合おすすめカード（reco + today-pick） -->
+        <section class="featured-card" id="featured-card" hidden>
+          <div class="featured-label" id="featured-label">✨ 今日のあなた向け</div>
+          <button class="featured-pick" id="featured-pick" type="button">
+            <span class="featured-emoji" id="featured-emoji">🌳</span>
+            <div class="featured-body">
+              <div class="featured-title" id="featured-title">—</div>
+              <div class="featured-meta" id="featured-meta">—</div>
             </div>
-            <span class="reco-arrow">→</span>
+            <span class="featured-cta">引く →</span>
           </button>
         </section>
 
-        <!-- Daily missions widget -->
+        <!-- 🥉 デイリーミッション -->
         <section class="missions-widget" id="missions-widget" hidden>
           <div class="missions-header">
             <span>🎯 今日のミッション</span>
@@ -379,36 +336,81 @@
           </div>
         </section>
 
-        <!-- Today's recommended course (course mode only) -->
-        <section class="today-pick" id="today-pick" hidden>
-          <div class="today-label">
-            <span>✨ 今日のおすすめ</span>
-            <span class="today-streak" id="today-streak"></span>
-          </div>
-          <button class="today-card" id="today-card" type="button">
-            <span class="today-emoji" id="today-emoji">🌳</span>
-            <div class="today-body">
-              <div class="today-title" id="today-title">—</div>
-              <div class="today-meta" id="today-meta">—</div>
+        <!-- もっと見る（折りたたみ：補助情報） -->
+        <details class="home-more" id="home-more">
+          <summary class="home-more-summary">
+            <span>📈 もっと見る</span>
+            <span class="home-more-hint">人気ランキング・統計</span>
+          </summary>
+
+          <!-- Personal stats strip -->
+          <section class="home-stats" id="home-stats" hidden>
+            <div class="hs-item">
+              <span class="hs-num" id="hs-completed">0</span>
+              <span class="hs-label">完走</span>
             </div>
-            <span class="today-cta">引く</span>
-          </button>
-        </section>
+            <div class="hs-item">
+              <span class="hs-num" id="hs-stamps">0</span>
+              <span class="hs-label">スタンプ</span>
+            </div>
+            <div class="hs-item">
+              <span class="hs-num" id="hs-discovered">0</span>
+              <span class="hs-label">発見</span>
+            </div>
+            <div class="hs-item">
+              <span class="hs-num" id="hs-streak">0</span>
+              <span class="hs-label">🔥連続</span>
+            </div>
+          </section>
+
+          <!-- Popular courses ranking -->
+          <section class="popular-ranking" id="popular-ranking" hidden>
+            <div class="popular-header">
+              <span>📈 今週の人気コース</span>
+              <span class="popular-period">(7日間)</span>
+            </div>
+            <ol class="popular-list" id="popular-list">
+              <!-- populated by JS -->
+            </ol>
+          </section>
+        </details>
+
+        <!-- レガシー要素（隠して保持・JS互換のため） -->
+        <span hidden>
+          <span id="live-counter" hidden><span class="live-counter-dot"></span><span id="live-counter-text"></span></span>
+          <span id="weather-banner" hidden><span id="weather-icon"></span><span id="weather-msg"></span><span id="weather-meta"></span></span>
+          <span id="daily-tip" hidden><span id="daily-tip-text"></span></span>
+          <span id="reco-banner" hidden><span id="reco-emoji"></span><span id="reco-title"></span><span id="reco-meta"></span><button id="reco-card"></button></span>
+          <span id="today-pick" hidden><span id="today-streak"></span><span id="today-emoji"></span><span id="today-title"></span><span id="today-meta"></span><button id="today-card"></button></span>
+        </span>
 
         </div><!-- /tab-panel home -->
 
         <!-- ====== 探すタブ ====== -->
         <div class="tab-panel" data-tab-panel="discover" hidden>
 
-        <!-- Mode tabs -->
+        <!-- 🆕 巨大ガチャCTA（探すタブの最上部・最重要） -->
+        <section class="discover-cta" id="discover-cta">
+          <button class="discover-cta-btn" id="discover-cta-btn" type="button">
+            <span class="dcta-icon">🎰</span>
+            <div class="dcta-body">
+              <div class="dcta-label" id="dcta-label">ガチャを引く</div>
+              <div class="dcta-sub" id="dcta-sub">巨大ガチャマシンを回そう</div>
+            </div>
+            <span class="dcta-arrow">→</span>
+          </button>
+        </section>
+
+        <!-- Mode tabs + 説明 -->
         <div class="mode-tabs three" role="tablist" aria-label="モード">
           <button class="mode-tab active" id="tab-course" role="tab" aria-selected="true" type="button">📖 既存コース</button>
           <button class="mode-tab" id="tab-route" role="tab" aria-selected="false" type="button">🎯 自由ルート</button>
           <button class="mode-tab" id="tab-stroll" role="tab" aria-selected="false" type="button">🌿 散歩</button>
         </div>
+        <p class="mode-desc" id="mode-desc">📖 キュレーション済みコース21本から運命の一本を引く</p>
 
         <!-- Course mode: collapsible filters (area + tags) -->
-        <details class="filters-section" id="filters-section" open>
+        <details class="filters-section" id="filters-section">
           <summary class="filters-summary">
             <span class="filters-summary-label">
               <span>🔍 絞り込み</span>
@@ -590,9 +592,26 @@
             <div class="me-avatar" id="me-avatar">🥚</div>
             <div class="me-title" id="me-title">散歩はじめ</div>
             <div class="me-level" id="me-level">Lv.1</div>
+            <!-- XP プログレスバー -->
+            <div class="me-xp-bar" id="me-xp-bar">
+              <div class="me-xp-fill" id="me-xp-fill"></div>
+            </div>
+            <div class="me-xp-text" id="me-xp-text">次のレベルまで — XP</div>
           </section>
 
           <div class="me-stats" id="me-stats">
+            <!-- populated by JS -->
+          </div>
+
+          <!-- 🆕 最近の活動タイムライン -->
+          <div class="me-section-title" id="me-activity-title" hidden>📅 最近の活動</div>
+          <div class="me-timeline" id="me-timeline" hidden>
+            <!-- populated by JS -->
+          </div>
+
+          <!-- 🆕 バッジショーケース -->
+          <div class="me-section-title" id="me-badges-title" hidden>🏆 獲得バッジ</div>
+          <div class="me-badges" id="me-badges" hidden>
             <!-- populated by JS -->
           </div>
 
