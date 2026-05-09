@@ -238,8 +238,9 @@
       </div>
 
       <div class="profile-section-title">📜 散歩履歴</div>
-      <div class="data-actions" style="margin-bottom: 16px;">
-        <button class="btn-secondary" id="show-walk-log" type="button">🗓 すべての履歴を見る</button>
+      <div class="data-actions" style="margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap;">
+        <button class="btn-secondary" id="show-walk-log" type="button" style="flex: 1; min-width: 140px;">🗓 すべての履歴</button>
+        <button class="btn-secondary" id="show-photo-album" type="button" style="flex: 1; min-width: 140px;">📷 撮影アルバム</button>
       </div>
 
       <div class="profile-section-title">⚙️ データ管理</div>
@@ -988,6 +989,18 @@
     </div>
   </div>
 
+  <!-- ============ Photo Album Modal ============ -->
+  <div class="modal-backdrop" id="photo-album-modal" hidden>
+    <div class="modal photo-album-modal" role="dialog" aria-label="撮影アルバム" aria-modal="true">
+      <button class="modal-close" id="photo-album-close" type="button" aria-label="閉じる">✕</button>
+      <h2 class="modal-title">📷 撮影アルバム</h2>
+      <p class="album-stats" id="album-stats">—</p>
+      <div class="album-grid" id="album-grid">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </div>
+
   <!-- ============ Help / FAQ Modal ============ -->
   <div class="modal-backdrop" id="help-modal" hidden>
     <div class="modal help-modal" role="dialog" aria-label="ヘルプ" aria-modal="true">
@@ -1158,6 +1171,15 @@
           <span id="cert-date">—</span>
           <span class="cert-brand">👣 街歩きガチャ</span>
         </div>
+      </div>
+
+      <!-- AI ウォークレポート -->
+      <div class="walk-report" id="walk-report" hidden>
+        <div class="walk-report-header">
+          <span class="walk-report-icon">✍️</span>
+          <span class="walk-report-label">AIによる今日の振り返り</span>
+        </div>
+        <div class="walk-report-text" id="walk-report-text">—</div>
       </div>
 
       <!-- 完走時の即シェア促進バナー -->

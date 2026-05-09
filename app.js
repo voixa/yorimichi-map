@@ -3486,6 +3486,102 @@ ${trkPts}
     `;
   }
 
+  // ===== Photo album =====
+  function renderPhotoAlbum() {
+    const grid = $('#album-grid');
+    const stats = $('#album-stats');
+    if (!grid || !stats) return;
+
+    // すべてのコースから写真を集約
+    const allCourses = window.YORIMICHI_COURSES || [];
+    const allPhotos = [];
+    allCourses.forEach(course => {
+      const photos = getCoursePhotos(course.id);
+      Object.entries(photos).forEach(([idxStr, entry]) => {
+        const idx = parseInt(idxStr, 10);
+        const stop = course.stops[idx];
+        if (!stop) return;
+        const url = _photoUrlOf(entry);
+        if (!url) return;
+        allPhotos.push({
+          courseId: course.id,
+          courseName: tField(course, 'name'),
+          area: tField(course, 'areaName'),
+          areaIcon: course.areaIcon,
+          stopName: stop.name,
+          url,
+          desc: _photoDescOf(entry),
+        });
+      });
+    });
+
+    // 自由ルートで撮ったものは __free_ プレフィックスで保存されることがある
+    // localStorage を直接確認
+    try {
+      const keys = Object.keys(localStorage).filter(k => k.startsWith('yorimichi-photos-__free_'));
+      keys.forEach(key => {
+        try {
+          const data = JSON.parse(localStorage.getItem(key) || '{}');
+          Object.entries(data).forEach(([idxStr, entry]) => {
+            const url = _photoUrlOf(entry);
+            if (!url) return;
+            allPhotos.push({
+              courseId: 'free',
+              courseName: '自由ルート',
+              area: '',
+              areaIcon: '🌐',
+              stopName: '撮影スポット',
+              url,
+              desc: _photoDescOf(entry),
+            });
+          });
+        } catch {}
+      });
+    } catch {}
+
+    stats.textContent = `📸 ${allPhotos.length}枚 ・ ${new Set(allPhotos.map(p => p.courseId)).size}コース`;
+    grid.innerHTML = '';
+    if (allPhotos.length === 0) {
+      grid.innerHTML = `<div class="album-empty">
+        <div style="font-size:48px;opacity:0.5;margin-bottom:12px;">📷</div>
+        <div style="font-weight:700;color:var(--text);">まだ写真がありません</div>
+        <div style="font-size:13px;margin-top:6px;">散歩中に HUD の📸ボタンで撮影できます</div>
+      </div>`;
+      return;
+    }
+
+    allPhotos.forEach((p, i) => {
+      const tile = document.createElement('div');
+      tile.className = 'album-photo';
+      tile.innerHTML = `
+        <img src="${escapeHtml(p.url)}" alt="${escapeHtml(p.stopName)}" loading="lazy" />
+        <div class="album-photo-meta">${escapeHtml(p.areaIcon || '')} ${escapeHtml(p.stopName)}</div>
+      `;
+      tile.addEventListener('click', () => showPhotoViewer(p));
+      grid.appendChild(tile);
+    });
+  }
+
+  function showPhotoViewer(photo) {
+    if (document.querySelector('.photo-viewer')) return;
+    const overlay = document.createElement('div');
+    overlay.className = 'photo-viewer';
+    overlay.innerHTML = `
+      <button class="photo-viewer-close" aria-label="閉じる">✕</button>
+      <img src="${escapeHtml(photo.url)}" alt="${escapeHtml(photo.stopName)}" />
+      <div class="photo-viewer-info">
+        <div class="photo-viewer-name">${escapeHtml(photo.areaIcon || '')} ${escapeHtml(photo.stopName)}</div>
+        <div class="photo-viewer-desc">${escapeHtml(photo.courseName)}${photo.desc ? '<br>✨ ' + escapeHtml(photo.desc) : ''}</div>
+      </div>
+    `;
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay || e.target.classList.contains('photo-viewer-close')) {
+        overlay.remove();
+      }
+    });
+    document.body.appendChild(overlay);
+  }
+
   function renderWalkLog() {
     const list = $('#walk-log-list');
     const stats = $('#walk-log-stats');
@@ -6766,10 +6862,60 @@ ${route.themeIcon} ${route.themeName} ・ ${route.stops.length}スポット ・ 
     }, 50);
   }
 
+  async function fetchWalkReport(course, durationMin, photosTaken) {
+    if (!course || !course.stops) return null;
+    let weatherCode = null;
+    try {
+      const w = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY) || 'null');
+      if (w && Date.now() - w.fetchedAt < WEATHER_CACHE_TTL_MS) weatherCode = w.code;
+    } catch {}
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 12000);
+      const res = await fetch(`${API_BASE}/api/walk-report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          course_name: tField(course, 'name'),
+          area: tField(course, 'areaName'),
+          visited_stops: course.stops.map(s => s.name).filter(Boolean),
+          duration_min: durationMin || course.estimatedMin || 0,
+          photos_taken: photosTaken,
+          weather_code: weatherCode,
+          hour: (new Date()).getHours(),
+        }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data?.report || null;
+    } catch (e) {
+      console.warn('walk report fetch failed', e);
+      return null;
+    }
+  }
+
   function showCertificate(course) {
     $('#cert-modal').hidden = false;
     $('#cert-course').textContent = tField(course, 'name');
     $('#cert-area').textContent = `${course.areaIcon} ${tField(course, 'areaName')}`;
+    // ウォークレポートを非同期生成
+    const reportEl = $('#walk-report');
+    const reportText = $('#walk-report-text');
+    if (reportEl && reportText) {
+      reportEl.hidden = true;
+      reportText.textContent = '';
+      // 撮影写真数 + 開始からの経過時間概算
+      const photos = getCoursePhotos(course.id);
+      const photosCount = Object.keys(photos).length;
+      fetchWalkReport(course, course.estimatedMin, photosCount).then(report => {
+        if (report) {
+          reportText.textContent = report;
+          reportEl.hidden = false;
+        }
+      });
+    }
 
     // Walk count badge
     const count = state.walkCounts?.[course.id] || 1;
@@ -7296,6 +7442,16 @@ ${hashtag}`;
     $('#data-export').addEventListener('click', exportData);
     $('#data-import').addEventListener('click', importData);
     $('#data-reset').addEventListener('click', resetData);
+    // 撮影アルバム
+    const albumBtn = $('#show-photo-album');
+    if (albumBtn) albumBtn.addEventListener('click', () => {
+      $('#profile-modal').hidden = true;
+      renderPhotoAlbum();
+      $('#photo-album-modal').hidden = false;
+    });
+    const albumClose = $('#photo-album-close');
+    if (albumClose) albumClose.addEventListener('click', () => { $('#photo-album-modal').hidden = true; });
+
     // 散歩履歴モーダル
     const walkLogBtn = $('#show-walk-log');
     if (walkLogBtn) walkLogBtn.addEventListener('click', () => {

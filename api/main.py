@@ -499,6 +499,97 @@ def _fallback_narrative(theme: str, area: str, stop_names: list, rarity: str) ->
 
 # ----- AI 写真描写（Gemini Vision） -----
 # ----- AI スポットガイド（撮影ヒント・豆知識・楽しみ方） -----
+# ----- AI ウォークレポート（完走後の振り返り） -----
+@app.route("/api/walk-report", methods=["POST"])
+def walk_report():
+    """完走したコースの情報から、心象風景的な散歩レポートを生成"""
+    if not gemini_client:
+        return jsonify({"error": "ai_disabled"}), 503
+    data = request.get_json(silent=True) or {}
+    course_name = (data.get("course_name") or "").strip()[:80]
+    area = (data.get("area") or "").strip()[:40]
+    visited_stops = data.get("visited_stops") or []
+    if not isinstance(visited_stops, list):
+        visited_stops = []
+    visited_stops = [str(s)[:60] for s in visited_stops][:8]
+    duration_min = int(data.get("duration_min") or 0)
+    photos_taken = int(data.get("photos_taken") or 0)
+    weather_code = data.get("weather_code")
+    hour = int(data.get("hour") or 12)
+
+    # 時間帯ヒント
+    time_hint = "朝"
+    if hour < 5: time_hint = "深夜"
+    elif hour < 9: time_hint = "早朝"
+    elif hour < 12: time_hint = "午前中"
+    elif hour < 15: time_hint = "昼下がり"
+    elif hour < 18: time_hint = "夕方"
+    else: time_hint = "夜"
+
+    weather_hint = ""
+    if isinstance(weather_code, int):
+        if weather_code == 0: weather_hint = "・快晴の日"
+        elif 1 <= weather_code <= 3: weather_hint = "・曇り空の下"
+        elif 51 <= weather_code <= 67: weather_hint = "・雨の中"
+
+    if not course_name or not visited_stops:
+        return jsonify({"error": "insufficient_input"}), 400
+
+    prompt = (
+        f"あなたは散歩ライター。ユーザーが完走したコースを振り返る短い物語を書きます。\n"
+        f"\n"
+        f"【入力データ - これらは実在の地名・店舗名です。そのまま使ってOKです】\n"
+        f"- コース名: {course_name}\n"
+        f"- エリア: {area}\n"
+        f"- 訪問スポット: {' → '.join(visited_stops)}\n"
+        f"- 所要時間: 約{duration_min}分\n"
+        f"- 写真撮影: {photos_taken}枚\n"
+        f"- 時間帯: {time_hint}{weather_hint}\n"
+        f"\n"
+        f"【ルール】\n"
+        f"- 110-160字の物語\n"
+        f"- 二人称「あなた」を使う\n"
+        f"- **訪問スポットを最低2件、文中にそのまま登場させる**\n"
+        f"  例: 「カヤバ珈琲で一息ついた」「夕やけだんだんの石段を下る」\n"
+        f"- スポット名を勝手に変えたり省略したりしない\n"
+        f"- ただし、入力にない固有名詞（実在しない建物・人名）は追加しない\n"
+        f"- 商標・著名人・ジブリ・ポケモン等は使わない\n"
+        f"- 詩的だが過剰な比喩は避ける\n"
+        f"\n"
+        f'JSON: {{"report": "..."}}'
+    )
+
+    try:
+        config_kwargs = dict(
+            temperature=0.85,
+            max_output_tokens=2048,
+            response_mime_type="application/json",
+            response_schema=genai_types.Schema(
+                type=genai_types.Type.OBJECT,
+                required=["report"],
+                properties={"report": genai_types.Schema(type=genai_types.Type.STRING)},
+            ),
+        )
+        try:
+            config_kwargs["thinking_config"] = genai_types.ThinkingConfig(thinking_budget=0)
+        except Exception:
+            pass
+        config = genai_types.GenerateContentConfig(**config_kwargs)
+        response = gemini_client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=config,
+        )
+        text = (response.text or "").strip()
+        if not text:
+            return jsonify({"error": "empty"}), 502
+        result = json.loads(text)
+        return jsonify({"report": str(result.get("report", ""))[:400]})
+    except Exception as e:
+        logger.exception("walk_report failed")
+        return jsonify({"error": "server_error"}), 502
+
+
 @app.route("/api/spot-guide", methods=["POST"])
 def spot_guide():
     """スポット名+エリアから「撮るべき写真」「豆知識」「楽しみ方」を3行生成"""

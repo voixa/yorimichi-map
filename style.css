@@ -3991,6 +3991,94 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
   font-weight: 600;
 }
 
+/* ===== Photo album modal ===== */
+.photo-album-modal { max-width: 560px; }
+.album-stats {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 4px 0 16px;
+}
+.album-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+@media (min-width: 480px) {
+  .album-grid { grid-template-columns: repeat(4, 1fr); }
+}
+.album-photo {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.album-photo:hover { transform: scale(1.04); }
+.album-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.album-photo-meta {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.85));
+  color: white;
+  font-size: 9px;
+  padding: 8px 6px 4px;
+  font-weight: 600;
+}
+.album-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 16px;
+  color: var(--text-muted);
+}
+
+/* Photo viewer overlay */
+.photo-viewer {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 20px;
+}
+.photo-viewer img {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.photo-viewer-info {
+  color: white;
+  text-align: center;
+  margin-top: 16px;
+  max-width: 600px;
+}
+.photo-viewer-name { font-weight: 800; font-size: 16px; }
+.photo-viewer-desc { font-size: 13px; opacity: 0.85; margin-top: 6px; line-height: 1.6; }
+.photo-viewer-close {
+  position: absolute;
+  top: 16px; right: 16px;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  border: 0;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+}
+
 /* ===== Walk log modal ===== */
 .walk-log-modal { max-width: 520px; }
 .walk-log-stats {
@@ -4392,6 +4480,37 @@ button:focus-visible,
   animation: livePulse 2s ease-in-out infinite;
 }
 
+/* ===== Walk Report (AI summary) ===== */
+.walk-report {
+  background: linear-gradient(135deg, rgba(108, 99, 255, 0.12) 0%, rgba(255, 64, 129, 0.10) 100%);
+  border-left: 4px solid #6c63ff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 12px 0 8px;
+  position: relative;
+}
+[data-theme="dark"] .walk-report {
+  background: linear-gradient(135deg, rgba(124, 117, 255, 0.18) 0%, rgba(255, 64, 129, 0.14) 100%);
+  border-left-color: #7c75ff;
+}
+.walk-report-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+}
+.walk-report-icon { font-size: 16px; }
+.walk-report-text {
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--text);
+  font-family: "Hiragino Mincho ProN", serif;
+}
+
 /* ===== Share prompt (after completion) ===== */
 .share-prompt {
   display: flex;
@@ -4777,6 +4896,19 @@ button:focus-visible,
   margin-bottom: 6px;
 }
 .sub-active-msg { font-size: 13px; color: #856404; margin: 0 0 12px; }
+
+/* ===== Map controls reposition during walk (HUD表示時) ===== */
+/* HUD 表示中は Leaflet の zoom controls をHUDに被らない位置に */
+body:has(.walk-hud:not([hidden])) .leaflet-bottom.leaflet-left,
+body:has(.walk-hud:not([hidden])) .leaflet-bottom.leaflet-right {
+  bottom: 130px !important; /* HUD の上に */
+}
+@media (max-width: 480px) {
+  body:has(.walk-hud:not([hidden])) .leaflet-bottom.leaflet-left,
+  body:has(.walk-hud:not([hidden])) .leaflet-bottom.leaflet-right {
+    bottom: 145px !important;
+  }
+}
 
 /* ===== Walk Mode HUD (mobile-first overlay) ===== */
 .walk-hud {
