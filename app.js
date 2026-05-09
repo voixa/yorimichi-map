@@ -305,6 +305,31 @@
     _showNextToast();
   }
 
+  // ↩ Undo付きトースト（独立したスナックバー、5秒間表示）
+  function showUndoToast(msg, onUndo, duration = 5000) {
+    // 既存の Undo を消す
+    document.querySelectorAll('.undo-toast').forEach(el => el.remove());
+    const toast = document.createElement('div');
+    toast.className = 'undo-toast';
+    toast.innerHTML = `
+      <span class="undo-toast-msg">${escapeHtml(msg)}</span>
+      <button class="undo-toast-btn" type="button">↩ 取り消し</button>
+    `;
+    document.body.appendChild(toast);
+    let dismissed = false;
+    const dismiss = () => {
+      if (dismissed) return;
+      dismissed = true;
+      toast.classList.add('out');
+      setTimeout(() => { try { toast.remove(); } catch {} }, 250);
+    };
+    toast.querySelector('.undo-toast-btn').addEventListener('click', () => {
+      try { onUndo && onUndo(); } catch (e) { console.warn('undo failed', e); }
+      dismiss();
+    });
+    setTimeout(dismiss, duration);
+  }
+
   function showLoader(text = '読み込み中...') {
     $('#loader-text').textContent = text;
     $('#loader').hidden = false;
@@ -5215,6 +5240,81 @@ ${trkPts}
   }
 
   // 統合おすすめカード（reco-banner + today-pick の代替）
+  // 🔎 コース・スポット横断検索
+  function runCourseSearch(query) {
+    const resultsEl = $('#course-search-results');
+    if (!resultsEl) return;
+    const q = String(query || '').trim().toLowerCase();
+    if (!q) {
+      resultsEl.hidden = true;
+      resultsEl.innerHTML = '';
+      return;
+    }
+    const allCourses = (window.YORIMICHI_COURSES || []);
+    const hits = []; // { course, matchType, matchText }
+    allCourses.forEach(c => {
+      const name = String(tField(c, 'name') || '').toLowerCase();
+      const desc = String(tField(c, 'description') || '').toLowerCase();
+      const areaName = String(tField(c, 'areaName') || '').toLowerCase();
+      const tags = (c.tags || []).map(t => String(t).toLowerCase()).join(' ');
+      // コース自体マッチ
+      if (name.includes(q)) {
+        hits.push({ course: c, matchType: 'name', matchText: tField(c, 'name') });
+        return;
+      }
+      if (desc.includes(q) || tags.includes(q) || areaName.includes(q)) {
+        hits.push({ course: c, matchType: 'meta', matchText: areaName.includes(q) ? tField(c, 'areaName') : (tags.includes(q) ? `#${q}` : tField(c, 'description')?.slice(0, 40)) });
+        return;
+      }
+      // スポットマッチ
+      const matchedStops = (c.stops || []).filter(s => {
+        const sn = String(s.name || '').toLowerCase();
+        const sd = String(s.desc || '').toLowerCase();
+        const stags = (s.tags || []).map(t => String(t).toLowerCase()).join(' ');
+        return sn.includes(q) || sd.includes(q) || stags.includes(q);
+      });
+      if (matchedStops.length > 0) {
+        hits.push({
+          course: c,
+          matchType: 'stop',
+          matchText: matchedStops.map(s => s.name).slice(0, 2).join(' / '),
+        });
+      }
+    });
+    if (hits.length === 0) {
+      resultsEl.innerHTML = `<div class="search-empty">該当するコースがありません</div>`;
+      resultsEl.hidden = false;
+      return;
+    }
+    resultsEl.innerHTML = `
+      <div class="search-results-header">${hits.length}件 ヒット</div>
+      ${hits.slice(0, 10).map(h => {
+        const c = h.course;
+        const done = state.completedCourses.has(c.id);
+        const fav = isFavorite(c.id);
+        const matchTypeLabel = h.matchType === 'stop' ? '📍 スポット' : (h.matchType === 'meta' ? '🏷️ タグ/エリア' : '🗺 コース名');
+        return `
+          <button class="search-result-item" type="button" data-course-id="${escapeHtml(c.id)}">
+            <span class="search-result-emoji">${c.themeIcon || c.areaIcon || '🌳'}</span>
+            <span class="search-result-body">
+              <span class="search-result-name">${escapeHtml(tField(c, 'name'))} ${fav ? '<span class="sr-fav">❤️</span>' : ''} ${done ? '<span class="sr-done">完走</span>' : ''}</span>
+              <span class="search-result-meta">${escapeHtml(matchTypeLabel)} ・ ${escapeHtml(h.matchText || '')}</span>
+            </span>
+            <span class="search-result-cta">→</span>
+          </button>
+        `;
+      }).join('')}
+    `;
+    resultsEl.hidden = false;
+    resultsEl.querySelectorAll('.search-result-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const cid = el.getAttribute('data-course-id');
+        const c = allCourses.find(x => x.id === cid);
+        if (c) showCourseDetail(c);
+      });
+    });
+  }
+
   // 🚶 コース難易度を自動推定（時間 + スポット数 + 区間長から）
   function computeCourseDifficulty(course) {
     if (!course) return { level: 1, label: '初級', icon: '🚶', factors: [] };
@@ -6372,6 +6472,11 @@ ${trkPts}
           const tagsHtml = tags.length
             ? `<div class="cd-stop-tags">${tags.map(t => `<span class="detail-tag">#${escapeHtml(t)}</span>`).join('')}</div>`
             : '';
+          // 📝 前回の自分のメモがあれば表示
+          const pastMemo = getStopMemos(course.id)[i]?.memo || '';
+          const pastMemoHtml = pastMemo
+            ? `<div class="cd-past-memo">📝 <em>「${escapeHtml(pastMemo)}」</em><span class="cd-past-memo-tag">前回の自分のメモ</span></div>`
+            : '';
           return `
           ${segmentHtml}
           <div class="cd-stop expandable" data-stop-idx="${i}">
@@ -6385,6 +6490,7 @@ ${trkPts}
             <div class="cd-stop-expanded">
               <div class="cd-stop-meta">${detailRows.join('')}</div>
               ${tagsHtml}
+              ${pastMemoHtml}
             </div>
           </div>`;
         }).join('')}
@@ -8276,8 +8382,10 @@ ${trkPts}
     try { localStorage.setItem('yorimichi-stop-memos-' + courseId, JSON.stringify(all)); } catch {}
   }
   function showMemoPrompt(stop, courseId, idx) {
-    // 既存があれば編集、なければ新規
-    const existing = getStopMemos(courseId)[idx]?.memo || '';
+    // 過去のメモがあれば「前回の感想」として表示（ただしテキスト欄は空白で開始）
+    const past = getStopMemos(courseId)[idx];
+    const pastMemo = past?.memo || '';
+    const pastDate = past?.at ? new Date(past.at).toLocaleDateString('ja-JP') : '';
     const overlay = document.createElement('div');
     overlay.className = 'memo-prompt-overlay';
     overlay.innerHTML = `
@@ -8289,8 +8397,15 @@ ${trkPts}
             <div class="memo-prompt-sub">気持ちをひとことメモ（任意・最大120字）</div>
           </div>
         </div>
-        <textarea id="memo-prompt-input" class="memo-prompt-input" placeholder="例：抹茶ラテが絶品だった。次は限定スイーツも頼みたい。" maxlength="120">${escapeHtml(existing)}</textarea>
-        <div class="memo-prompt-counter"><span id="memo-prompt-count">${existing.length}</span>/120</div>
+        ${pastMemo ? `
+          <div class="memo-past-card">
+            <div class="memo-past-label">📅 ${escapeHtml(pastDate)}の自分のメモ</div>
+            <div class="memo-past-text">「${escapeHtml(pastMemo)}」</div>
+            <button class="memo-past-reuse" id="memo-past-reuse" type="button">↻ 前回のメモを引き継ぐ</button>
+          </div>
+        ` : ''}
+        <textarea id="memo-prompt-input" class="memo-prompt-input" placeholder="例：抹茶ラテが絶品だった。次は限定スイーツも頼みたい。" maxlength="120"></textarea>
+        <div class="memo-prompt-counter"><span id="memo-prompt-count">0</span>/120</div>
         <div class="memo-prompt-actions">
           <button class="memo-prompt-skip" type="button">スキップ</button>
           <button class="memo-prompt-save" type="button">💾 保存</button>
@@ -8302,6 +8417,13 @@ ${trkPts}
     const counter = overlay.querySelector('#memo-prompt-count');
     input.addEventListener('input', () => { counter.textContent = String(input.value.length); });
     setTimeout(() => input.focus(), 50);
+    // 前回のメモを引き継ぐ
+    const reuseBtn = overlay.querySelector('#memo-past-reuse');
+    if (reuseBtn) reuseBtn.addEventListener('click', () => {
+      input.value = pastMemo;
+      counter.textContent = String(pastMemo.length);
+      input.focus();
+    });
     const close = () => { try { overlay.remove(); } catch {} };
     overlay.querySelector('.memo-prompt-skip').addEventListener('click', close);
     overlay.querySelector('.memo-prompt-save').addEventListener('click', () => {
@@ -8332,6 +8454,21 @@ ${trkPts}
     speak(`${stop.name}に到着しました。スタンプGET。${stop.desc ? stop.desc.slice(0, 50) : ''}`);
     updateWalkUI();
     renderSelectedMarkers();
+
+    // ↩ 手動チェックイン時のみ undo を出す（GPS 自動なら誤タップではない）
+    if (manual) {
+      showUndoToast(`✅ ${stop.name} にチェックイン`, () => {
+        // チェックイン取消
+        const v = state.completedStops[courseId];
+        if (v && v.has(idx)) {
+          v.delete(idx);
+          saveCompletion();
+          updateWalkUI();
+          renderSelectedMarkers();
+          showToast('チェックインを取り消しました', 'info', 2000);
+        }
+      });
+    }
 
     // 📝 メモ入力プロンプト（最後のスポット以外、視覚的に邪魔にならない遅延付き）
     setTimeout(() => {
@@ -9623,7 +9760,19 @@ ${hashtag}`;
       try { localStorage.setItem('yorimichi-skipped-stops', JSON.stringify(
         Object.fromEntries(Object.entries(state.skippedStops).map(([k, v]) => [k, [...v]]))
       )); } catch {}
-      showToast(`⏭ 「${stop?.name || 'スポット'}」をスキップしました`, 'info', 2500);
+      showUndoToast(`⏭ 「${stop?.name || 'スポット'}」をスキップ`, () => {
+        // スキップ取消: visited から削除し、skippedStops からも削除
+        const v = state.completedStops[courseId];
+        if (v) v.delete(nextIdx);
+        if (state.skippedStops?.[courseId]) state.skippedStops[courseId].delete(nextIdx);
+        saveCompletion();
+        try { localStorage.setItem('yorimichi-skipped-stops', JSON.stringify(
+          Object.fromEntries(Object.entries(state.skippedStops || {}).map(([k, v]) => [k, [...v]]))
+        )); } catch {}
+        updateWalkUI();
+        renderSelectedMarkers();
+        showToast('スキップを取り消しました', 'info', 2000);
+      });
       updateWalkUI();
       renderSelectedMarkers();
       // 次のスポット案内
@@ -9759,6 +9908,23 @@ ${hashtag}`;
     const wlSort = $('#walk-log-sort');
     if (wlFilter) wlFilter.addEventListener('change', () => renderWalkLog());
     if (wlSort) wlSort.addEventListener('change', () => renderWalkLog());
+
+    // 🔎 コース検索
+    const searchInput = $('#course-search-input');
+    const searchClear = $('#course-search-clear');
+    if (searchInput) {
+      let dbTimer = null;
+      searchInput.addEventListener('input', () => {
+        if (searchClear) searchClear.hidden = !searchInput.value;
+        clearTimeout(dbTimer);
+        dbTimer = setTimeout(() => runCourseSearch(searchInput.value), 200);
+      });
+    }
+    if (searchClear) searchClear.addEventListener('click', () => {
+      if (searchInput) searchInput.value = '';
+      searchClear.hidden = true;
+      runCourseSearch('');
+    });
 
     // 設定モーダル
     const settingsBtn = $('#show-settings');

@@ -470,6 +470,19 @@
           <button class="mode-help-btn" id="mode-help-btn" type="button" aria-label="モードの違いを見る">？</button>
         </div>
 
+        <!-- 🔎 全コース・スポット検索 -->
+        <div class="course-search-wrap">
+          <input
+            type="search"
+            id="course-search-input"
+            class="course-search-input"
+            placeholder="🔎 コース名・スポット名・タグで検索…"
+            aria-label="コース検索"
+          />
+          <button class="course-search-clear" id="course-search-clear" type="button" aria-label="クリア" hidden>✕</button>
+        </div>
+        <div class="course-search-results" id="course-search-results" hidden></div>
+
         <!-- Course mode: collapsible filters (area + tags) -->
         <details class="filters-section" id="filters-section">
           <summary class="filters-summary">
