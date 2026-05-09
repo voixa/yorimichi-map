@@ -5789,6 +5789,16 @@ body.map-fullscreen #map-container {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.featured-thumb {
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.15);
+  border-radius: 8px;
+  padding: 4px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.featured-thumb svg.course-thumb-svg { display: block; }
 .featured-cta {
   background: white;
   color: #ab47bc;
@@ -5798,6 +5808,21 @@ body.map-fullscreen #map-container {
   font-size: 13px;
   flex-shrink: 0;
 }
+
+/* Nearby card thumb */
+.nearby-item {
+  grid-template-columns: 32px 1fr 70px auto !important;
+}
+.nearby-item-thumb {
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.15);
+  border-radius: 6px;
+  padding: 3px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.nearby-item-thumb svg.course-thumb-svg { display: block; }
 
 /* ===== Home "more" expandable ===== */
 .home-more {
@@ -6317,6 +6342,66 @@ body:has(.walk-hud:not([hidden])) .leaflet-bottom.leaflet-right {
 .walk-hud-elapsed { color: #fff; font-weight: 700; opacity: 0.85; }
 .walk-hud-totaldist { color: #ffb380; font-weight: 700; }
 .walk-hud-eta { color: #fcd34d; font-weight: 800; }
+
+/* ⏸ Pause Overlay */
+.walk-pause-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 28, 31, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: white;
+  cursor: pointer;
+  animation: wpo-fade-in 0.25s ease-out;
+}
+.walk-pause-overlay[hidden] { display: none !important; }
+.wpo-icon {
+  font-size: 120px;
+  line-height: 1;
+  filter: drop-shadow(0 6px 30px rgba(255, 255, 255, 0.3));
+  animation: wpo-pulse 2s ease-in-out infinite;
+}
+.wpo-title {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+.wpo-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,0.75);
+  text-align: center;
+  max-width: 280px;
+  margin-bottom: 8px;
+}
+.wpo-resume {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: white;
+  border: 0;
+  padding: 14px 36px;
+  border-radius: 100px;
+  font-weight: 800;
+  font-size: 16px;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.4);
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
+}
+.wpo-resume:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(34, 197, 94, 0.5); }
+.wpo-resume:active { transform: scale(0.97); }
+@keyframes wpo-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes wpo-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.95; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
 
 /* HUD progress bar (course completion visualization) */
 .walk-hud-progress-bar {

@@ -1810,6 +1810,35 @@
     if (dur === 'short') all = all.filter(c => (c.estimatedMin || 0) <= 30);
     else if (dur === 'medium') all = all.filter(c => (c.estimatedMin || 0) > 30 && (c.estimatedMin || 0) <= 90);
     else if (dur === 'long') all = all.filter(c => (c.estimatedMin || 0) > 90);
+    // 未完走のみ
+    if (state.filterUnwalked) {
+      all = all.filter(c => !state.completedCourses.has(c.id));
+    }
+    // 雨でもOK = 屋内タグ多め or 全体に屋内比率高い
+    if (state.filterRainOk) {
+      all = all.filter(c => {
+        const tags = [...(c.tags || []), ...c.stops.flatMap(s => s.tags || [])];
+        const indoorTags = ['屋内', 'カフェ', '美術館', '博物館', '神社', '寺', '雨でもOK', '雨の日', '室内', 'ショッピング', 'ギャラリー'];
+        const hits = tags.filter(t => indoorTags.some(ind => String(t).includes(ind))).length;
+        return hits >= 1;
+      });
+    }
+    // 夜OK = bestTime に夜時間帯を含むスポットが2件以上 or 'nightlife' タグ
+    if (state.filterNightOk) {
+      all = all.filter(c => {
+        const tags = [...(c.tags || []), ...c.stops.flatMap(s => s.tags || [])];
+        if (tags.some(t => /夜|ナイト|バー|居酒屋|night/i.test(String(t)))) return true;
+        // bestTime チェック: 18:00以降を含むスポットが2件以上
+        const nightStops = c.stops.filter(s => {
+          if (!s.bestTime) return false;
+          const m = String(s.bestTime).match(/(\d{1,2}):/);
+          if (!m) return false;
+          const hr = parseInt(m[1], 10);
+          return hr >= 18 || hr <= 4;
+        });
+        return nightStops.length >= 2;
+      });
+    }
     return all;
   }
 
@@ -1858,6 +1887,7 @@
     if (badge) {
       const active = (state.activeArea ? 1 : 0) + state.activeTags.size +
         (state.filterHasPhoto ? 1 : 0) + (state.filterHasPerk ? 1 : 0) +
+        (state.filterUnwalked ? 1 : 0) + (state.filterRainOk ? 1 : 0) + (state.filterNightOk ? 1 : 0) +
         ((state.filterDuration && state.filterDuration !== 'all') ? 1 : 0);
       if (active > 0) {
         badge.textContent = String(active);
@@ -4862,6 +4892,40 @@ ${trkPts}
   }
 
   // 統合おすすめカード（reco-banner + today-pick の代替）
+  // 🗺 コースのスポット位置から SVG ミニマップを生成（カードのサムネ用）
+  function buildCourseThumbSvg(course, opts) {
+    opts = opts || {};
+    const W = opts.w || 80;
+    const H = opts.h || 50;
+    const stops = (course?.stops || []).filter(s => s.lat != null && s.lng != null);
+    if (stops.length < 2) return '';
+    // BBox
+    const lats = stops.map(s => s.lat);
+    const lngs = stops.map(s => s.lng);
+    const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+    const dLat = Math.max(maxLat - minLat, 0.001);
+    const dLng = Math.max(maxLng - minLng, 0.001);
+    const pad = 6;
+    const points = stops.map(s => {
+      const x = pad + ((s.lng - minLng) / dLng) * (W - pad * 2);
+      // SVG y は上下逆
+      const y = pad + (1 - (s.lat - minLat) / dLat) * (H - pad * 2);
+      return [x, y];
+    });
+    const polyline = points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+    const dots = points.map(([x, y], i) => {
+      const r = (i === 0 || i === points.length - 1) ? 3 : 2;
+      const fill = i === 0 ? '#16a34a' : (i === points.length - 1 ? '#dc2626' : '#ff7e3d');
+      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${fill}" stroke="white" stroke-width="0.7"/>`;
+    }).join('');
+    const stroke = opts.lightStroke ? 'rgba(255,255,255,0.85)' : 'rgba(255,126,61,0.7)';
+    return `<svg class="course-thumb-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">
+      <polyline points="${polyline}" fill="none" stroke="${stroke}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+      ${dots}
+    </svg>`;
+  }
+
   function renderFeaturedCard() {
     const card = $('#featured-card');
     if (!card) return;
@@ -4882,6 +4946,8 @@ ${trkPts}
     $('#featured-title').textContent = tField(reco, 'name');
     const minutes = reco.estimatedMin ? `約${reco.estimatedMin}分` : '';
     $('#featured-meta').textContent = `${reco.areaIcon || ''} ${tField(reco, 'areaName')} ・ ${minutes} ・ ${reco.stops.length}スポット`;
+    const thumbEl = $('#featured-thumb');
+    if (thumbEl) thumbEl.innerHTML = buildCourseThumbSvg(reco, { w: 70, h: 50, lightStroke: true });
 
     const btn = $('#featured-pick');
     if (btn) {
@@ -4934,6 +5000,7 @@ ${trkPts}
     list.innerHTML = ranked.map(({ course, km }) => {
       const distLabel = km < 1 ? `${Math.round(km * 1000)}m` : `${km.toFixed(1)}km`;
       const done = state.completedCourses.has(course.id);
+      const thumb = buildCourseThumbSvg(course, { w: 60, h: 40, lightStroke: true });
       return `
         <button class="nearby-item${done ? ' nearby-done' : ''}" type="button" data-course-id="${escapeHtml(course.id)}">
           <span class="nearby-item-emoji">${course.themeIcon || course.areaIcon || '🌳'}</span>
@@ -4941,6 +5008,7 @@ ${trkPts}
             <span class="nearby-item-name">${escapeHtml(tField(course, 'name'))}${done ? ' <span class="nearby-done-tag">完走済</span>' : ''}</span>
             <span class="nearby-item-meta">${course.areaIcon || ''} ${escapeHtml(tField(course, 'areaName'))} ・ 約${course.estimatedMin || '?'}分</span>
           </span>
+          <span class="nearby-item-thumb">${thumb}</span>
           <span class="nearby-item-dist">📏 ${distLabel}</span>
         </button>
       `;
@@ -6173,7 +6241,10 @@ ${trkPts}
       }
     }
     $$('.main-tab').forEach(tab => {
-      tab.addEventListener('click', () => setMainTab(tab.dataset.mainTab));
+      tab.addEventListener('click', () => {
+        vib(8); // 軽いタップフィードバック
+        setMainTab(tab.dataset.mainTab);
+      });
     });
     // 起動時の初期タブ復元
     try {
@@ -6939,6 +7010,33 @@ ${trkPts}
     try { localStorage.removeItem(ACTIVE_WALK_KEY); } catch {}
   }
 
+  function showPauseOverlay() {
+    let ov = document.getElementById('walk-pause-overlay');
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.id = 'walk-pause-overlay';
+      ov.className = 'walk-pause-overlay';
+      ov.innerHTML = `
+        <div class="wpo-icon">⏸</div>
+        <div class="wpo-title">ウォーク一時停止中</div>
+        <div class="wpo-sub">経過時間とGPSトラッキングを停止しています</div>
+        <button class="wpo-resume" id="wpo-resume" type="button">▶ 再開する</button>
+      `;
+      document.body.appendChild(ov);
+      ov.querySelector('#wpo-resume').addEventListener('click', () => {
+        resumeWalk();
+      });
+      // 背景タップでも再開
+      ov.addEventListener('click', (e) => {
+        if (e.target === ov) resumeWalk();
+      });
+    }
+    ov.hidden = false;
+  }
+  function hidePauseOverlay() {
+    const ov = document.getElementById('walk-pause-overlay');
+    if (ov) ov.hidden = true;
+  }
   function pauseWalk() {
     if (!state.activeWalk || state.activeWalk.paused) return;
     state.activeWalk.paused = true;
@@ -6949,7 +7047,8 @@ ${trkPts}
     persistActiveWalk();
     const btn = $('#walk-hud-pause');
     if (btn) btn.textContent = '▶';
-    showToast('⏸ ウォークを一時停止しました', 'info', 2500);
+    vib(40);
+    showPauseOverlay();
   }
   function resumeWalk() {
     if (!state.activeWalk || !state.activeWalk.paused) return;
@@ -6964,7 +7063,9 @@ ${trkPts}
     persistActiveWalk();
     const btn = $('#walk-hud-pause');
     if (btn) btn.textContent = '⏸';
-    showToast('▶ ウォークを再開しました', 'success', 2500);
+    vib(20);
+    hidePauseOverlay();
+    showToast('▶ ウォークを再開しました', 'success', 2200);
   }
   function togglePauseWalk() {
     if (!state.activeWalk) return;
@@ -7374,6 +7475,8 @@ ${trkPts}
     if (hud) hud.hidden = true;
     const recenter = $('#map-recenter-btn');
     if (recenter) recenter.hidden = true;
+    // 終了時は一時停止オーバーレイも消す
+    try { hidePauseOverlay(); } catch {}
   }
   function updateWalkHud(userLoc) {
     const hud = $('#walk-hud');
@@ -7570,6 +7673,8 @@ ${trkPts}
     state.completedStops[courseId] = new Set();
     saveCompletion();
     fireConfetti(150, ['#ffd700', '#16a34a', '#ff7e3d', '#ec4899', '#3b82f6'], { shapes: ['rect', 'circle'] });
+    // 🎉 完走時の触覚フィードバック（祝福パターン）
+    vib([100, 60, 100, 60, 100, 60, 300]);
     speak('コース完走、おめでとうございます！');
     // Bonus coins for completion
     gacha.coins += COMPLETION_BONUS;
@@ -8667,6 +8772,9 @@ ${hashtag}`;
     // Visual filters (photo / perk)
     const fp = $('#filter-has-photo');
     const fk = $('#filter-has-perk');
+    const fu = $('#filter-unwalked');
+    const fr = $('#filter-rain-ok');
+    const fn = $('#filter-night-ok');
     if (fp) fp.addEventListener('change', () => {
       state.filterHasPhoto = fp.checked;
       updateFilterStat();
@@ -8675,6 +8783,24 @@ ${hashtag}`;
     });
     if (fk) fk.addEventListener('change', () => {
       state.filterHasPerk = fk.checked;
+      updateFilterStat();
+      renderCoursePreview();
+      renderPoolPreview();
+    });
+    if (fu) fu.addEventListener('change', () => {
+      state.filterUnwalked = fu.checked;
+      updateFilterStat();
+      renderCoursePreview();
+      renderPoolPreview();
+    });
+    if (fr) fr.addEventListener('change', () => {
+      state.filterRainOk = fr.checked;
+      updateFilterStat();
+      renderCoursePreview();
+      renderPoolPreview();
+    });
+    if (fn) fn.addEventListener('change', () => {
+      state.filterNightOk = fn.checked;
       updateFilterStat();
       renderCoursePreview();
       renderPoolPreview();
