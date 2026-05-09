@@ -275,6 +275,22 @@
         <!-- ====== ホームタブ（再編：優先度順） ====== -->
         <div class="tab-panel" data-tab-panel="home">
 
+        <!-- 🆕 初回ユーザー向けウェルカムカード（完走0回時のみ） -->
+        <section class="welcome-card" id="welcome-card" hidden>
+          <div class="welcome-emoji">🥚</div>
+          <h2 class="welcome-title">街歩きの旅、はじめませんか？</h2>
+          <p class="welcome-sub">あなたの街にある、まだ知らないコースをガチャで引いてみましょう</p>
+          <div class="welcome-steps">
+            <div class="welcome-step">1️⃣ ガチャを引く</div>
+            <div class="welcome-step">2️⃣ コースを歩く</div>
+            <div class="welcome-step">3️⃣ 証明書をシェア</div>
+          </div>
+          <button class="btn-primary welcome-cta" id="welcome-cta" type="button">
+            🎰 はじめてのガチャを引く
+          </button>
+          <p class="welcome-fine">無料 ・ 登録不要 ・ 1分で開始</p>
+        </section>
+
         <!-- 🥇 優先度1: 中断ウォーク（あれば最優先） -->
         <section class="resume-banner" id="resume-banner" hidden>
           <div class="resume-icon">🚶</div>
@@ -614,6 +630,14 @@
           <div class="me-badges" id="me-badges" hidden>
             <!-- populated by JS -->
           </div>
+
+          <!-- 🆕 公開プロフィール直接シェア -->
+          <button class="btn-primary me-share-btn" id="me-share-public" type="button" style="width: 100%; margin: 12px 0; background: linear-gradient(135deg, #ec407a 0%, #ab47bc 100%); display:flex; align-items:center; justify-content:center; gap:8px;">
+            <span>🎴</span><span>実績ページを生成してシェア</span>
+          </button>
+          <p style="text-align:center; font-size: 11px; color: var(--text-muted); margin: 0 0 8px;">
+            匿名URLで友達にあなたの記録を見せられます
+          </p>
 
           <div class="me-shortcuts">
             <button class="me-shortcut" id="ms-profile" type="button">

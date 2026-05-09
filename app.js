@@ -1822,7 +1822,8 @@
     const badge = $('#filters-active-badge');
     if (badge) {
       const active = (state.activeArea ? 1 : 0) + state.activeTags.size +
-        (state.filterHasPhoto ? 1 : 0) + (state.filterHasPerk ? 1 : 0);
+        (state.filterHasPhoto ? 1 : 0) + (state.filterHasPerk ? 1 : 0) +
+        ((state.filterDuration && state.filterDuration !== 'all') ? 1 : 0);
       if (active > 0) {
         badge.textContent = String(active);
         badge.hidden = false;
@@ -3539,31 +3540,65 @@ ${trkPts}
       }
     }
 
-    // バッジショーケース
+    // バッジショーケース + 進行中バッジ
     const bgTitle = $('#me-badges-title');
     const bgEl = $('#me-badges');
     if (bgTitle && bgEl) {
-      // バッジ生成（簡易: 完走数・連続日数・発見数で判定）
-      const badges = [];
-      if (s.completed >= 1) badges.push('🥇 初完走');
-      if (s.completed >= 5) badges.push('🌟 5コース達成');
-      if (s.completed >= 10) badges.push('👑 10コース達成');
-      if (s.completed >= 20) badges.push('💎 20コース達成');
-      if (s.discovered >= 5) badges.push('🔍 5コース発見');
-      if (s.discovered >= 15) badges.push('🗺 15コース発見');
-      if ((state.loginStreak || 0) >= 7) badges.push('🔥 1週間連続');
-      if ((state.loginStreak || 0) >= 30) badges.push('💪 30日連続');
-      if (s.totalMin >= 60) badges.push('⏱ 1時間散歩');
-      if (s.totalMin >= 600) badges.push('🚀 10時間散歩');
-      if (gacha.pulls >= 50) badges.push('🎰 50連達成');
+      // バッジ定義（しきい値・現在値）
+      const badgeDefs = [
+        { name: '🥇 初完走', threshold: 1, current: s.completed, kind: 'completed' },
+        { name: '🌟 5コース達成', threshold: 5, current: s.completed, kind: 'completed' },
+        { name: '👑 10コース達成', threshold: 10, current: s.completed, kind: 'completed' },
+        { name: '💎 20コース達成', threshold: 20, current: s.completed, kind: 'completed' },
+        { name: '🔍 5コース発見', threshold: 5, current: s.discovered, kind: 'discovered' },
+        { name: '🗺 15コース発見', threshold: 15, current: s.discovered, kind: 'discovered' },
+        { name: '🔥 1週間連続', threshold: 7, current: state.loginStreak || 0, kind: 'streak' },
+        { name: '💪 30日連続', threshold: 30, current: state.loginStreak || 0, kind: 'streak' },
+        { name: '⏱ 1時間散歩', threshold: 60, current: s.totalMin, kind: 'walkmin' },
+        { name: '🚀 10時間散歩', threshold: 600, current: s.totalMin, kind: 'walkmin' },
+        { name: '🎰 50連達成', threshold: 50, current: gacha.pulls, kind: 'pulls' },
+      ];
+      const earned = badgeDefs.filter(b => b.current >= b.threshold);
+      // 次の未獲得バッジ（1つだけ進捗バー付きで表示）
+      const nextBadge = badgeDefs.find(b => b.current < b.threshold);
 
-      if (badges.length === 0) {
-        bgTitle.hidden = true;
-        bgEl.hidden = true;
-      } else {
-        bgEl.innerHTML = badges.map(b => `<span class="me-badge-pill">${escapeHtml(b)}</span>`).join('');
+      let html = '';
+      if (earned.length > 0) {
+        html += earned.map(b => `<span class="me-badge-pill earned">${escapeHtml(b.name)}</span>`).join('');
+      }
+      if (nextBadge) {
+        const pct = Math.round((nextBadge.current / nextBadge.threshold) * 100);
+        html += `
+          <div class="me-next-badge" style="width: 100%; margin-top: 10px;">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:4px;">
+              <span>次のバッジ: ${escapeHtml(nextBadge.name)}</span>
+              <span>${nextBadge.current}/${nextBadge.threshold}</span>
+            </div>
+            <div class="me-xp-bar" style="margin: 0;">
+              <div class="me-xp-fill" style="width: ${pct}%;"></div>
+            </div>
+          </div>
+        `;
+      }
+
+      if (html === '' && s.completed === 0) {
+        // 完走0時の励ましメッセージ
+        bgEl.innerHTML = `
+          <div style="width:100%; text-align:center; padding: 16px; background: var(--surface-2); border-radius: 12px; color: var(--text-muted); font-size: 13px;">
+            🌱 まずは1コース歩いてバッジを獲得しよう
+          </div>
+        `;
+        bgTitle.textContent = '🏆 最初のバッジまで';
         bgTitle.hidden = false;
         bgEl.hidden = false;
+      } else if (html) {
+        bgEl.innerHTML = html;
+        bgTitle.textContent = earned.length > 0 ? '🏆 獲得バッジ' : '🏆 進行中バッジ';
+        bgTitle.hidden = false;
+        bgEl.hidden = false;
+      } else {
+        bgTitle.hidden = true;
+        bgEl.hidden = true;
       }
     }
   }
@@ -4283,6 +4318,18 @@ ${trkPts}
     }, 60_000); // 60秒ごと
     // 人気ランキングは5分に1回でOK
     setInterval(fetchAndRenderPopularRanking, 5 * 60_000);
+  }
+
+  // 初回ユーザー向けウェルカムカード制御
+  function renderWelcomeCard() {
+    const card = $('#welcome-card');
+    if (!card) return;
+    // 完走0かつガチャ0回 = 初回ユーザー
+    const isFirstTime = (state.completedCourses.size === 0) && (gacha.pulls === 0);
+    card.hidden = !isFirstTime;
+    // 初回でない場合 → クイックスタートを表示
+    const qs = $('#quickstart-hero');
+    if (qs) qs.hidden = isFirstTime; // 初回はwelcome側がメインCTAになる
   }
 
   async function quickStart() {
@@ -5536,6 +5583,11 @@ ${trkPts}
     const quickBtn = $('#quickstart-btn');
     if (quickBtn) quickBtn.addEventListener('click', quickStart);
 
+    // 初回ウェルカムCTA（quickStartと同じ動作）
+    const welcomeBtn = $('#welcome-cta');
+    if (welcomeBtn) welcomeBtn.addEventListener('click', quickStart);
+    try { renderWelcomeCard(); } catch {}
+
     // 🆕 探すタブの巨大ガチャCTA
     const discoverCtaBtn = $('#discover-cta-btn');
     if (discoverCtaBtn) discoverCtaBtn.addEventListener('click', () => {
@@ -5586,6 +5638,7 @@ ${trkPts}
       try { localStorage.setItem(MAIN_TAB_KEY, name); } catch {}
       // タブ切替時に該当タブの内容を更新
       if (name === 'home') {
+        try { renderWelcomeCard(); } catch {}
         try { renderFeaturedCard(); } catch {}
         try { renderMissions(); } catch {}
         try { renderStatusBar(); } catch {}
@@ -5603,6 +5656,33 @@ ${trkPts}
       const saved = localStorage.getItem(MAIN_TAB_KEY) || 'home';
       setMainTab(saved);
     } catch { setMainTab('home'); }
+
+    // マイタブのインライン公開シェア
+    const meShareBtn = $('#me-share-public');
+    if (meShareBtn) meShareBtn.addEventListener('click', async () => {
+      meShareBtn.disabled = true;
+      const orig = meShareBtn.innerHTML;
+      meShareBtn.innerHTML = '<span>⏳</span><span>生成中...</span>';
+      const result = await generatePublicProfile();
+      meShareBtn.disabled = false;
+      meShareBtn.innerHTML = orig;
+      if (!result || !result.url) {
+        showToast('生成に失敗しました', 'error', 3000);
+        return;
+      }
+      // ネイティブ共有
+      const text = `街歩きガチャの実績ページ ✨\n${result.url}\n\n#街歩きガチャ`;
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: '街歩きガチャ実績', text, url: result.url });
+        } catch {}
+      } else {
+        try {
+          await navigator.clipboard.writeText(text);
+          showToast('📋 リンクをコピーしました', 'success', 3000);
+        } catch {}
+      }
+    });
 
     // マイタブのショートカット
     $('#ms-profile')?.addEventListener('click', () => showProfile());
