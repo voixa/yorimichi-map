@@ -4619,6 +4619,40 @@ button:focus-visible,
   white-space: nowrap;
 }
 
+/* スクロールトップボタン */
+.scroll-top-btn {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--brand);
+  color: white;
+  font-size: 22px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(255, 126, 61, 0.4);
+  z-index: 100;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.2s, transform 0.2s;
+}
+.scroll-top-btn:not([hidden]) {
+  opacity: 1;
+  transform: translateY(0);
+}
+.scroll-top-btn:hover { transform: translateY(-2px); }
+
+/* タブ切替トランジション */
+.tab-panel:not([hidden]) {
+  animation: tabFadeIn 0.25s ease-out;
+}
+@keyframes tabFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* マイタブへの誘導アニメ（完走後） */
 .main-tab.me-pulse {
   animation: mePulse 1.5s ease-in-out 3;
@@ -5143,12 +5177,38 @@ button:focus-visible,
 .dcta-arrow { font-size: 22px; font-weight: 900; flex-shrink: 0; }
 
 /* mode description */
+.mode-desc-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 4px 0 12px;
+}
 .mode-desc {
   font-size: 12px;
   color: var(--text-muted);
   text-align: center;
-  margin: 4px 0 12px;
+  margin: 0;
   padding: 0 8px;
+}
+.mode-help-btn {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-muted);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+.mode-help-btn:hover {
+  background: var(--brand-soft);
+  border-color: var(--brand);
+  color: var(--brand);
 }
 
 /* ===== Quick Start Hero (1-tap full flow) ===== */

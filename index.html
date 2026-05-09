@@ -263,6 +263,11 @@
         <span class="handle-bar" aria-hidden="true"></span>
       </button>
 
+      <!-- 「トップへ戻る」ボタン -->
+      <button class="scroll-top-btn" id="scroll-top-btn" type="button" aria-label="トップへ戻る" hidden>
+        ↑
+      </button>
+
       <div class="panel-inner">
 
         <!-- 🆕 Main tabs: ホーム / 探す / マイ -->
@@ -438,7 +443,10 @@
             <span class="mode-tab-label">散歩</span>
           </button>
         </div>
-        <p class="mode-desc" id="mode-desc">📖 キュレーション済みコース21本から運命の一本を引く</p>
+        <div class="mode-desc-wrap">
+          <p class="mode-desc" id="mode-desc">📖 キュレーション済みコース21本から運命の一本を引く</p>
+          <button class="mode-help-btn" id="mode-help-btn" type="button" aria-label="モードの違いを見る">？</button>
+        </div>
 
         <!-- Course mode: collapsible filters (area + tags) -->
         <details class="filters-section" id="filters-section">

@@ -5626,6 +5626,20 @@ ${trkPts}
     if (welcomeBtn) welcomeBtn.addEventListener('click', quickStart);
     try { renderWelcomeCard(); } catch {}
 
+    // モードヘルプ
+    const modeHelpBtn = $('#mode-help-btn');
+    if (modeHelpBtn) modeHelpBtn.addEventListener('click', () => {
+      const helpModal = $('#help-modal');
+      if (helpModal) {
+        helpModal.hidden = false;
+        // 該当アコーディオンを開く
+        const item = Array.from(helpModal.querySelectorAll('.faq-item summary')).find(s =>
+          s.textContent && s.textContent.includes('既存コース')
+        );
+        if (item && item.parentElement) item.parentElement.open = true;
+      }
+    });
+
     // 🆕 探すタブの巨大ガチャCTA
     const discoverCtaBtn = $('#discover-cta-btn');
     if (discoverCtaBtn) discoverCtaBtn.addEventListener('click', () => {
@@ -5736,6 +5750,25 @@ ${trkPts}
     $('#ms-collection')?.addEventListener('click', () => showCollection());
     $('#ms-settings')?.addEventListener('click', () => openSettingsModal());
     $('#ms-help')?.addEventListener('click', () => { $('#help-modal').hidden = false; });
+
+    // スクロールトップボタン
+    const scrollBtn = $('#scroll-top-btn');
+    const panelEl = $('#panel');
+    if (scrollBtn && panelEl) {
+      const scrollHost = panelEl.querySelector('.panel-inner') || panelEl;
+      const checkScroll = () => {
+        scrollBtn.hidden = scrollHost.scrollTop < 200;
+      };
+      scrollHost.addEventListener('scroll', checkScroll, { passive: true });
+      // ウィンドウ自体のスクロールも検出（デスクトップ）
+      window.addEventListener('scroll', () => {
+        scrollBtn.hidden = window.scrollY < 200 && scrollHost.scrollTop < 200;
+      }, { passive: true });
+      scrollBtn.addEventListener('click', () => {
+        scrollHost.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
 
     // ライブアクティビティ
     try { startLiveActivity(); } catch {}
