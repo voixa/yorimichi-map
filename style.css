@@ -4304,6 +4304,28 @@ button:focus-visible,
 .notify-status.granted { color: #16a34a; font-weight: 700; }
 .notify-status.denied { color: #ef4444; font-weight: 700; }
 
+/* ===== Collection search ===== */
+.collection-search-row {
+  margin: 8px 0 12px;
+}
+.collection-search-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+.collection-search-input:focus {
+  outline: none;
+  border-color: var(--brand);
+  background: var(--surface);
+}
+.collection-search-input::placeholder { color: var(--text-muted); }
+
 /* ===== AI spot guide ===== */
 .ai-spot-guide {
   background: linear-gradient(135deg, rgba(108, 99, 255, 0.08) 0%, rgba(255, 64, 129, 0.06) 100%);
@@ -4368,6 +4390,66 @@ button:focus-visible,
   border-radius: 50%;
   background: #16a34a;
   animation: livePulse 2s ease-in-out infinite;
+}
+
+/* ===== Popular ranking ===== */
+.popular-ranking {
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 8px 0;
+}
+.popular-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.popular-period { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+.popular-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.popular-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--surface);
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+.popular-item:hover { transform: translateX(2px); }
+.popular-rank {
+  font-weight: 900;
+  font-size: 16px;
+  color: var(--brand);
+  flex-shrink: 0;
+  width: 24px;
+}
+.popular-rank.gold { color: #ffd700; }
+.popular-rank.silver { color: #c0c0c0; }
+.popular-rank.bronze { color: #cd7f32; }
+.popular-name {
+  flex: 1;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.popular-pulls {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 /* ===== Quick Start Hero (1-tap full flow) ===== */

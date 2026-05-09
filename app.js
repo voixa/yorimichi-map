@@ -2614,7 +2614,10 @@
     // ミッション「ガチャを1回引く」
     try { markMissionDone('gacha'); } catch {}
     // ライブイベント
-    try { sendHeartbeat('pull'); } catch {}
+    try {
+      const cid = route?.isCurated ? route.id : null;
+      sendHeartbeat('pull', cid ? { course_id: cid } : {});
+    } catch {}
   }
 
   function updateSessionStreak() {
@@ -3936,13 +3939,14 @@ ${trkPts}
   // ===== Live activity counter & heartbeat =====
   let _liveStatsTimer = null;
 
-  async function sendHeartbeat(event = 'tick') {
+  async function sendHeartbeat(event = 'tick', extra = {}) {
     try {
       const userId = getOrCreateUserId();
+      const body = { user_id: userId, event, ...extra };
       await fetch(`${API_BASE}/api/heartbeat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, event }),
+        body: JSON.stringify(body),
         keepalive: true,
       }).catch(() => {});
     } catch {}
@@ -3980,14 +3984,63 @@ ${trkPts}
     } catch (e) { console.warn('live stats failed', e); }
   }
 
+  async function fetchAndRenderPopularRanking() {
+    try {
+      const res = await fetch(`${API_BASE}/api/popular-courses`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const list = data.courses || [];
+      const widget = $('#popular-ranking');
+      const ul = $('#popular-list');
+      if (!widget || !ul) return;
+      const allCourses = window.YORIMICHI_COURSES || [];
+      // courseIdに対応するコース名を解決
+      const items = list
+        .map(r => {
+          const course = allCourses.find(c => c.id === r.course_id);
+          if (!course) return null;
+          return { course, pulls: r.pulls_7d };
+        })
+        .filter(Boolean)
+        .slice(0, 5);
+      if (items.length === 0) {
+        widget.hidden = true;
+        return;
+      }
+      const medals = ['gold', 'silver', 'bronze', '', ''];
+      ul.innerHTML = items.map((it, i) => `
+        <li class="popular-item" data-cid="${escapeHtml(it.course.id)}">
+          <span class="popular-rank ${medals[i] || ''}">${i + 1}</span>
+          <span class="popular-name">${escapeHtml(it.course.themeIcon || it.course.areaIcon || '🌳')} ${escapeHtml(tField(it.course, 'name'))}</span>
+          <span class="popular-pulls">${it.pulls}回引かれた</span>
+        </li>
+      `).join('');
+      // クリックで地図にセット
+      ul.querySelectorAll('.popular-item').forEach(li => {
+        li.addEventListener('click', () => {
+          const cid = li.dataset.cid;
+          const course = allCourses.find(c => c.id === cid);
+          if (course) {
+            applyRoute(courseToRoute(course));
+            showToast(`✨ 「${tField(course, 'name')}」を地図に設定`, 'success', 3000);
+          }
+        });
+      });
+      widget.hidden = false;
+    } catch (e) { console.warn('popular fetch failed', e); }
+  }
+
   function startLiveActivity() {
     sendHeartbeat('tick');
     fetchAndRenderLiveStats();
+    fetchAndRenderPopularRanking();
     if (_liveStatsTimer) clearInterval(_liveStatsTimer);
     _liveStatsTimer = setInterval(() => {
       sendHeartbeat('tick');
       fetchAndRenderLiveStats();
     }, 60_000); // 60秒ごと
+    // 人気ランキングは5分に1回でOK
+    setInterval(fetchAndRenderPopularRanking, 5 * 60_000);
   }
 
   async function quickStart() {
@@ -4450,6 +4503,56 @@ ${trkPts}
       if (!data.exists || !data.state) return null;
       return data.state;
     } catch (e) { console.warn('cloud restore failed', e); return null; }
+  }
+
+  /** 公開プロフィール用スナップショットを生成 */
+  function buildPublicProfileSnapshot() {
+    const xp = computeXP();
+    const { current } = computeLevel(xp);
+    // お気に入りエリア
+    const areaCount = {};
+    for (const id of state.completedCourses) {
+      const c = (window.YORIMICHI_COURSES || []).find(x => x.id === id);
+      if (c?.area) areaCount[c.area] = (areaCount[c.area] || 0) + 1;
+    }
+    let favArea = '';
+    let favCount = 0;
+    for (const [a, n] of Object.entries(areaCount)) {
+      if (n > favCount) { favArea = a; favCount = n; }
+    }
+    const favAreaObj = favArea ? (window.YORIMICHI_AREAS || []).find(a => a.id === favArea) : null;
+    // バッジは現状あれば取得（簡易）
+    const badges = [];
+    try {
+      const b = JSON.parse(localStorage.getItem('yorimichi-badges') || '[]');
+      if (Array.isArray(b)) badges.push(...b);
+    } catch {}
+    return {
+      display_name: current.title,
+      level: current.lv,
+      xp: xp,
+      completed_courses_count: state.completedCourses.size,
+      discovered_courses_count: state.discoveredCourses.size,
+      total_walk_min: parseInt(localStorage.getItem('yorimichi-total-walk-min') || '0', 10) || 0,
+      login_streak: state.loginStreak || 0,
+      favorite_area: favAreaObj ? `${favAreaObj.icon} ${favAreaObj.name}` : '',
+      badges: badges.slice(0, 20),
+      completed_course_ids: [...state.completedCourses].slice(0, 50),
+    };
+  }
+
+  async function generatePublicProfile() {
+    const userId = getOrCreateUserId();
+    const snapshot = buildPublicProfileSnapshot();
+    try {
+      const res = await fetch(`${API_BASE}/api/public-profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, snapshot }),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) { console.warn('public profile failed', e); return null; }
   }
 
   async function deleteCloudData() {
@@ -7195,6 +7298,40 @@ ${hashtag}`;
     });
     // Invite link
     setupInviteLink();
+
+    // 公開プロフィール生成
+    const ppBtn = $('#btn-public-profile');
+    if (ppBtn) ppBtn.addEventListener('click', async () => {
+      ppBtn.disabled = true;
+      ppBtn.textContent = '🔄 生成中...';
+      const result = await generatePublicProfile();
+      ppBtn.disabled = false;
+      ppBtn.textContent = '🎴 公開プロフィールを再生成';
+      if (!result || !result.url) {
+        showToast('生成に失敗しました', 'error', 3500);
+        return;
+      }
+      const resultDiv = $('#public-profile-result');
+      const linkEl = $('#public-profile-link');
+      if (resultDiv && linkEl) {
+        linkEl.value = result.url;
+        resultDiv.hidden = false;
+      }
+      showToast('🎴 公開プロフィールを生成しました', 'success', 3500);
+    });
+    const ppCopy = $('#public-profile-copy');
+    if (ppCopy) ppCopy.addEventListener('click', async () => {
+      const linkEl = $('#public-profile-link');
+      if (!linkEl || !linkEl.value) return;
+      try {
+        await navigator.clipboard.writeText(linkEl.value);
+        showToast('📋 コピーしました', 'success', 2500);
+      } catch {
+        linkEl.select();
+        document.execCommand('copy');
+        showToast('📋 コピーしました', 'success', 2500);
+      }
+    });
 
     // Pool undiscovered toggle
     const poolToggle = $('#pool-undiscovered-only');

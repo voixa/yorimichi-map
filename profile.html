@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ff7e3d" />
+  <title>公開プロフィール — 街歩きガチャ</title>
+  <meta name="description" content="街歩きガチャの公開プロフィール" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👣</text></svg>" />
+
+  <!-- OGP -->
+  <meta property="og:title" content="街歩きガチャ — 公開プロフィール" />
+  <meta property="og:description" content="街歩きの実績をシェア" />
+  <meta property="og:type" content="profile" />
+  <meta property="og:image" content="https://yorimichi.in-dx.jp/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://yorimichi.in-dx.jp/og.png" />
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", Arial, sans-serif;
+      background: linear-gradient(180deg, #fafaf7 0%, #fff8e1 100%);
+      color: #1c1c1f;
+      min-height: 100vh;
+      padding: 24px 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 480px; margin: 0 auto; }
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .header h1 { font-size: 24px; margin-bottom: 4px; }
+    .header .sub { color: #6b6b72; font-size: 13px; }
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 28px 24px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .avatar {
+      font-size: 80px;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .display-name {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .level {
+      display: inline-block;
+      background: linear-gradient(90deg, #ffd700, #ff9800);
+      color: #5a3a00;
+      padding: 4px 14px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 20px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat {
+      background: #fff8e1;
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .stat-num {
+      font-size: 26px;
+      font-weight: 900;
+      color: #ff7e3d;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: #6b6b72;
+      font-weight: 600;
+    }
+    .badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 12px;
+    }
+    .badge-pill {
+      background: #fff8e1;
+      border: 1.5px solid #d4af37;
+      color: #5a3a00;
+      padding: 4px 10px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .cta {
+      display: block;
+      text-align: center;
+      background: linear-gradient(135deg, #ff7e3d 0%, #ff4081 100%);
+      color: white;
+      padding: 14px;
+      border-radius: 16px;
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 15px;
+      box-shadow: 0 6px 20px rgba(255, 64, 129, 0.3);
+    }
+    .footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    .footer a { color: #94a3b8; }
+    .loader, .error {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6b6b72;
+    }
+    .loader { font-size: 14px; }
+    .error { color: #dc2626; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>👣 街歩きガチャ</h1>
+      <div class="sub">公開プロフィール</div>
+    </div>
+
+    <div id="content" class="loader">読み込み中...</div>
+
+    <a class="cta" href="/" id="cta">あなたも街歩きを始める →</a>
+
+    <div class="footer">
+      <a href="/">街歩きガチャ</a> ・ 飲DX ・ 個人情報は公開されません
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'https://yorimichi-api-1028920472559.asia-northeast1.run.app';
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id');
+    const content = document.getElementById('content');
+
+    function escape(s) {
+      return String(s || '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;'
+      }[c]));
+    }
+
+    function fmtMin(min) {
+      const h = Math.floor(min / 60);
+      const m = min % 60;
+      if (h > 0) return `${h}h${m > 0 ? ' ' + m + 'm' : ''}`;
+      return `${m}m`;
+    }
+
+    async function load() {
+      if (!id) {
+        content.className = 'error';
+        content.textContent = 'プロフィールIDが指定されていません。';
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/api/public-profile?id=${encodeURIComponent(id)}`);
+        if (res.status === 404) {
+          content.className = 'error';
+          content.textContent = 'プロフィールが見つかりません。';
+          return;
+        }
+        if (!res.ok) throw new Error('fetch failed');
+        const data = await res.json();
+        if (!data.exists) {
+          content.className = 'error';
+          content.textContent = 'プロフィールが見つかりません。';
+          return;
+        }
+        const p = data.profile || {};
+        renderProfile(p);
+      } catch (e) {
+        content.className = 'error';
+        content.textContent = '読み込みに失敗しました。';
+      }
+    }
+
+    function renderProfile(p) {
+      content.className = 'card';
+      const badges = (p.badges || []).slice(0, 8);
+      content.innerHTML = `
+        <div class="avatar">🥚</div>
+        <div class="display-name">${escape(p.display_name || '散歩者')}</div>
+        <div class="level">Lv.${p.level || 1} ・ ${escape(p.favorite_area || '東京')}</div>
+        <div class="stats-grid">
+          <div class="stat">
+            <div class="stat-num">${p.completed_courses_count || 0}</div>
+            <div class="stat-label">完走コース</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">${p.discovered_courses_count || 0}</div>
+            <div class="stat-label">発見コース</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">${fmtMin(p.total_walk_min || 0)}</div>
+            <div class="stat-label">累計散歩時間</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">🔥${p.login_streak || 0}</div>
+            <div class="stat-label">連続日数</div>
+          </div>
+        </div>
+        ${badges.length > 0 ? `
+          <div style="font-size:12px;color:#6b6b72;margin-top:16px;font-weight:700;">獲得バッジ</div>
+          <div class="badges">
+            ${badges.map(b => `<span class="badge-pill">${escape(b)}</span>`).join('')}
+          </div>
+        ` : ''}
+      `;
+    }
+
+    load();
+  </script>
+</body>
+</html>

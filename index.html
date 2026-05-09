@@ -220,6 +220,18 @@
         <button class="btn-primary" id="invite-share" type="button">📤 X / LINE で共有</button>
       </div>
 
+      <div class="profile-section-title">🎴 公開プロフィール</div>
+      <div class="invite-section">
+        <p class="invite-desc">あなたの実績ページを <strong>シェア可能なURL</strong> として生成します。レベル・完走数・バッジが匿名公開されます。</p>
+        <button class="btn-secondary" id="btn-public-profile" type="button" style="width: 100%;">🎴 公開プロフィールを生成</button>
+        <div id="public-profile-result" hidden style="margin-top: 8px;">
+          <div class="invite-link-row">
+            <input type="text" id="public-profile-link" readonly />
+            <button class="btn-secondary" id="public-profile-copy" type="button">📋</button>
+          </div>
+        </div>
+      </div>
+
       <div class="profile-section-title">📊 生涯統計</div>
       <div class="lifetime-stats" id="lifetime-stats">
         <!-- populated by JS -->
@@ -317,6 +329,17 @@
             <div class="weather-msg" id="weather-msg">天気を取得中…</div>
             <div class="weather-meta" id="weather-meta">—</div>
           </div>
+        </section>
+
+        <!-- Popular courses ranking -->
+        <section class="popular-ranking" id="popular-ranking" hidden>
+          <div class="popular-header">
+            <span>📈 今週の人気コース</span>
+            <span class="popular-period">(7日間)</span>
+          </div>
+          <ol class="popular-list" id="popular-list">
+            <!-- populated by JS -->
+          </ol>
         </section>
 
         <!-- Smart recommendation banner -->

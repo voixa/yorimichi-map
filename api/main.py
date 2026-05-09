@@ -209,6 +209,43 @@ def _trim_buckets(now_min):
             if k < cutoff:
                 _live_buckets[kind].pop(k, None)
 
+# ----- コース人気ランキング（直近7日） -----
+# heartbeat の pull イベント時にコースIDを記録 → 集計
+_course_pull_buckets = {}  # course_id -> { ts_min: count }
+
+def _record_course_pull(course_id):
+    if not course_id or not isinstance(course_id, str):
+        return
+    if len(course_id) > 80:
+        return
+    now_min = int(_time.time() // 60)
+    if course_id not in _course_pull_buckets:
+        _course_pull_buckets[course_id] = {}
+    _course_pull_buckets[course_id][now_min] = _course_pull_buckets[course_id].get(now_min, 0) + 1
+    # 7日より古いバケットを削除
+    cutoff = now_min - 7 * 24 * 60
+    for cid in list(_course_pull_buckets.keys()):
+        for k in list(_course_pull_buckets[cid].keys()):
+            if k < cutoff:
+                _course_pull_buckets[cid].pop(k, None)
+        if not _course_pull_buckets[cid]:
+            _course_pull_buckets.pop(cid, None)
+
+
+@app.route("/api/popular-courses", methods=["GET"])
+def popular_courses():
+    """直近7日のコース別 pull 数で人気ランキング"""
+    ranked = []
+    for cid, buckets in _course_pull_buckets.items():
+        total = sum(buckets.values())
+        ranked.append({"course_id": cid, "pulls_7d": total})
+    ranked.sort(key=lambda x: -x["pulls_7d"])
+    return jsonify({
+        "courses": ranked[:10],
+        "total_pulls_7d": sum(r["pulls_7d"] for r in ranked),
+    })
+
+
 @app.route("/api/heartbeat", methods=["POST"])
 def heartbeat():
     """ユーザーが「いる」ことを匿名で記録（直近30分のアクティブ数集計用）"""
@@ -221,6 +258,10 @@ def heartbeat():
         _live_buckets["active"].setdefault(now_min, set()).add(user_id[:32])
     if event == "pull":
         _live_buckets["pulls"][now_min] = _live_buckets["pulls"].get(now_min, 0) + 1
+        # course_id があれば人気ランキングにも記録
+        course_id = (data.get("course_id") or "").strip()
+        if course_id:
+            _record_course_pull(course_id)
     elif event == "complete":
         _live_buckets["completes"][now_min] = _live_buckets["completes"].get(now_min, 0) + 1
     return jsonify({"ok": True})
@@ -250,6 +291,76 @@ def live_stats():
         "completes_30min": completes_30,
         "ts": int(_time.time()),
     })
+
+
+# ----- 公開プロフィール（オプトイン・スナップショット） -----
+PUBLIC_PROFILE_COLLECTION = "yorimichi_public_profiles"
+import secrets as _secrets
+
+@app.route("/api/public-profile", methods=["POST"])
+def create_public_profile():
+    """ユーザーの実績スナップショットを公開可能なURLとして保存"""
+    if not firestore_client:
+        return jsonify({"error": "firestore_disabled"}), 503
+    data = request.get_json(silent=True) or {}
+    user_id = (data.get("user_id") or "").strip()
+    if not _validate_user_id(user_id):
+        return jsonify({"error": "invalid_user_id"}), 400
+    snapshot = data.get("snapshot") or {}
+    if not isinstance(snapshot, dict):
+        return jsonify({"error": "invalid_snapshot"}), 400
+
+    # 公開しても安全なフィールドだけホワイトリスト
+    safe = {
+        "display_name": str(snapshot.get("display_name", ""))[:30],
+        "level": int(snapshot.get("level") or 0),
+        "xp": int(snapshot.get("xp") or 0),
+        "completed_courses_count": int(snapshot.get("completed_courses_count") or 0),
+        "discovered_courses_count": int(snapshot.get("discovered_courses_count") or 0),
+        "total_walk_min": int(snapshot.get("total_walk_min") or 0),
+        "login_streak": int(snapshot.get("login_streak") or 0),
+        "favorite_area": str(snapshot.get("favorite_area", ""))[:30],
+        "badges": [str(b)[:30] for b in (snapshot.get("badges") or [])][:20],
+        "completed_course_ids": [str(c)[:80] for c in (snapshot.get("completed_course_ids") or [])][:50],
+    }
+
+    # 公開ID（短い・推測困難）
+    public_id = _secrets.token_urlsafe(8)
+    safe["_owner_user_id"] = user_id
+    safe["_created_at"] = firestore.SERVER_TIMESTAMP
+
+    try:
+        firestore_client.collection(PUBLIC_PROFILE_COLLECTION).document(public_id).set(safe)
+        return jsonify({"public_id": public_id, "url": f"{PRIMARY_ORIGIN}/profile.html?id={public_id}"})
+    except Exception as e:
+        logger.exception("public profile create failed")
+        return jsonify({"error": "firestore_error"}), 502
+
+
+@app.route("/api/public-profile", methods=["GET"])
+def get_public_profile():
+    """公開IDからプロフィール取得"""
+    if not firestore_client:
+        return jsonify({"error": "firestore_disabled"}), 503
+    public_id = (request.args.get("id") or "").strip()
+    if not public_id or not _re.match(r"^[A-Za-z0-9_-]{8,32}$", public_id):
+        return jsonify({"error": "invalid_id"}), 400
+    try:
+        doc = firestore_client.collection(PUBLIC_PROFILE_COLLECTION).document(public_id).get()
+        if not doc.exists:
+            return jsonify({"exists": False}), 404
+        data = doc.to_dict() or {}
+        # _owner_user_id, _created_at は外部に出さない
+        owner = data.pop("_owner_user_id", None)
+        created = data.pop("_created_at", None)
+        return jsonify({
+            "exists": True,
+            "profile": data,
+            "created_at": created.isoformat() if created else None,
+        })
+    except Exception as e:
+        logger.exception("public profile get failed")
+        return jsonify({"error": "firestore_error"}), 502
 
 
 @app.route("/api/delete-user-data", methods=["POST"])
