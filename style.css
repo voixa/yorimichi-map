@@ -4619,6 +4619,46 @@ button:focus-visible,
   white-space: nowrap;
 }
 
+/* マップ全画面トグル */
+.map-fullscreen-btn {
+  position: fixed;
+  top: 70px;
+  right: 16px;
+  width: 40px; height: 40px;
+  border-radius: 8px;
+  border: 0;
+  background: white;
+  color: #1c1c1f;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 6000;
+  display: grid;
+  place-items: center;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.map-fullscreen-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+}
+[data-theme="dark"] .map-fullscreen-btn {
+  background: #2d2d33;
+  color: #fff;
+}
+
+/* 全画面モード: パネルを非表示 + マップ拡大 */
+body.map-fullscreen .panel { display: none !important; }
+body.map-fullscreen .layout {
+  grid-template-columns: 1fr !important;
+  grid-template-rows: 1fr !important;
+}
+body.map-fullscreen .map-fullscreen-btn::before {
+  content: '⛶';
+}
+body.map-fullscreen #map-container {
+  height: 100vh !important;
+}
+
 /* マップ「現在地に戻る」ボタン */
 .map-recenter-btn {
   position: fixed;
@@ -4679,6 +4719,53 @@ button:focus-visible,
 @keyframes tabFadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== Post-completion next actions ===== */
+.next-actions {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.next-actions-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-align: center;
+}
+.next-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+.next-action-btn {
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 4px;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: transform 0.12s, border-color 0.12s, background 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.next-action-btn:hover {
+  transform: translateY(-2px);
+  border-color: var(--brand);
+  background: var(--brand-soft);
+}
+.next-action-btn:active { transform: scale(0.96); }
+.nab-icon { font-size: 22px; line-height: 1; }
+.nab-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+  text-align: center;
 }
 
 /* ===== Walk-start attract animation (after course apply) ===== */
@@ -5795,6 +5882,22 @@ body:has(.walk-hud:not([hidden])) .leaflet-bottom.leaflet-right {
 .walk-hud-steps { color: #4ade80; font-weight: 700; }
 .walk-hud-elapsed { color: #fff; font-weight: 700; opacity: 0.85; }
 .walk-hud-totaldist { color: #ffb380; font-weight: 700; }
+
+/* HUD progress bar (course completion visualization) */
+.walk-hud-progress-bar {
+  height: 5px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 100px;
+  overflow: hidden;
+  margin: 6px 0 4px;
+}
+.walk-hud-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ade80 0%, #22c55e 50%, #16a34a 100%);
+  border-radius: 100px;
+  transition: width 0.5s ease;
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+}
 
 .walk-hud-actions {
   display: flex;

@@ -7080,11 +7080,19 @@ ${trkPts}
       $('#walk-hud-dist').textContent = '完走おめでとう';
       $('#walk-hud-progress').textContent = `${totalStops}/${totalStops}`;
       $('#walk-hud-arrow').style.opacity = '0.3';
+      const progressFill = $('#walk-hud-progress-fill');
+      if (progressFill) progressFill.style.width = '100%';
       return;
     }
     const next = state.selected[nextIdx];
     $('#walk-hud-name').textContent = (next.emoji || '📍') + ' ' + (next.name || '次のスポット');
     $('#walk-hud-progress').textContent = `${visitedCount}/${totalStops}`;
+    // 全体進捗バー
+    const progressFill = $('#walk-hud-progress-fill');
+    if (progressFill && totalStops > 0) {
+      const pct = Math.round((visitedCount / totalStops) * 100);
+      progressFill.style.width = `${pct}%`;
+    }
     if (userLoc && next.lat != null && next.lng != null) {
       const dKm = haversineKm(userLoc, next);
       const dM = Math.round(dKm * 1000);
@@ -7897,6 +7905,43 @@ ${hashtag}`;
     const igBtn = $('#cert-ig');
     if (igBtn) igBtn.onclick = () => downloadInstagramShareImage(course);
 
+    // 3択の next-actions（同じコース再歩行・同エリア別コース・もう1回ガチャ）
+    const reWalkBtn = $('#next-action-rewalk');
+    if (reWalkBtn) {
+      reWalkBtn.onclick = () => {
+        $('#cert-modal').hidden = true;
+        applyRoute(courseToRoute(course));
+        showToast(`🔄 「${tField(course, 'name')}」をもう一度歩きます`, 'info', 3000);
+      };
+    }
+    const areaBtn = $('#next-action-area');
+    const areaIcon = $('#nab-area-icon');
+    const areaLabel = $('#nab-area-label');
+    // 同じエリアの別コース
+    const sameAreaCourses = (window.YORIMICHI_COURSES || []).filter(c =>
+      c.area === course.area && c.id !== course.id
+    );
+    if (areaBtn && sameAreaCourses.length > 0) {
+      const altCourse = sameAreaCourses[Math.floor(Math.random() * sameAreaCourses.length)];
+      if (areaIcon) areaIcon.textContent = altCourse.themeIcon || altCourse.areaIcon || '🌳';
+      if (areaLabel) areaLabel.innerHTML = `同じエリア:<br>${escapeHtml(tField(altCourse, 'name')).slice(0, 14)}`;
+      areaBtn.onclick = () => {
+        $('#cert-modal').hidden = true;
+        applyRoute(courseToRoute(altCourse));
+        showToast(`🌳 「${tField(altCourse, 'name')}」を地図に設定`, 'success', 3000);
+      };
+      areaBtn.style.display = '';
+    } else if (areaBtn) {
+      areaBtn.style.display = 'none';
+    }
+    const gachaBtn = $('#next-action-gacha');
+    if (gachaBtn) {
+      gachaBtn.onclick = () => {
+        $('#cert-modal').hidden = true;
+        try { showGachaModal(); } catch {}
+      };
+    }
+
     // Suggest next course - 履歴ベースのレコメンドエンジンで強化
     const next = getRecommendedCourse() || pickNextSuggestion(course);
     const nextSec = $('#next-suggestion');
@@ -8249,6 +8294,18 @@ ${hashtag}`;
           () => showToast('現在地が取得できませんでした', 'error', 3000),
           { enableHighAccuracy: true, timeout: 8000 }
         );
+      }
+    });
+
+    // マップ全画面トグル
+    const fsBtn = $('#map-fullscreen-btn');
+    if (fsBtn) fsBtn.addEventListener('click', () => {
+      const isFs = document.body.classList.toggle('map-fullscreen');
+      fsBtn.textContent = isFs ? '⛔' : '⛶';
+      fsBtn.setAttribute('aria-label', isFs ? 'パネルを表示' : '地図を全画面表示');
+      // map invalidateSize でサイズ再計算
+      if (state.map) {
+        setTimeout(() => state.map.invalidateSize(), 350);
       }
     });
 

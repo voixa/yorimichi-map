@@ -1022,6 +1022,11 @@
     📍
   </button>
 
+  <!-- マップ全画面トグル -->
+  <button class="map-fullscreen-btn" id="map-fullscreen-btn" type="button" aria-label="地図を全画面表示">
+    ⛶
+  </button>
+
   <!-- ============ Walk Log Modal ============ -->
   <div class="modal-backdrop" id="walk-log-modal" hidden>
     <div class="modal walk-log-modal" role="dialog" aria-label="散歩履歴" aria-modal="true">
@@ -1220,6 +1225,9 @@
     <div class="walk-hud-info">
       <div class="walk-hud-label">次のスポット</div>
       <div class="walk-hud-name" id="walk-hud-name">—</div>
+      <div class="walk-hud-progress-bar">
+        <div class="walk-hud-progress-fill" id="walk-hud-progress-fill"></div>
+      </div>
       <div class="walk-hud-meta">
         <span class="walk-hud-dist" id="walk-hud-dist">— m</span>
         <span class="walk-hud-progress" id="walk-hud-progress">0/0</span>
@@ -1347,6 +1355,25 @@
           </div>
           <span class="next-cta">これで行く</span>
         </button>
+      </div>
+
+      <!-- 完走後の次のアクション3択 -->
+      <div class="next-actions" id="next-actions">
+        <div class="next-actions-label">他にも：</div>
+        <div class="next-actions-grid">
+          <button class="next-action-btn" id="next-action-rewalk" type="button">
+            <span class="nab-icon">🔄</span>
+            <span class="nab-label">同じコースを<br>もう一度</span>
+          </button>
+          <button class="next-action-btn" id="next-action-area" type="button">
+            <span class="nab-icon" id="nab-area-icon">🌳</span>
+            <span class="nab-label" id="nab-area-label">同じエリアの<br>別コース</span>
+          </button>
+          <button class="next-action-btn" id="next-action-gacha" type="button">
+            <span class="nab-icon">🎰</span>
+            <span class="nab-label">ガチャをもう<br>1回引く</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
