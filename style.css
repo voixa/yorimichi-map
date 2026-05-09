@@ -4619,6 +4619,34 @@ button:focus-visible,
   white-space: nowrap;
 }
 
+/* マップ「現在地に戻る」ボタン */
+.map-recenter-btn {
+  position: fixed;
+  bottom: 200px;
+  right: 16px;
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  border: 0;
+  background: white;
+  color: #ff7e3d;
+  font-size: 22px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+  z-index: 7000;
+  display: grid;
+  place-items: center;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.map-recenter-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+}
+.map-recenter-btn:active { transform: scale(0.95); }
+[data-theme="dark"] .map-recenter-btn {
+  background: #2d2d33;
+  color: #ff9966;
+}
+
 /* スクロールトップボタン */
 .scroll-top-btn {
   position: absolute;
@@ -5621,6 +5649,8 @@ body:has(.walk-hud:not([hidden])) .leaflet-bottom.leaflet-right {
 .walk-hud-dist { color: #ffd54f; font-weight: 700; }
 .walk-hud-progress { color: #94a3b8; }
 .walk-hud-steps { color: #4ade80; font-weight: 700; }
+.walk-hud-elapsed { color: #fff; font-weight: 700; opacity: 0.85; }
+.walk-hud-totaldist { color: #ffb380; font-weight: 700; }
 
 .walk-hud-actions {
   display: flex;

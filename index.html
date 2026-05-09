@@ -1015,6 +1015,11 @@
   <!-- 散歩中の写真撮影用（モバイルカメラ起動） -->
   <input type="file" id="walk-photo-input" accept="image/*" capture="environment" style="display:none" />
 
+  <!-- 「現在地に戻る」マップ上ボタン -->
+  <button class="map-recenter-btn" id="map-recenter-btn" type="button" aria-label="現在地に戻る" hidden>
+    📍
+  </button>
+
   <!-- ============ Walk Log Modal ============ -->
   <div class="modal-backdrop" id="walk-log-modal" hidden>
     <div class="modal walk-log-modal" role="dialog" aria-label="散歩履歴" aria-modal="true">
@@ -1217,6 +1222,8 @@
         <span class="walk-hud-dist" id="walk-hud-dist">— m</span>
         <span class="walk-hud-progress" id="walk-hud-progress">0/0</span>
         <span class="walk-hud-steps" id="walk-hud-steps" hidden>👣 0歩</span>
+        <span class="walk-hud-elapsed" id="walk-hud-elapsed">0:00</span>
+        <span class="walk-hud-totaldist" id="walk-hud-totaldist" hidden>📏 0.0km</span>
       </div>
     </div>
     <div class="walk-hud-actions">

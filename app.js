@@ -1621,6 +1621,25 @@
         setEndpointMarker('dest', null);
         state.origin = null;
         state.dest = null;
+        // 自由/散歩モードに切替時：現在地を出発地のデフォルトに
+        if (navigator.geolocation && (mode === 'route' || mode === 'stroll')) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              state.origin = {
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+                name: '現在地',
+                shortLabel: '現在地',
+              };
+              try { setEndpointMarker('origin', state.origin); } catch {}
+              const originInput = $('#origin-input');
+              if (originInput) originInput.value = '現在地';
+              showToast('📍 現在地を出発地に設定しました', 'success', 2500);
+            },
+            () => { /* 取得失敗は静かに */ },
+            { enableHighAccuracy: false, timeout: 5000, maximumAge: 30000 }
+          );
+        }
       }
       // Reset UI
       const summarySection = $('#summary-section');
@@ -6376,6 +6395,19 @@ ${trkPts}
     // モバイル用 Walk HUD を表示
     showWalkHud();
 
+    // 経過時間を1秒ごとにticking
+    if (state.activeWalk._tickTimer) clearInterval(state.activeWalk._tickTimer);
+    state.activeWalk._tickTimer = setInterval(() => {
+      if (!state.activeWalk) return;
+      const el = $('#walk-hud-elapsed');
+      if (el && state.activeWalk.startedAt) {
+        const elapsed = Math.floor((Date.now() - state.activeWalk.startedAt) / 1000);
+        const mm = Math.floor(elapsed / 60);
+        const ss = elapsed % 60;
+        el.textContent = `${mm}:${String(ss).padStart(2, '0')}`;
+      }
+    }, 1000);
+
     // 歩数計（モバイルのみ・iOS は権限要求）
     startStepCounter().then(ok => {
       const stepEl = $('#walk-hud-steps');
@@ -6389,6 +6421,10 @@ ${trkPts}
   function stopWalk() {
     if (state.activeWalk && state.activeWalk.gpsWatchId != null) {
       navigator.geolocation.clearWatch(state.activeWalk.gpsWatchId);
+    }
+    if (state.activeWalk && state.activeWalk._tickTimer) {
+      clearInterval(state.activeWalk._tickTimer);
+      state.activeWalk._tickTimer = null;
     }
     // 累計ウォーク時間を加算
     if (state.activeWalk && state.activeWalk.startedAt) {
@@ -6737,10 +6773,15 @@ ${trkPts}
     if (!hud) return;
     hud.hidden = false;
     updateWalkHud(null);
+    // 「現在地に戻る」ボタンも表示
+    const recenter = $('#map-recenter-btn');
+    if (recenter) recenter.hidden = false;
   }
   function hideWalkHud() {
     const hud = $('#walk-hud');
     if (hud) hud.hidden = true;
+    const recenter = $('#map-recenter-btn');
+    if (recenter) recenter.hidden = true;
   }
   function updateWalkHud(userLoc) {
     const hud = $('#walk-hud');
@@ -6779,10 +6820,41 @@ ${trkPts}
       $('#walk-hud-dist').textContent = 'GPS取得中…';
       $('#walk-hud-arrow').style.opacity = '0.5';
     }
+
+    // 累積距離 + 経過時間を更新
+    const totalDistEl = $('#walk-hud-totaldist');
+    const elapsedEl = $('#walk-hud-elapsed');
+    if (state.activeWalk?.startedAt) {
+      const elapsed = Math.floor((Date.now() - state.activeWalk.startedAt) / 1000);
+      const mm = Math.floor(elapsed / 60);
+      const ss = elapsed % 60;
+      if (elapsedEl) elapsedEl.textContent = `${mm}:${String(ss).padStart(2, '0')}`;
+      const totalKm = state.activeWalk._totalKm || 0;
+      if (totalDistEl) {
+        if (totalKm > 0.05) {
+          totalDistEl.textContent = `📏 ${totalKm.toFixed(2)}km`;
+          totalDistEl.hidden = false;
+        } else {
+          totalDistEl.hidden = true;
+        }
+      }
+    }
   }
 
   function onGpsUpdate(pos) {
     const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    // 累積距離計算: 直前の位置との距離を足す
+    if (state.activeWalk) {
+      const aw = state.activeWalk;
+      if (aw._lastLoc) {
+        const incrementKm = haversineKm(aw._lastLoc, loc);
+        // 異常値（>500m / 数秒）は破棄（GPSドリフト対策）
+        if (incrementKm < 0.5) {
+          aw._totalKm = (aw._totalKm || 0) + incrementKm;
+        }
+      }
+      aw._lastLoc = loc;
+    }
     // Update user marker
     if (!state.userMarker) {
       const icon = L.divIcon({
@@ -7882,6 +7954,24 @@ ${hashtag}`;
     loadVoicePref();
     $('#walk-start').addEventListener('click', startWalk);
     $('#walk-stop').addEventListener('click', stopWalk);
+
+    // 「現在地に戻る」ボタン
+    const recenterBtn = $('#map-recenter-btn');
+    if (recenterBtn) recenterBtn.addEventListener('click', () => {
+      if (state.userMarker && state.map) {
+        const ll = state.userMarker.getLatLng();
+        state.map.flyTo([ll.lat, ll.lng], 16, { duration: 0.6 });
+      } else if (navigator.geolocation && state.map) {
+        // userMarker がまだなければ現在地取得
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            state.map.flyTo([pos.coords.latitude, pos.coords.longitude], 16, { duration: 0.6 });
+          },
+          () => showToast('現在地が取得できませんでした', 'error', 3000),
+          { enableHighAccuracy: true, timeout: 8000 }
+        );
+      }
+    });
 
     // Walk HUD ボタン
     const hudEnd = $('#walk-hud-end');
