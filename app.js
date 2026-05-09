@@ -88,7 +88,7 @@
       tabRoute: '🎯 自由ルート',
       tabStroll: '🌿 散歩',
       todayLabel: '✨ 今日のおすすめ',
-      todayCta: '引く',
+      todayCta: '歩く →',
       filtersLabel: '🔍 絞り込み',
       filterArea: 'エリア',
       filterTags: '気分タグ',
@@ -107,7 +107,7 @@
       tabRoute: '🎯 Free Route',
       tabStroll: '🌿 Stroll',
       todayLabel: '✨ Today\'s Pick',
-      todayCta: 'Try',
+      todayCta: 'Walk →',
       filtersLabel: '🔍 Filter',
       filterArea: 'Area',
       filterTags: 'Mood tags',
@@ -5794,17 +5794,16 @@ ${trkPts}
       const sub = $('#dcta-sub');
       const desc = $('#mode-desc');
       if (!label || !sub) return;
+      // CTAラベルは常に「ガチャを引く」で統一、modeによって sub だけ変える
+      label.textContent = '🎰 ガチャを引く';
       if (state.mode === 'course') {
-        label.textContent = '🎰 コースガチャを引く';
         sub.textContent = 'キュレーション済み21本から1本';
         if (desc) desc.textContent = '📖 キュレーション済みコース21本から運命の一本を引く';
       } else if (state.mode === 'route') {
-        label.textContent = '🎯 自由ルートガチャ';
-        sub.textContent = '出発地→目的地から AI生成';
+        sub.textContent = '出発地→目的地から AI が動的生成';
         if (desc) desc.textContent = '🎯 出発地と目的地を入れると AI が街歩きコースを動的生成';
       } else if (state.mode === 'stroll') {
-        label.textContent = '🌿 散歩ガチャ';
-        sub.textContent = '出発地から気の向くまま';
+        sub.textContent = '出発地から AI が散歩コース生成';
         if (desc) desc.textContent = '🌿 出発地のみ入れて、AIが周辺の散歩コースを生成';
       }
     }

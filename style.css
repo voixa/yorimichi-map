@@ -5328,6 +5328,7 @@ button:focus-visible,
 .quickstart-hero {
   margin: 8px 0 12px;
 }
+/* QuickStart は ⚡ おまかせ用 → 青緑系で「ガチャ系」と区別 */
 .quickstart-btn {
   width: 100%;
   display: flex;
@@ -5336,15 +5337,18 @@ button:focus-visible,
   padding: 16px 18px;
   border: 0;
   border-radius: 16px;
-  background: linear-gradient(135deg, #ff7e3d 0%, #ff4081 50%, #9c27b0 100%);
+  background: linear-gradient(135deg, #1976d2 0%, #00897b 100%);
   color: white;
   font-family: inherit;
   cursor: pointer;
   text-align: left;
-  box-shadow: 0 8px 24px rgba(255, 64, 129, 0.35);
+  box-shadow: 0 8px 24px rgba(25, 118, 210, 0.35);
   transition: transform 0.15s, box-shadow 0.15s;
   position: relative;
   overflow: hidden;
+}
+.quickstart-btn:hover {
+  box-shadow: 0 12px 32px rgba(25, 118, 210, 0.45);
 }
 .quickstart-btn::before {
   content: '';
@@ -5360,7 +5364,6 @@ button:focus-visible,
 }
 .quickstart-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(255, 64, 129, 0.45);
 }
 .quickstart-btn:active {
   transform: scale(0.98);
