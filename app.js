@@ -585,20 +585,32 @@
     clearPoiMarkers();
     const courseId = state.activeWalk?.courseId;
     const visited = courseId ? (state.completedStops[courseId] || new Set()) : new Set();
+    // 「現在の目標」= ウォーク中のときだけ。最初の未訪問スポットを current にする
+    let currentIdx = -1;
+    if (state.activeWalk) {
+      for (let i = 0; i < state.selected.length; i++) {
+        if (!visited.has(i)) { currentIdx = i; break; }
+      }
+    }
     state.selected.forEach((stop, i) => {
       const emoji = stop.emoji || (categoryById(stop.cat) || { emoji: '📍' }).emoji;
       const isVisited = visited.has(i);
+      const isCurrent = (i === currentIdx);
       const display = isVisited ? '✓' : emoji;
       const html = `
         <span class="poi-num">${i + 1}</span>
         <span class="poi-emo">${display}</span>
         <span class="poi-name-label">${escapeHtml(stop.name)}</span>
+        ${isCurrent ? '<span class="poi-current-badge">📍次</span>' : ''}
       `;
-      const cls = 'poi-marker numbered' + (isVisited ? ' visited' : '');
+      let cls = 'poi-marker numbered';
+      if (isVisited) cls += ' visited';
+      else if (isCurrent) cls += ' current';
+      else cls += ' upcoming';
       const marker = L.marker([stop.lat, stop.lng], {
         icon: makeIcon(html, cls, 44),
         title: stop.name,
-        zIndexOffset: 100 + i,
+        zIndexOffset: isCurrent ? 500 : (100 + i),
       }).addTo(state.map);
       marker.on('click', () => {
         showSelectedStopDetail(stop, i);
@@ -5626,7 +5638,7 @@ ${trkPts}
 
       ${renderTimeline(course.stops)}
 
-      <div class="cd-stops-title">📍 経由スポット</div>
+      <div class="cd-stops-title">📍 経由スポット <span class="cd-stops-hint">タップで詳細</span></div>
       <div class="cd-stops">
         ${course.stops.map((s, i) => {
           const photoUrl = (window.YORIMICHI_PHOTOS || {})[s.name];
@@ -5635,13 +5647,42 @@ ${trkPts}
           const thumb = photoUrl
             ? `<span class="cd-stop-thumb" style="background-image:url('${photoUrl}')"></span>`
             : `<span class="cd-stop-emoji">${s.emoji || '📍'}</span>`;
+          // スポット間の徒歩時間（4km/h）
+          let segmentHtml = '';
+          if (i > 0) {
+            const prev = course.stops[i - 1];
+            if (prev && s.lat != null && s.lng != null && prev.lat != null && prev.lng != null) {
+              const segKm = haversineKm(prev, s);
+              const segMin = Math.max(1, Math.round((segKm / 4) * 60));
+              const segM = Math.round(segKm * 1000);
+              const segDist = segM >= 1000 ? `${(segM/1000).toFixed(1)}km` : `${segM}m`;
+              segmentHtml = `<div class="cd-segment"><span class="cd-segment-line"></span><span class="cd-segment-text">🚶 ${segDist}・約${segMin}分</span><span class="cd-segment-line"></span></div>`;
+            }
+          }
+          // 詳細情報（展開時表示）
+          const stayMin = (typeof s.stayMin === 'number') ? s.stayMin : 5;
+          const tags = (s.tags || []).slice(0, 5);
+          const detailRows = [];
+          if (s.bestTime) detailRows.push(`<span class="cd-meta-pill">🕐 ${escapeHtml(s.bestTime)}</span>`);
+          detailRows.push(`<span class="cd-meta-pill">⏱ 滞在約${stayMin}分</span>`);
+          if (s.budget) detailRows.push(`<span class="cd-meta-pill">💴 ${escapeHtml(s.budget)}</span>`);
+          if (perk) detailRows.push(`<span class="cd-meta-pill cd-perk-pill">🎫 ${escapeHtml(perk.label || '特典あり')}</span>`);
+          const tagsHtml = tags.length
+            ? `<div class="cd-stop-tags">${tags.map(t => `<span class="detail-tag">#${escapeHtml(t)}</span>`).join('')}</div>`
+            : '';
           return `
-          <div class="cd-stop">
+          ${segmentHtml}
+          <div class="cd-stop expandable" data-stop-idx="${i}">
             <span class="cd-stop-num">${i + 1}</span>
             ${thumb}
             <div class="cd-stop-info">
               <div class="cd-stop-name">${escapeHtml(tField(s, 'name'))}${perk ? ' <span class="cd-perk-tag">🎫 特典あり</span>' : ''}</div>
               <div class="cd-stop-desc">${s.bestTime ? `<span class="cd-besttime">🕐 ${escapeHtml(s.bestTime)}</span> ` : ''}${escapeHtml(tField(s, 'desc'))}</div>
+            </div>
+            <span class="cd-stop-toggle" aria-hidden="true">▾</span>
+            <div class="cd-stop-expanded">
+              <div class="cd-stop-meta">${detailRows.join('')}</div>
+              ${tagsHtml}
             </div>
           </div>`;
         }).join('')}
@@ -5669,6 +5710,12 @@ ${trkPts}
       applyRoute(courseToRoute(course));
       setTimeout(() => startWalk(), 500);
     };
+    // 各スポットをタップして展開
+    $$('.cd-stop.expandable').forEach(el => {
+      el.addEventListener('click', () => {
+        el.classList.toggle('open');
+      });
+    });
   }
 
   function rerollPlans(type) {
@@ -7082,6 +7129,8 @@ ${trkPts}
       $('#walk-hud-arrow').style.opacity = '0.3';
       const progressFill = $('#walk-hud-progress-fill');
       if (progressFill) progressFill.style.width = '100%';
+      const etaEl = $('#walk-hud-eta');
+      if (etaEl) etaEl.hidden = true;
       return;
     }
     const next = state.selected[nextIdx];
@@ -7124,6 +7173,40 @@ ${trkPts}
         } else {
           totalDistEl.hidden = true;
         }
+      }
+    }
+
+    // 残り推定時間: 現在地→次→以降のスポット間距離を合計、徒歩4km/h + 滞在時間を加算
+    const etaEl = $('#walk-hud-eta');
+    if (etaEl) {
+      let remainingKm = 0;
+      let prev = userLoc || null;
+      const remainingStops = [];
+      for (let i = nextIdx; i < state.selected.length; i++) {
+        if (visited.has(i)) continue;
+        const s = state.selected[i];
+        if (prev && s.lat != null && s.lng != null) {
+          remainingKm += haversineKm(prev, s);
+        }
+        prev = s;
+        remainingStops.push(s);
+      }
+      // 徒歩 4km/h
+      const walkMin = (remainingKm / 4) * 60;
+      // 滞在時間: stayMin があれば使い、なければ 1スポット 5分
+      let stayMin = 0;
+      remainingStops.forEach(s => {
+        stayMin += (typeof s.stayMin === 'number' ? s.stayMin : 5);
+      });
+      // 最終スポットでは滞在しない想定（少し多めに見積もるので残しておく）
+      const totalMin = Math.max(1, Math.round(walkMin + stayMin));
+      if (totalMin > 0 && remainingStops.length > 0) {
+        etaEl.textContent = totalMin >= 60
+          ? `⏱ 残り${Math.floor(totalMin/60)}h${totalMin%60}m`
+          : `⏱ 残り約${totalMin}分`;
+        etaEl.hidden = false;
+      } else {
+        etaEl.hidden = true;
       }
     }
   }

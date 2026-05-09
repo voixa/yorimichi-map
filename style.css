@@ -3402,6 +3402,16 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
 .cd-besttime { font-weight: 600; color: var(--brand-dark); margin-right: 6px; }
 [data-theme="dark"] .cd-besttime { color: var(--brand); }
 .cd-stops { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.cd-stops-hint {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-left: 6px;
+  background: var(--surface-2);
+  padding: 2px 8px;
+  border-radius: 100px;
+  vertical-align: middle;
+}
 .cd-stop {
   display: grid;
   grid-template-columns: 24px 36px 1fr;
@@ -3410,6 +3420,81 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
   padding: 8px 10px;
   background: var(--surface-2);
   border-radius: var(--radius-sm);
+}
+.cd-stop.expandable {
+  grid-template-columns: 24px 36px 1fr 20px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  position: relative;
+}
+.cd-stop.expandable:hover { background: var(--surface-3, #fff5e6); }
+.cd-stop.expandable:active { transform: scale(0.99); }
+.cd-stop-toggle {
+  font-size: 16px;
+  color: var(--text-muted);
+  text-align: center;
+  transition: transform 0.2s ease;
+  user-select: none;
+}
+.cd-stop.expandable.open .cd-stop-toggle { transform: rotate(180deg); }
+.cd-stop-expanded {
+  grid-column: 1 / -1;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  margin-top: 4px;
+  border-top: 1px dashed var(--border, #e5e7eb);
+}
+.cd-stop.expandable.open .cd-stop-expanded { display: flex; }
+.cd-stop-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cd-meta-pill {
+  background: white;
+  border: 1px solid var(--border, #e5e7eb);
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+.cd-meta-pill.cd-perk-pill {
+  background: linear-gradient(135deg, #fff8e1, #fff3c4);
+  border-color: #d4af37;
+  color: #5a3a00;
+}
+.cd-stop-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+[data-theme="dark"] .cd-meta-pill {
+  background: #2a2a32;
+  color: var(--text);
+  border-color: #3a3a42;
+}
+/* スポット間の徒歩区間表示 */
+.cd-segment {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  margin: -2px 0;
+}
+.cd-segment-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border, #e5e7eb), transparent);
+}
+.cd-segment-text {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 600;
+  white-space: nowrap;
 }
 .cd-stop-num {
   width: 24px; height: 24px;
@@ -3739,6 +3824,61 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
   background: #16a34a;
   color: white;
   border-color: #15803d;
+}
+
+/* Map markers: current target (next to visit during walk) */
+.poi-marker.numbered.current {
+  background: linear-gradient(135deg, #ff7e3d, #ff4081);
+  border-color: #fff;
+  box-shadow: 0 0 0 0 rgba(255, 126, 61, 0.7), 0 6px 16px rgba(255, 64, 129, 0.5);
+  animation: pulse-current-marker 1.6s ease-in-out infinite;
+  transform: scale(1.18);
+}
+.poi-marker.numbered.current .poi-num {
+  background: #fff;
+  color: #ff4081;
+  border-color: #ff4081;
+}
+.poi-marker.numbered.current .poi-name-label {
+  background: linear-gradient(135deg, #ff7e3d, #ff4081);
+  color: white;
+  border-color: #fff;
+  font-weight: 800;
+}
+.poi-marker.numbered.current .poi-current-badge {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ff4081;
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 100px;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  border: 2px solid white;
+  pointer-events: none;
+  z-index: 3;
+}
+@keyframes pulse-current-marker {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 126, 61, 0.7), 0 6px 16px rgba(255, 64, 129, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 14px rgba(255, 126, 61, 0), 0 6px 16px rgba(255, 64, 129, 0.5);
+  }
+}
+
+/* Map markers: upcoming (not yet visited, not current) */
+.poi-marker.numbered.upcoming {
+  background: var(--brand);
+  border-color: white;
+  opacity: 0.85;
+}
+.poi-marker.numbered.upcoming .poi-emo {
+  filter: brightness(1.2) saturate(0.9);
 }
 
 /* Course completed badge in collection */
@@ -5882,6 +6022,7 @@ body:has(.walk-hud:not([hidden])) .leaflet-bottom.leaflet-right {
 .walk-hud-steps { color: #4ade80; font-weight: 700; }
 .walk-hud-elapsed { color: #fff; font-weight: 700; opacity: 0.85; }
 .walk-hud-totaldist { color: #ffb380; font-weight: 700; }
+.walk-hud-eta { color: #fcd34d; font-weight: 800; }
 
 /* HUD progress bar (course completion visualization) */
 .walk-hud-progress-bar {
