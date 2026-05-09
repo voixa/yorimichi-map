@@ -4681,6 +4681,62 @@ button:focus-visible,
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ===== Walk-start attract animation (after course apply) ===== */
+.walk-start-attract {
+  position: relative;
+  animation: walkStartPulse 1s ease-in-out 6;
+  box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.6) !important;
+}
+@keyframes walkStartPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.6);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 0 0 12px rgba(22, 163, 74, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
+  }
+}
+.walk-start-attract::after {
+  content: '👈 ここを押す';
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 12px);
+  transform: translateY(-50%);
+  background: #16a34a;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: walkStartLabelBob 0.8s ease-in-out infinite;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+  z-index: 10;
+}
+@keyframes walkStartLabelBob {
+  0%, 100% { transform: translateY(-50%) translateX(0); }
+  50% { transform: translateY(-50%) translateX(-4px); }
+}
+@media (max-width: 480px) {
+  /* モバイルではラベルが画面外になりがちなので上に出す */
+  .walk-start-attract::after {
+    top: -32px;
+    left: 50%;
+    transform: translateX(-50%);
+    animation: walkStartLabelBobMobile 0.8s ease-in-out infinite;
+  }
+  @keyframes walkStartLabelBobMobile {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-4px); }
+  }
+}
+
 /* ===== Coach Mark / Guided Tour ===== */
 .coach-pulse {
   position: relative;

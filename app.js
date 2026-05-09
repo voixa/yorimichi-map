@@ -3231,24 +3231,39 @@
     fitToEndpoints();
     saveStateToHash();
 
-    // 🎓 Step 3: ルート適用後「歩き始める」を pulse
-    if (isFirstRunUser()) {
-      setTimeout(() => {
-        const startBtn = $('#walk-start');
-        if (startBtn && !startBtn.hidden) {
-          // summary-section を画面に表示するためスクロール
-          const ss = $('#summary-section');
-          if (ss) ss.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          showCoach({
-            target: '#walk-start',
-            message: '🚶 準備完了！押して散歩を始めよう',
-            hintKey: 'coach-step3-walk-start',
-            arrow: 'down',
-            autoDismissMs: 18000,
-          });
-        }
-      }, 800);
-    }
+    // 🚶 ルート適用後は「歩き始める」へ自動誘導（全ユーザー対象）
+    setTimeout(() => {
+      const startBtn = $('#walk-start');
+      if (!startBtn || startBtn.hidden) return;
+
+      // 「探す」タブに切替（summary-section が探すタブ内にある）
+      const discoverTab = document.querySelector('.main-tab[data-main-tab="discover"]');
+      if (discoverTab && !discoverTab.classList.contains('active')) {
+        discoverTab.click();
+      }
+
+      // summary-section を画面中央へスクロール
+      const ss = $('#summary-section');
+      if (ss) ss.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      // 「歩き始める」ボタンを 3秒間 pulse + 永続的な🌟マーク
+      startBtn.classList.add('walk-start-attract');
+      setTimeout(() => startBtn.classList.remove('walk-start-attract'), 6000);
+
+      // 初回ユーザーには明示的なヒントバブルも
+      if (isFirstRunUser()) {
+        showCoach({
+          target: '#walk-start',
+          message: '🚶 準備完了！ここを押して散歩を始めよう',
+          hintKey: 'coach-step3-walk-start',
+          arrow: 'down',
+          autoDismissMs: 18000,
+        });
+      } else {
+        // 既存ユーザーにもさり気なくトースト通知
+        showToast('🚶 「歩き始める」ボタンが下にあります', 'info', 4000);
+      }
+    }, 600);
   }
 
   // Confetti palette presets（用途別）
