@@ -3871,6 +3871,24 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
   }
 }
 
+/* Map markers: skipped */
+.poi-marker.numbered.skipped {
+  background: #94a3b8;
+  border-color: #cbd5e1;
+  opacity: 0.7;
+}
+.poi-marker.numbered.skipped .poi-num {
+  background: #cbd5e1;
+  color: #475569;
+  border-color: #94a3b8;
+}
+.poi-marker.numbered.skipped .poi-name-label {
+  background: #f1f5f9;
+  color: #64748b;
+  border-color: #cbd5e1;
+  text-decoration: line-through;
+}
+
 /* Map markers: upcoming (not yet visited, not current) */
 .poi-marker.numbered.upcoming {
   background: var(--brand);
@@ -5208,6 +5226,110 @@ body.map-fullscreen #map-container {
   margin: 16px 0 8px;
   letter-spacing: 0.05em;
 }
+
+/* ❤️ Favorites in My tab */
+.me-favorites {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.me-fav-item {
+  display: grid;
+  grid-template-columns: 32px 1fr 24px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255, 64, 129, 0.08), rgba(255, 126, 61, 0.08));
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+  width: 100%;
+  font-family: inherit;
+  border: 1px solid rgba(255, 64, 129, 0.15);
+}
+.me-fav-item:hover { background: linear-gradient(135deg, rgba(255, 64, 129, 0.14), rgba(255, 126, 61, 0.14)); }
+.me-fav-item:active { transform: scale(0.99); }
+.me-fav-emoji {
+  font-size: 22px;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 64, 129, 0.15);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+.me-fav-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.me-fav-name {
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.me-fav-tag {
+  background: linear-gradient(135deg, #ffd700, #ff9800);
+  color: white;
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 100px;
+  margin-left: 4px;
+  font-weight: 700;
+}
+.me-fav-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.me-fav-remove {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-muted);
+  opacity: 0.5;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.1s ease, opacity 0.1s ease;
+}
+.me-fav-remove:hover { opacity: 1; background: rgba(0,0,0,0.1); }
+
+/* Heart button on course detail */
+.btn-fav {
+  grid-column: 1 / -1;
+  background: white;
+  color: #ff4081;
+  border: 2px solid #ff4081;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.15s ease;
+}
+.btn-fav:hover { background: rgba(255, 64, 129, 0.06); }
+[data-theme="dark"] .btn-fav {
+  background: transparent;
+  border-color: #ff6b9d;
+  color: #ff6b9d;
+}
+
 .me-timeline {
   background: var(--surface-2);
   border-radius: 12px;

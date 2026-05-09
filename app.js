@@ -244,6 +244,7 @@
     overpassCache: new Map(),
     discoveredCourses: new Set(),
     completedCourses: new Set(),         // 100% walked at least once
+    favoriteCourses: new Set(),           // ❤️ user-saved courses
     completedStops: {},                   // { courseId: Set(stopIdx) } — current walk progress
     walkCounts: {},                       // { courseId: number } — completion count
     coinClaimedDate: '',                  // last date daily bonus was claimed
@@ -585,6 +586,7 @@
     clearPoiMarkers();
     const courseId = state.activeWalk?.courseId;
     const visited = courseId ? (state.completedStops[courseId] || new Set()) : new Set();
+    const skipped = courseId ? (state.skippedStops?.[courseId] || new Set()) : new Set();
     // 「現在の目標」= ウォーク中のときだけ。最初の未訪問スポットを current にする
     let currentIdx = -1;
     if (state.activeWalk) {
@@ -595,8 +597,9 @@
     state.selected.forEach((stop, i) => {
       const emoji = stop.emoji || (categoryById(stop.cat) || { emoji: '📍' }).emoji;
       const isVisited = visited.has(i);
+      const isSkipped = skipped.has(i);
       const isCurrent = (i === currentIdx);
-      const display = isVisited ? '✓' : emoji;
+      const display = isSkipped ? '⏭' : (isVisited ? '✓' : emoji);
       const html = `
         <span class="poi-num">${i + 1}</span>
         <span class="poi-emo">${display}</span>
@@ -604,7 +607,8 @@
         ${isCurrent ? '<span class="poi-current-badge">📍次</span>' : ''}
       `;
       let cls = 'poi-marker numbered';
-      if (isVisited) cls += ' visited';
+      if (isSkipped) cls += ' skipped';
+      else if (isVisited) cls += ' visited';
       else if (isCurrent) cls += ' current';
       else cls += ' upcoming';
       const marker = L.marker([stop.lat, stop.lng], {
@@ -2147,6 +2151,37 @@
     try {
       state.coinClaimedDate = localStorage.getItem('yorimichi-coin-claimed') || '';
     } catch (e) {}
+    try {
+      const fav = JSON.parse(localStorage.getItem('yorimichi-favorites') || '[]');
+      state.favoriteCourses = new Set(fav);
+    } catch (e) { state.favoriteCourses = new Set(); }
+    try {
+      const sk = JSON.parse(localStorage.getItem('yorimichi-skipped-stops') || '{}');
+      state.skippedStops = {};
+      Object.entries(sk).forEach(([k, v]) => { state.skippedStops[k] = new Set(v); });
+    } catch (e) { state.skippedStops = {}; }
+  }
+
+  function saveFavorites() {
+    try {
+      localStorage.setItem('yorimichi-favorites', JSON.stringify([...(state.favoriteCourses || [])]));
+    } catch {}
+  }
+
+  function isFavorite(courseId) {
+    return state.favoriteCourses?.has(courseId);
+  }
+
+  function toggleFavorite(courseId) {
+    if (!state.favoriteCourses) state.favoriteCourses = new Set();
+    if (state.favoriteCourses.has(courseId)) {
+      state.favoriteCourses.delete(courseId);
+      saveFavorites();
+      return false;
+    }
+    state.favoriteCourses.add(courseId);
+    saveFavorites();
+    return true;
   }
   function saveCompletion() {
     try {
@@ -3571,6 +3606,60 @@ ${trkPts}
   }
 
   // ===== Me tab render =====
+  // ❤️ お気に入りコースのレンダリング
+  function renderFavorites() {
+    const titleEl = $('#me-favorites-title');
+    const listEl = $('#me-favorites');
+    if (!titleEl || !listEl) return;
+    const favIds = [...(state.favoriteCourses || [])];
+    if (favIds.length === 0) {
+      titleEl.hidden = true;
+      listEl.hidden = true;
+      listEl.innerHTML = '';
+      return;
+    }
+    const courses = (window.YORIMICHI_COURSES || []);
+    const items = favIds
+      .map(id => courses.find(c => c.id === id))
+      .filter(Boolean);
+    if (items.length === 0) {
+      titleEl.hidden = true;
+      listEl.hidden = true;
+      return;
+    }
+    listEl.innerHTML = items.map(c => {
+      const done = state.completedCourses.has(c.id);
+      return `
+        <button class="me-fav-item" type="button" data-course-id="${escapeHtml(c.id)}">
+          <span class="me-fav-emoji">${c.themeIcon || c.areaIcon || '🌳'}</span>
+          <span class="me-fav-body">
+            <span class="me-fav-name">${escapeHtml(tField(c, 'name'))}${done ? ' <span class="me-fav-tag">完走済</span>' : ''}</span>
+            <span class="me-fav-meta">${c.areaIcon || ''} ${escapeHtml(tField(c, 'areaName'))} ・ 約${c.estimatedMin || '?'}分</span>
+          </span>
+          <span class="me-fav-remove" data-remove="${escapeHtml(c.id)}" aria-label="お気に入りから削除">×</span>
+        </button>
+      `;
+    }).join('');
+    titleEl.hidden = false;
+    listEl.hidden = false;
+
+    listEl.querySelectorAll('.me-fav-item').forEach(el => {
+      el.addEventListener('click', (e) => {
+        const removeAttr = e.target.getAttribute && e.target.getAttribute('data-remove');
+        const cid = el.getAttribute('data-course-id');
+        if (removeAttr) {
+          e.stopPropagation();
+          toggleFavorite(removeAttr);
+          renderFavorites();
+          showToast('お気に入りから外しました', 'info', 1800);
+          return;
+        }
+        const c = courses.find(x => x.id === cid);
+        if (c) showCourseDetail(c);
+      });
+    });
+  }
+
   function renderMeTab() {
     const xp = computeXP();
     const { current, next, progress } = computeLevel(xp);
@@ -3620,6 +3709,9 @@ ${trkPts}
         <div class="me-stat-label">連続日数</div>
       </div>
     `;
+
+    // ❤️ お気に入り
+    renderFavorites();
 
     // 最近の活動タイムライン（直近3件）
     const tlTitle = $('#me-activity-title');
@@ -5849,6 +5941,10 @@ ${trkPts}
         <button class="btn-secondary" id="cd-walk-now" type="button">
           <span>⚡</span><span>すぐ歩く</span>
         </button>
+        <button class="btn-fav" id="cd-fav" type="button" aria-label="お気に入り">
+          <span class="fav-icon">${isFavorite(course.id) ? '❤️' : '🤍'}</span>
+          <span>${isFavorite(course.id) ? 'お気に入り済' : 'お気に入りに保存'}</span>
+        </button>
       </div>
       ${walkCount > 0 ? `<div class="cd-walk-count">${courseLv ? `${courseLv.emoji} ${courseLv.lv} ・ ` : ''}🏅 完走 ${walkCount} 回</div>` : ''}
     `;
@@ -5870,6 +5966,20 @@ ${trkPts}
         el.classList.toggle('open');
       });
     });
+    // ❤️ お気に入りトグル
+    const favBtn = $('#cd-fav');
+    if (favBtn) {
+      favBtn.onclick = () => {
+        const nowFav = toggleFavorite(course.id);
+        const icon = favBtn.querySelector('.fav-icon');
+        const label = favBtn.querySelector('span:last-child');
+        if (icon) icon.textContent = nowFav ? '❤️' : '🤍';
+        if (label) label.textContent = nowFav ? 'お気に入り済' : 'お気に入りに保存';
+        showToast(nowFav ? `❤️ お気に入りに追加しました` : `お気に入りから外しました`, 'success', 2000);
+        // マイタブのお気に入り欄を更新
+        try { renderFavorites(); } catch {}
+      };
+    }
   }
 
   function rerollPlans(type) {
@@ -7521,6 +7631,8 @@ ${trkPts}
   // ===== Instagram縦長シェア画像 (1080x1920) =====
   // 直近のAIウォークレポートをキャッシュ（generateInstagramShareImage で使う）
   let _lastWalkReport = '';
+  let _lastWalkHaiku = '';
+  let _lastWalkEssay = '';
 
   async function generateInstagramShareImage(course) {
     const W = 1080;
@@ -7638,10 +7750,12 @@ ${trkPts}
     }
 
     // AI ウォークレポート（あれば）
-    if (_lastWalkReport) {
-      const reportY = (validPhotos.length > 0 ? 1280 : 1340);
-      const reportH = 200;
-      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    if (_lastWalkHaiku || _lastWalkEssay || _lastWalkReport) {
+      const reportY = (validPhotos.length > 0 ? 1260 : 1320);
+      const haiku = _lastWalkHaiku;
+      const essay = _lastWalkEssay || _lastWalkReport;
+      const reportH = haiku ? 280 : 200;
+      ctx.fillStyle = 'rgba(255,255,255,0.94)';
       roundRect(ctx, 80, reportY, W - 160, reportH, 20);
       ctx.fill();
       // ✍️ ラベル
@@ -7649,11 +7763,36 @@ ${trkPts}
       ctx.font = 'bold 26px sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText('✍️ AIによる振り返り', 110, reportY + 38);
+      // 俳句（金色背景でハイライト）
+      let textY = reportY + 75;
+      if (haiku) {
+        const haikuBoxY = reportY + 60;
+        const haikuBoxH = 80;
+        const haikuGrad = ctx.createLinearGradient(110, haikuBoxY, 110, haikuBoxY + haikuBoxH);
+        haikuGrad.addColorStop(0, '#fff8e1');
+        haikuGrad.addColorStop(1, '#ffe082');
+        ctx.fillStyle = haikuGrad;
+        roundRect(ctx, 110, haikuBoxY, W - 220, haikuBoxH, 12);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(212, 175, 55, 0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 4]);
+        roundRect(ctx, 110, haikuBoxY, W - 220, haikuBoxH, 12);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#5a3a00';
+        ctx.font = 'bold 32px "Hiragino Mincho ProN", "Yu Mincho", serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`《 ${haiku} 》`, W / 2, haikuBoxY + 52);
+        textY = haikuBoxY + haikuBoxH + 30;
+      }
       // 本文
-      ctx.fillStyle = '#1c1c1f';
-      ctx.font = '28px "Hiragino Mincho ProN", serif';
-      ctx.textAlign = 'left';
-      wrapText(ctx, _lastWalkReport, 110, reportY + 75, W - 220, 38);
+      if (essay) {
+        ctx.fillStyle = '#1c1c1f';
+        ctx.font = '24px "Hiragino Mincho ProN", serif';
+        ctx.textAlign = 'left';
+        wrapText(ctx, essay, 110, textY, W - 220, 34);
+      }
     }
 
     // QRコード（招待リンク）
@@ -7706,10 +7845,31 @@ ${trkPts}
       showToast('🎨 IG用画像を生成中...', 'info', 1500);
       const canvas = await generateInstagramShareImage(course);
       const blob = await new Promise(r => canvas.toBlob(r, 'image/png', 0.95));
+      // Web Share API (Level 2 - files) があれば直接シェア（モバイルで便利）
+      const fileName = `machiaruki_${(course.id || 'course').replace(/[^a-z0-9_-]/gi, '_')}_ig.png`;
+      try {
+        if (navigator.canShare && navigator.share) {
+          const file = new File([blob], fileName, { type: 'image/png' });
+          if (navigator.canShare({ files: [file] })) {
+            const haiku = _lastWalkHaiku ? `《 ${_lastWalkHaiku} 》\n\n` : '';
+            await navigator.share({
+              files: [file],
+              title: `${tField(course, 'name')} 完走しました`,
+              text: `${haiku}街歩きガチャで散歩中 👣 #街歩きガチャ\n${getInviteUrl()}`,
+            });
+            showToast('📤 シェアしました', 'success', 2500);
+            return;
+          }
+        }
+      } catch (e) {
+        // share キャンセル等は無視してダウンロードへフォールバック
+        if (e && e.name === 'AbortError') return;
+      }
+      // フォールバック: 通常のダウンロード
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `machiaruki_${(course.id || 'course').replace(/[^a-z0-9_-]/gi, '_')}_ig.png`;
+      a.download = fileName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -8080,6 +8240,8 @@ ${route.themeIcon} ${route.themeName} ・ ${route.stops.length}スポット ・ 
         reportText.textContent = essay;
         reportEl.hidden = false;
         _lastWalkReport = result.report || (haiku ? `《${haiku}》\n\n${essay}` : essay);
+        _lastWalkHaiku = haiku;
+        _lastWalkEssay = essay;
       });
     }
 
@@ -8592,6 +8754,48 @@ ${hashtag}`;
       }
       if (nextIdx >= 0) checkInStop(nextIdx, true);
       else showToast('全スポット訪問済みです', 'info', 2500);
+    });
+    // ⏭ スキップボタン: 現在の目標を「スキップ済」として記録、未訪問のまま次へ進む
+    const hudSkip = $('#walk-hud-skip');
+    if (hudSkip) hudSkip.addEventListener('click', () => {
+      if (!state.activeWalk) return;
+      const courseId = state.activeWalk.courseId;
+      const visited = state.completedStops[courseId] || new Set();
+      let nextIdx = -1;
+      for (let i = 0; i < state.selected.length; i++) {
+        if (!visited.has(i)) { nextIdx = i; break; }
+      }
+      if (nextIdx < 0) { showToast('スキップ可能なスポットがありません', 'info', 2200); return; }
+      const stop = state.selected[nextIdx];
+      const ok = confirm(`「${stop?.name || 'このスポット'}」をスキップしますか？\n（完走扱いにはなりませんが、次のスポットに進めます）`);
+      if (!ok) return;
+      // skipped セットを初期化
+      if (!state.skippedStops) state.skippedStops = {};
+      if (!state.skippedStops[courseId]) state.skippedStops[courseId] = new Set();
+      state.skippedStops[courseId].add(nextIdx);
+      // visited にも入れて未訪問扱いから外す（再描画と進捗を進める）
+      visited.add(nextIdx);
+      state.completedStops[courseId] = visited;
+      saveCompletion();
+      try { localStorage.setItem('yorimichi-skipped-stops', JSON.stringify(
+        Object.fromEntries(Object.entries(state.skippedStops).map(([k, v]) => [k, [...v]]))
+      )); } catch {}
+      showToast(`⏭ 「${stop?.name || 'スポット'}」をスキップしました`, 'info', 2500);
+      updateWalkUI();
+      renderSelectedMarkers();
+      // 次のスポット案内
+      let after = -1;
+      for (let i = 0; i < state.selected.length; i++) {
+        if (!visited.has(i)) { after = i; break; }
+      }
+      if (after < 0) {
+        // 全部訪問済 / スキップ済 → コース完了として扱う
+        const course = (window.YORIMICHI_COURSES || []).find(c => c.id === courseId);
+        if (course) finishWalk();
+      } else {
+        const next = state.selected[after];
+        speak(`次のスポットは${next.name}です`);
+      }
     });
     const hudPhoto = $('#walk-hud-photo');
     if (hudPhoto) hudPhoto.addEventListener('click', () => {

@@ -652,6 +652,12 @@
             <!-- populated by JS -->
           </div>
 
+          <!-- ❤️ お気に入りコース -->
+          <div class="me-section-title" id="me-favorites-title" hidden>❤️ お気に入りコース</div>
+          <div class="me-favorites" id="me-favorites" hidden>
+            <!-- populated by JS -->
+          </div>
+
           <!-- 🆕 最近の活動タイムライン -->
           <div class="me-section-title" id="me-activity-title" hidden>📅 最近の活動</div>
           <div class="me-timeline" id="me-timeline" hidden>
@@ -1253,6 +1259,7 @@
       <button class="walk-hud-btn" id="walk-hud-photo" type="button" aria-label="写真を撮る">📸</button>
       <button class="walk-hud-btn" id="walk-hud-share" type="button" aria-label="このコースをシェア">📤</button>
       <button class="walk-hud-btn" id="walk-hud-checkin" type="button" aria-label="手動チェックイン">✓</button>
+      <button class="walk-hud-btn" id="walk-hud-skip" type="button" aria-label="このスポットをスキップ">⏭</button>
       <button class="walk-hud-btn" id="walk-hud-pause" type="button" aria-label="一時停止">⏸</button>
       <button class="walk-hud-btn walk-hud-end" id="walk-hud-end" type="button" aria-label="ウォーク終了">⏹</button>
     </div>
@@ -1355,7 +1362,7 @@
         <button class="btn-share-copy" id="share-copy" type="button">🔗 URL</button>
       </div>
       <button class="btn-cert-download" id="cert-download" type="button">📥 画像でダウンロード</button>
-      <button class="btn-primary" id="cert-ig" type="button" style="margin-top: 8px; width: 100%; background: linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%);">📱 Instagramストーリー用 (9:16)</button>
+      <button class="btn-primary" id="cert-ig" type="button" style="margin-top: 8px; width: 100%; background: linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%);">📱 縦長画像でシェア (俳句入り)</button>
       <button class="btn-secondary" id="cert-gpx" type="button" style="margin-top: 8px; width: 100%;">🗺 GPX エクスポート（Stravaなど用）</button>
 
       <div class="next-suggestion" id="next-suggestion" hidden>
