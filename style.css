@@ -3401,6 +3401,30 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
 }
 .cd-besttime { font-weight: 600; color: var(--brand-dark); margin-right: 6px; }
 [data-theme="dark"] .cd-besttime { color: var(--brand); }
+/* Course difficulty pill */
+.cd-difficulty {
+  font-weight: 800 !important;
+  cursor: help;
+}
+.cd-difficulty-1 {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0) !important;
+  color: #065f46 !important;
+  border-color: #6ee7b7 !important;
+}
+.cd-difficulty-2 {
+  background: linear-gradient(135deg, #fef3c7, #fde68a) !important;
+  color: #78350f !important;
+  border-color: #fcd34d !important;
+}
+.cd-difficulty-3 {
+  background: linear-gradient(135deg, #fee2e2, #fecaca) !important;
+  color: #7f1d1d !important;
+  border-color: #fca5a5 !important;
+}
+[data-theme="dark"] .cd-difficulty-1 { background: linear-gradient(135deg, #064e3b, #065f46) !important; color: #d1fae5 !important; }
+[data-theme="dark"] .cd-difficulty-2 { background: linear-gradient(135deg, #78350f, #92400e) !important; color: #fef3c7 !important; }
+[data-theme="dark"] .cd-difficulty-3 { background: linear-gradient(135deg, #7f1d1d, #991b1b) !important; color: #fee2e2 !important; }
+
 .cd-stops { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
 .cd-stops-hint {
   font-size: 10px;
@@ -5158,6 +5182,96 @@ body.map-fullscreen #map-container {
 }
 
 /* ===== Main tabs (top of panel) ===== */
+/* 🚶 アクティブウォーク常時表示バー (sticky) */
+.active-walk-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  color: white;
+  border: 0;
+  border-radius: 14px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  box-shadow: 0 8px 24px rgba(22, 163, 74, 0.35);
+  position: sticky;
+  top: 56px;
+  z-index: 49;
+  animation: awb-pulse-glow 2.6s ease-in-out infinite;
+}
+.active-walk-bar:hover { transform: translateY(-1px); }
+.active-walk-bar:active { transform: scale(0.99); }
+.awb-emoji {
+  font-size: 22px;
+  width: 36px;
+  height: 36px;
+  background: rgba(255,255,255,0.22);
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.awb-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+.awb-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  opacity: 0.9;
+  text-transform: uppercase;
+}
+.awb-name {
+  font-weight: 800;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.awb-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.awb-progress-text { font-size: 11px; font-weight: 800; }
+.awb-progress-bar {
+  width: 60px;
+  height: 4px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 100px;
+  overflow: hidden;
+}
+.awb-progress-fill {
+  display: block;
+  height: 100%;
+  background: white;
+  border-radius: 100px;
+  transition: width 0.4s ease;
+}
+.awb-cta {
+  background: white;
+  color: #15803d;
+  font-weight: 800;
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 100px;
+  flex-shrink: 0;
+}
+@keyframes awb-pulse-glow {
+  0%, 100% { box-shadow: 0 8px 24px rgba(22, 163, 74, 0.35); }
+  50% { box-shadow: 0 8px 28px rgba(22, 163, 74, 0.6); }
+}
+
 .main-tabs {
   display: flex;
   gap: 4px;
@@ -6342,6 +6456,120 @@ body:has(.walk-hud:not([hidden])) .leaflet-bottom.leaflet-right {
 .walk-hud-elapsed { color: #fff; font-weight: 700; opacity: 0.85; }
 .walk-hud-totaldist { color: #ffb380; font-weight: 700; }
 .walk-hud-eta { color: #fcd34d; font-weight: 800; }
+
+/* 📝 Stop Memo Prompt */
+.memo-prompt-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: wpo-fade-in 0.2s ease-out;
+}
+.memo-prompt-card {
+  background: white;
+  border-radius: 18px;
+  padding: 20px 18px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.3);
+}
+[data-theme="dark"] .memo-prompt-card { background: #1f1f27; }
+.memo-prompt-header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.memo-prompt-emoji {
+  font-size: 28px;
+  width: 44px;
+  height: 44px;
+  background: var(--surface-2);
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.memo-prompt-title {
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--text);
+  flex: 1;
+}
+.memo-prompt-sub {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.memo-prompt-input {
+  width: 100%;
+  border: 2px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  resize: vertical;
+  min-height: 80px;
+  background: var(--surface-1, white);
+  color: var(--text);
+  box-sizing: border-box;
+}
+.memo-prompt-input:focus {
+  outline: none;
+  border-color: #ff7e3d;
+}
+.memo-prompt-counter {
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.memo-prompt-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.memo-prompt-skip,
+.memo-prompt-save {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 13px;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+.memo-prompt-skip {
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+.memo-prompt-save {
+  background: linear-gradient(135deg, #ff7e3d, #ff4081);
+  color: white;
+  box-shadow: 0 4px 12px rgba(255, 64, 129, 0.3);
+}
+/* Walk log memo display */
+.wli-memos {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.wli-memo {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  padding: 4px 8px;
+  border-radius: 8px;
+  border-left: 3px solid #ff7e3d;
+  font-style: italic;
+}
 
 /* ⏸ Pause Overlay */
 .walk-pause-overlay {

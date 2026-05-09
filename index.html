@@ -274,6 +274,20 @@
           <button class="main-tab" data-main-tab="me" role="tab" type="button">👤 マイ</button>
         </nav>
 
+        <!-- 🚶 アクティブウォーク常時表示バー（歩行中のみ） -->
+        <button class="active-walk-bar" id="active-walk-bar" type="button" hidden>
+          <span class="awb-emoji" id="awb-emoji">🚶</span>
+          <span class="awb-body">
+            <span class="awb-label">歩行中</span>
+            <span class="awb-name" id="awb-name">—</span>
+          </span>
+          <span class="awb-progress">
+            <span class="awb-progress-text" id="awb-progress-text">0/0</span>
+            <span class="awb-progress-bar"><span class="awb-progress-fill" id="awb-progress-fill"></span></span>
+          </span>
+          <span class="awb-cta">地図へ →</span>
+        </button>
+
         <!-- ====== ホームタブ（再編：優先度順） ====== -->
         <div class="tab-panel" data-tab-panel="home">
 

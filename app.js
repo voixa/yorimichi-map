@@ -4104,12 +4104,29 @@ ${trkPts}
       const name = course ? tField(course, 'name') : '自由ルート';
       const emoji = course?.themeIcon || course?.areaIcon || '🚶';
       const completed = h.completed ? '🏅 完走' : '途中';
+      // 該当コースのスポットメモを集めて表示
+      let memosHtml = '';
+      if (course) {
+        const memos = getStopMemos(course.id);
+        const memoEntries = Object.entries(memos)
+          .map(([k, v]) => ({ idx: parseInt(k, 10), memo: v?.memo || '' }))
+          .filter(m => m.memo)
+          .sort((a, b) => a.idx - b.idx)
+          .slice(0, 3);
+        if (memoEntries.length > 0) {
+          memosHtml = `<div class="wli-memos">${memoEntries.map(m => {
+            const stop = course.stops[m.idx];
+            return `<div class="wli-memo">${escapeHtml(stop?.emoji || '📍')} <span>${escapeHtml(m.memo)}</span></div>`;
+          }).join('')}</div>`;
+        }
+      }
       return `
         <div class="walk-log-item">
           <div class="wli-emoji">${emoji}</div>
           <div class="wli-body">
             <div class="wli-name">${escapeHtml(name)}</div>
             <div class="wli-meta">${completed} ・ ${h.stops || 0}スポット</div>
+            ${memosHtml}
           </div>
           <div class="wli-date">${escapeHtml(h.date || '')}</div>
         </div>
@@ -4892,6 +4909,40 @@ ${trkPts}
   }
 
   // 統合おすすめカード（reco-banner + today-pick の代替）
+  // 🚶 コース難易度を自動推定（時間 + スポット数 + 区間長から）
+  function computeCourseDifficulty(course) {
+    if (!course) return { level: 1, label: '初級', icon: '🚶', factors: [] };
+    const min = course.estimatedMin || 0;
+    const stops = (course.stops || []).length;
+    // 累計区間距離
+    let totalKm = 0;
+    for (let i = 1; i < course.stops.length; i++) {
+      const a = course.stops[i - 1];
+      const b = course.stops[i];
+      if (a.lat == null || b.lat == null) continue;
+      totalKm += haversineKm(a, b);
+    }
+    let score = 0;
+    const factors = [];
+    if (min >= 90) { score += 2; factors.push(`所要時間 ${min}分`); }
+    else if (min >= 60) { score += 1; factors.push(`所要時間 ${min}分`); }
+    if (stops >= 7) { score += 2; factors.push(`${stops}スポット`); }
+    else if (stops >= 5) { score += 1; factors.push(`${stops}スポット`); }
+    if (totalKm >= 4) { score += 2; factors.push(`総距離 ${totalKm.toFixed(1)}km`); }
+    else if (totalKm >= 2) { score += 1; factors.push(`総距離 ${totalKm.toFixed(1)}km`); }
+    // タグから「階段」「坂」を検出
+    const tags = [...(course.tags || []), ...(course.stops || []).flatMap(s => s.tags || [])];
+    if (tags.some(t => /階段|坂|登り/.test(String(t)))) {
+      score += 1;
+      factors.push('階段や坂あり');
+    }
+    let level, label, icon;
+    if (score >= 4) { level = 3; label = '上級'; icon = '🚶🚶🚶'; }
+    else if (score >= 2) { level = 2; label = '中級'; icon = '🚶🚶'; }
+    else { level = 1; label = '初級'; icon = '🚶'; }
+    return { level, label, icon, factors, totalKm };
+  }
+
   // 🗺 コースのスポット位置から SVG ミニマップを生成（カードのサムネ用）
   function buildCourseThumbSvg(course, opts) {
     opts = opts || {};
@@ -4945,7 +4996,8 @@ ${trkPts}
     $('#featured-emoji').textContent = reco.themeIcon || reco.areaIcon || '🌳';
     $('#featured-title').textContent = tField(reco, 'name');
     const minutes = reco.estimatedMin ? `約${reco.estimatedMin}分` : '';
-    $('#featured-meta').textContent = `${reco.areaIcon || ''} ${tField(reco, 'areaName')} ・ ${minutes} ・ ${reco.stops.length}スポット`;
+    const diff = computeCourseDifficulty(reco);
+    $('#featured-meta').textContent = `${reco.areaIcon || ''} ${tField(reco, 'areaName')} ・ ${minutes} ・ ${reco.stops.length}スポット ・ ${diff.icon} ${diff.label}`;
     const thumbEl = $('#featured-thumb');
     if (thumbEl) thumbEl.innerHTML = buildCourseThumbSvg(reco, { w: 70, h: 50, lightStroke: true });
 
@@ -5943,6 +5995,7 @@ ${trkPts}
       <div class="cd-stats">
         <span class="meta-pill">📍 ${course.stops.length}スポット</span>
         <span class="meta-pill">⏱ 約${course.estimatedMin}分</span>
+        <span class="meta-pill cd-difficulty cd-difficulty-${computeCourseDifficulty(course).level}" title="${escapeHtml(computeCourseDifficulty(course).factors.join(' / '))}">${computeCourseDifficulty(course).icon} ${computeCourseDifficulty(course).label}</span>
         <span class="meta-pill">💴 ${escapeHtml(course.budget || '無料')}</span>
         <span class="meta-pill">🚶 ${course.travelMode === 'walk' ? '徒歩' : course.travelMode === 'bike' ? '自転車' : '車'}</span>
       </div>
@@ -6245,6 +6298,21 @@ ${trkPts}
         vib(8); // 軽いタップフィードバック
         setMainTab(tab.dataset.mainTab);
       });
+    });
+
+    // 🚶 常時表示バー: タップで地図にフォーカス（パネルを閉じる）
+    const awb = document.getElementById('active-walk-bar');
+    if (awb) awb.addEventListener('click', () => {
+      vib(15);
+      // パネルを最小化してマップ全画面に
+      try {
+        document.body.classList.add('map-fullscreen');
+        const fsBtn = document.getElementById('map-fullscreen-btn');
+        if (fsBtn) fsBtn.textContent = '⛔';
+        if (state.map) setTimeout(() => state.map.invalidateSize(), 350);
+      } catch {}
+      // 一時停止中なら overlay を表示
+      if (state.activeWalk?.paused) showPauseOverlay();
     });
     // 起動時の初期タブ復元
     try {
@@ -7469,14 +7537,42 @@ ${trkPts}
     // 「現在地に戻る」ボタンも表示
     const recenter = $('#map-recenter-btn');
     if (recenter) recenter.hidden = false;
+    // 常時表示バー
+    try { updateActiveWalkBar(); } catch {}
   }
   function hideWalkHud() {
     const hud = $('#walk-hud');
     if (hud) hud.hidden = true;
     const recenter = $('#map-recenter-btn');
     if (recenter) recenter.hidden = true;
-    // 終了時は一時停止オーバーレイも消す
+    // 終了時は一時停止オーバーレイ + 常時バーも消す
     try { hidePauseOverlay(); } catch {}
+    try {
+      const bar = document.getElementById('active-walk-bar');
+      if (bar) bar.hidden = true;
+    } catch {}
+  }
+
+  // 🚶 アクティブウォークの常時表示バー更新
+  function updateActiveWalkBar() {
+    const bar = document.getElementById('active-walk-bar');
+    if (!bar) return;
+    if (!state.activeWalk) { bar.hidden = true; return; }
+    const courseId = state.activeWalk.courseId;
+    const course = (window.YORIMICHI_COURSES || []).find(c => c.id === courseId);
+    const visited = state.completedStops[courseId] || new Set();
+    const total = state.activeWalk.stopsTotal || state.selected.length;
+    const done = visited.size;
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    const nameEl = document.getElementById('awb-name');
+    const emojiEl = document.getElementById('awb-emoji');
+    const progEl = document.getElementById('awb-progress-text');
+    const fillEl = document.getElementById('awb-progress-fill');
+    if (nameEl) nameEl.textContent = course ? tField(course, 'name') : 'コース';
+    if (emojiEl) emojiEl.textContent = state.activeWalk.paused ? '⏸' : (course?.themeIcon || course?.areaIcon || '🚶');
+    if (progEl) progEl.textContent = `${done}/${total}`;
+    if (fillEl) fillEl.style.width = `${pct}%`;
+    bar.hidden = false;
   }
   function updateWalkHud(userLoc) {
     const hud = $('#walk-hud');
@@ -7622,6 +7718,56 @@ ${trkPts}
     updateWalkHud(loc);
   }
 
+  // 📝 スポット別メモ（チェックイン時に1行記録）
+  function getStopMemos(courseId) {
+    if (!courseId) return {};
+    try { return JSON.parse(localStorage.getItem('yorimichi-stop-memos-' + courseId) || '{}'); } catch { return {}; }
+  }
+  function saveStopMemo(courseId, stopIdx, memo) {
+    const all = getStopMemos(courseId);
+    all[stopIdx] = { memo: String(memo || '').slice(0, 120), at: Date.now() };
+    try { localStorage.setItem('yorimichi-stop-memos-' + courseId, JSON.stringify(all)); } catch {}
+  }
+  function showMemoPrompt(stop, courseId, idx) {
+    // 既存があれば編集、なければ新規
+    const existing = getStopMemos(courseId)[idx]?.memo || '';
+    const overlay = document.createElement('div');
+    overlay.className = 'memo-prompt-overlay';
+    overlay.innerHTML = `
+      <div class="memo-prompt-card">
+        <div class="memo-prompt-header">
+          <span class="memo-prompt-emoji">${escapeHtml(stop.emoji || '📍')}</span>
+          <div class="memo-prompt-title">
+            <div>${escapeHtml(stop.name)}</div>
+            <div class="memo-prompt-sub">気持ちをひとことメモ（任意・最大120字）</div>
+          </div>
+        </div>
+        <textarea id="memo-prompt-input" class="memo-prompt-input" placeholder="例：抹茶ラテが絶品だった。次は限定スイーツも頼みたい。" maxlength="120">${escapeHtml(existing)}</textarea>
+        <div class="memo-prompt-counter"><span id="memo-prompt-count">${existing.length}</span>/120</div>
+        <div class="memo-prompt-actions">
+          <button class="memo-prompt-skip" type="button">スキップ</button>
+          <button class="memo-prompt-save" type="button">💾 保存</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector('#memo-prompt-input');
+    const counter = overlay.querySelector('#memo-prompt-count');
+    input.addEventListener('input', () => { counter.textContent = String(input.value.length); });
+    setTimeout(() => input.focus(), 50);
+    const close = () => { try { overlay.remove(); } catch {} };
+    overlay.querySelector('.memo-prompt-skip').addEventListener('click', close);
+    overlay.querySelector('.memo-prompt-save').addEventListener('click', () => {
+      const v = input.value.trim();
+      if (v) {
+        saveStopMemo(courseId, idx, v);
+        showToast('📝 メモを保存しました', 'success', 2000);
+      }
+      close();
+    });
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  }
+
   function checkInStop(idx, manual = false) {
     if (!state.activeWalk) return;
     const courseId = state.activeWalk.courseId;
@@ -7639,6 +7785,14 @@ ${trkPts}
     speak(`${stop.name}に到着しました。スタンプGET。${stop.desc ? stop.desc.slice(0, 50) : ''}`);
     updateWalkUI();
     renderSelectedMarkers();
+
+    // 📝 メモ入力プロンプト（最後のスポット以外、視覚的に邪魔にならない遅延付き）
+    setTimeout(() => {
+      if (!state.activeWalk) return;
+      // 既に完走モーダルが出ていたら出さない
+      if (!$('#cert-modal') || !$('#cert-modal').hidden) return;
+      showMemoPrompt(stop, courseId, idx);
+    }, 1800);
 
     // Announce next stop
     let nextIdx = -1;
@@ -8545,6 +8699,8 @@ ${hashtag}`;
     const pct = Math.round((done / total) * 100);
     $('#walk-percent').textContent = `${done} / ${total} (${pct}%)`;
     $('#walk-bar-fill').style.width = pct + '%';
+    // 全タブ常時表示バーの更新
+    updateActiveWalkBar();
 
     // Find next unvisited stop
     let nextIdx = -1;
