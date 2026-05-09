@@ -4274,7 +4274,47 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
   max-width: 600px;
 }
 .photo-viewer-name { font-weight: 800; font-size: 16px; }
-.photo-viewer-desc { font-size: 13px; opacity: 0.85; margin-top: 6px; line-height: 1.6; }
+.photo-viewer-course { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+.photo-viewer-desc-wrap {
+  margin-top: 12px;
+  background: rgba(255,255,255,0.1);
+  padding: 10px 14px;
+  border-radius: 12px;
+  text-align: left;
+  border-left: 3px solid #6c63ff;
+}
+.photo-viewer-desc-label {
+  font-size: 10px;
+  font-weight: 800;
+  opacity: 0.7;
+  margin-bottom: 4px;
+  letter-spacing: 0.05em;
+}
+.photo-viewer-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  font-family: "Hiragino Mincho ProN", serif;
+}
+.photo-viewer-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  justify-content: center;
+}
+.pv-action {
+  background: rgba(255,255,255,0.15);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 8px 14px;
+  border-radius: 100px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease;
+}
+.pv-action:hover { background: rgba(255,255,255,0.25); }
+.pv-action:disabled { opacity: 0.5; cursor: wait; }
 .photo-viewer-close {
   position: absolute;
   top: 16px; right: 16px;
@@ -5498,6 +5538,72 @@ body.map-fullscreen #map-container {
 .me-best-icon { font-size: 16px; text-align: center; }
 .me-best-label { color: var(--text-muted); font-weight: 600; }
 .me-best-value { font-weight: 800; color: var(--text); text-align: right; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 📰 Journey feed */
+.me-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.me-feed-item {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-radius: 10px;
+  border-left: 3px solid var(--border, #e5e7eb);
+}
+.me-feed-walk-complete { border-left-color: #16a34a; }
+.me-feed-walk-incomplete { border-left-color: #94a3b8; }
+.me-feed-photo { border-left-color: #6c63ff; }
+.me-feed-memo { border-left-color: #ff7e3d; }
+.me-feed-emoji {
+  font-size: 22px;
+  width: 36px; height: 36px;
+  background: var(--surface-1, white);
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+}
+[data-theme="dark"] .me-feed-emoji { background: rgba(255,255,255,0.08); }
+.me-feed-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.me-feed-title {
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.me-feed-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.me-feed-date {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-top: 1px;
+}
+.me-feed-thumb {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
 
 /* ❤️ Favorites in My tab */
 .me-favorites {
@@ -6888,6 +6994,114 @@ body:has(.walk-hud:not([hidden])) .leaflet-bottom.leaflet-right {
   border-radius: 8px;
   border-left: 3px solid #ff7e3d;
   font-style: italic;
+}
+
+/* 🔁 Walk Resume Modal */
+.walk-resume-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: wpo-fade-in 0.2s ease-out;
+}
+.walk-resume-card {
+  background: white;
+  border-radius: 22px;
+  padding: 22px 20px 20px;
+  max-width: 380px;
+  width: 100%;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+}
+[data-theme="dark"] .walk-resume-card { background: #1f1f27; }
+.walk-resume-header {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.walk-resume-emoji {
+  font-size: 36px;
+  width: 56px; height: 56px;
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.3);
+}
+.walk-resume-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+.walk-resume-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
+  margin-top: 2px;
+}
+.walk-resume-pitch {
+  font-size: 14px;
+  font-weight: 700;
+  color: #16a34a;
+  text-align: center;
+  padding: 12px;
+  background: rgba(22, 163, 74, 0.08);
+  border-radius: 12px;
+  margin: 12px 0;
+}
+.walk-resume-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 16px;
+}
+.walk-resume-progress-track {
+  flex: 1;
+  height: 8px;
+  background: rgba(0,0,0,0.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+[data-theme="dark"] .walk-resume-progress-track { background: rgba(255,255,255,0.1); }
+.walk-resume-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #16a34a, #22c55e);
+  border-radius: 4px;
+}
+.walk-resume-progress-text {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+.walk-resume-actions {
+  display: flex;
+  gap: 10px;
+}
+.walk-resume-cancel,
+.walk-resume-go {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 14px;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+.walk-resume-cancel {
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+.walk-resume-go {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: white;
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.3);
 }
 
 /* ⏸ Pause Overlay */

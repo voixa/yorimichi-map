@@ -3761,6 +3761,102 @@ ${trkPts}
     }
   }
 
+  // 📰 統合旅ログフィード（歩行履歴 + 写真撮影 + メモ書き）
+  function renderJourneyFeed() {
+    const titleEl = $('#me-feed-title');
+    const feedEl = $('#me-feed');
+    if (!titleEl || !feedEl) return;
+    const events = [];
+    const allCourses = (window.YORIMICHI_COURSES || []);
+
+    // 歩行履歴
+    (state.walkHistory || []).forEach(h => {
+      const c = allCourses.find(x => x.id === h.courseId);
+      if (!c && !h.completed) return;
+      events.push({
+        type: h.completed ? 'walk-complete' : 'walk-incomplete',
+        date: h.date,
+        ts: h.date ? new Date(h.date + 'T12:00:00').getTime() : Date.now(),
+        emoji: h.completed ? '🏅' : '🚶',
+        title: h.completed ? '完走しました' : '歩きました',
+        body: c ? tField(c, 'name') : '自由ルート',
+        course: c,
+      });
+    });
+
+    // 写真撮影（保存日時はタイムスタンプ無いため、courseId と stopIdx で擬似タイムスタンプ）
+    allCourses.forEach(c => {
+      const photos = getCoursePhotos(c.id);
+      Object.entries(photos).forEach(([idxStr, entry]) => {
+        const idx = parseInt(idxStr, 10);
+        const stop = c.stops[idx];
+        if (!stop) return;
+        const url = _photoUrlOf(entry);
+        if (!url) return;
+        const desc = _photoDescOf(entry);
+        // walkHistory から同じコースの最も近い日付を擬似タイムスタンプに使用
+        const lastWalk = (state.walkHistory || []).filter(h => h.courseId === c.id).pop();
+        const ts = lastWalk?.date ? new Date(lastWalk.date + 'T12:00:00').getTime() + idx : Date.now() - (allCourses.indexOf(c) * 100000);
+        events.push({
+          type: 'photo',
+          date: lastWalk?.date || '',
+          ts,
+          emoji: '📸',
+          title: stop.name,
+          body: desc || tField(c, 'name'),
+          photoUrl: url,
+          course: c,
+        });
+      });
+    });
+
+    // スポットメモ
+    allCourses.forEach(c => {
+      const memos = getStopMemos(c.id);
+      Object.entries(memos).forEach(([idxStr, entry]) => {
+        const idx = parseInt(idxStr, 10);
+        const stop = c.stops[idx];
+        if (!stop || !entry?.memo) return;
+        events.push({
+          type: 'memo',
+          date: entry.at ? new Date(entry.at).toISOString().slice(0, 10) : '',
+          ts: entry.at || Date.now(),
+          emoji: stop.emoji || '📝',
+          title: stop.name,
+          body: `「${entry.memo}」`,
+          course: c,
+        });
+      });
+    });
+
+    if (events.length === 0) {
+      titleEl.hidden = true;
+      feedEl.hidden = true;
+      feedEl.innerHTML = '';
+      return;
+    }
+
+    events.sort((a, b) => b.ts - a.ts);
+    const recent = events.slice(0, 12);
+    feedEl.innerHTML = recent.map(e => {
+      const dateLabel = e.date || '';
+      const photoThumb = e.photoUrl ? `<img class="me-feed-thumb" src="${escapeHtml(e.photoUrl)}" loading="lazy" alt="" />` : '';
+      return `
+        <div class="me-feed-item me-feed-${e.type}">
+          <div class="me-feed-emoji">${escapeHtml(e.emoji)}</div>
+          <div class="me-feed-body">
+            <div class="me-feed-title">${escapeHtml(e.title)}</div>
+            <div class="me-feed-meta">${escapeHtml(e.body)}</div>
+            <div class="me-feed-date">${escapeHtml(dateLabel)}</div>
+          </div>
+          ${photoThumb}
+        </div>
+      `;
+    }).join('');
+    titleEl.hidden = false;
+    feedEl.hidden = false;
+  }
+
   // ❤️ お気に入りコースのレンダリング
   function renderFavorites() {
     const titleEl = $('#me-favorites-title');
@@ -3867,6 +3963,9 @@ ${trkPts}
 
     // 📊 詳細統計ダッシュボード
     renderDetailedStats();
+
+    // 📰 統合旅ログフィード
+    renderJourneyFeed();
 
     // ❤️ お気に入り
     renderFavorites();
@@ -4023,6 +4122,7 @@ ${trkPts}
         if (!url) return;
         allPhotos.push({
           courseId: course.id,
+          stopIdx: idx,
           courseName: tField(course, 'name'),
           area: tField(course, 'areaName'),
           areaIcon: course.areaIcon,
@@ -4084,20 +4184,76 @@ ${trkPts}
     if (document.querySelector('.photo-viewer')) return;
     const overlay = document.createElement('div');
     overlay.className = 'photo-viewer';
+    const hasCourse = photo.courseId && photo.stopIdx != null;
+    const currentDesc = photo.desc || '';
     overlay.innerHTML = `
       <button class="photo-viewer-close" aria-label="閉じる">✕</button>
       <img src="${escapeHtml(photo.url)}" alt="${escapeHtml(photo.stopName)}" />
       <div class="photo-viewer-info">
         <div class="photo-viewer-name">${escapeHtml(photo.areaIcon || '')} ${escapeHtml(photo.stopName)}</div>
-        <div class="photo-viewer-desc">${escapeHtml(photo.courseName)}${photo.desc ? '<br>✨ ' + escapeHtml(photo.desc) : ''}</div>
+        <div class="photo-viewer-course">${escapeHtml(photo.courseName)}</div>
+        <div class="photo-viewer-desc-wrap">
+          <div class="photo-viewer-desc-label">${currentDesc ? '✨ AI描写' : 'メモなし'}</div>
+          <div class="photo-viewer-desc" id="pv-desc">${currentDesc ? escapeHtml(currentDesc) : '<span style="opacity:0.6">説明はまだありません</span>'}</div>
+        </div>
+        ${hasCourse ? `
+          <div class="photo-viewer-actions">
+            <button class="pv-action" id="pv-regen" type="button">${currentDesc ? '🔄 再生成' : '✨ AIで生成'}</button>
+            <button class="pv-action" id="pv-edit" type="button">✏️ 編集</button>
+          </div>
+        ` : ''}
       </div>
     `;
     overlay.addEventListener('click', (e) => {
+      // ボタン以外で閉じる
       if (e.target === overlay || e.target.classList.contains('photo-viewer-close')) {
         overlay.remove();
       }
     });
     document.body.appendChild(overlay);
+    if (!hasCourse) return;
+    // 再生成
+    overlay.querySelector('#pv-regen').addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      const btn = ev.currentTarget;
+      btn.disabled = true;
+      btn.textContent = '⏳ 生成中...';
+      try {
+        const desc = await describePhotoWithAI(photo.url, photo.stopName, photo.area || '');
+        if (desc) {
+          saveCoursePhoto(photo.courseId, photo.stopIdx, photo.url, desc);
+          photo.desc = desc;
+          const descEl = overlay.querySelector('#pv-desc');
+          if (descEl) descEl.textContent = desc;
+          const labelEl = overlay.querySelector('.photo-viewer-desc-label');
+          if (labelEl) labelEl.textContent = '✨ AI描写';
+          showToast('✨ AI描写を更新しました', 'success', 2200);
+          btn.textContent = '🔄 再生成';
+        } else {
+          showToast('AI描写の生成に失敗しました', 'error', 2500);
+          btn.textContent = '✨ AIで生成';
+        }
+      } catch (e) {
+        showToast('生成に失敗しました', 'error', 2500);
+        btn.textContent = '✨ AIで生成';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+    // 編集
+    overlay.querySelector('#pv-edit').addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const newDesc = prompt('説明を編集（最大120字）', photo.desc || '');
+      if (newDesc == null) return;
+      const trimmed = String(newDesc).trim().slice(0, 120);
+      saveCoursePhoto(photo.courseId, photo.stopIdx, photo.url, trimmed);
+      photo.desc = trimmed;
+      const descEl = overlay.querySelector('#pv-desc');
+      if (descEl) descEl.textContent = trimmed || '説明なし';
+      const labelEl = overlay.querySelector('.photo-viewer-desc-label');
+      if (labelEl) labelEl.textContent = trimmed ? '✏️ メモ' : 'メモなし';
+      showToast('💾 説明を保存しました', 'success', 2000);
+    });
   }
 
   // 月別アクティビティカレンダー描画（GitHub草スタイル）
@@ -6410,28 +6566,22 @@ ${trkPts}
     // 評価モーダル
     setupRatingListeners();
 
-    // 中断ウォークの自動リカバリ（30分以内）
+    // 中断ウォークの自動リカバリ（24時間以内に拡張、賢い再開UI）
     try {
       const raw = localStorage.getItem(ACTIVE_WALK_KEY);
       if (raw) {
         const saved = JSON.parse(raw);
         const ageMin = (Date.now() - (saved.savedAt || 0)) / 60000;
-        if (ageMin <= 30 && saved.courseId && !saved.courseId.startsWith('__free_')) {
+        // 24時間（1440分）まで再開可能に
+        if (ageMin <= 1440 && saved.courseId && !saved.courseId.startsWith('__free_')) {
           const course = (window.YORIMICHI_COURSES || []).find(c => c.id === saved.courseId);
           if (course) {
-            setTimeout(() => {
-              if (confirm(`前回のウォーク「${tField(course, 'name')}」を再開しますか？\n（${Math.round(ageMin)}分前に中断されました）`)) {
-                applyRoute(courseToRoute(course));
-                setTimeout(() => startWalk(), 600);
-              } else {
-                clearActiveWalkPersist();
-              }
-            }, 1500);
+            setTimeout(() => showWalkResumeModal(course, saved, ageMin), 1500);
           } else {
             clearActiveWalkPersist();
           }
         } else {
-          // 30分超過したら破棄
+          // 24時間超過したら破棄
           clearActiveWalkPersist();
         }
       }
@@ -7341,6 +7491,66 @@ ${trkPts}
   }
   function clearActiveWalkPersist() {
     try { localStorage.removeItem(ACTIVE_WALK_KEY); } catch {}
+  }
+
+  // 🔁 中断ウォークの再開モーダル（進捗・残り・誘い文句付き）
+  function showWalkResumeModal(course, saved, ageMin) {
+    const visited = state.completedStops[course.id] || new Set();
+    const total = course.stops.length;
+    const done = visited.size;
+    const remaining = total - done;
+    const ageLabel = ageMin < 60 ? `${Math.round(ageMin)}分前` :
+                     ageMin < 24 * 60 ? `${Math.floor(ageMin / 60)}時間前` :
+                     `${Math.floor(ageMin / (60 * 24))}日前`;
+    // 誘い文句: 残り数で変化
+    let pitch = '続きを歩きませんか？';
+    if (remaining === 0) pitch = '🎉 全スポット訪問済！完走モーダルを再表示します';
+    else if (remaining === 1) pitch = '🌟 あと1スポットで完走です！';
+    else if (remaining <= 2) pitch = `🔥 あと${remaining}スポットで完走！`;
+    else pitch = `${done}/${total}スポット訪問済 ・ あと${remaining}スポット`;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'walk-resume-overlay';
+    overlay.innerHTML = `
+      <div class="walk-resume-card">
+        <div class="walk-resume-header">
+          <span class="walk-resume-emoji">${escapeHtml(course.themeIcon || course.areaIcon || '🚶')}</span>
+          <div>
+            <div class="walk-resume-label">${ageLabel}に中断したウォーク</div>
+            <div class="walk-resume-title">${escapeHtml(tField(course, 'name'))}</div>
+          </div>
+        </div>
+        <div class="walk-resume-pitch">${pitch}</div>
+        <div class="walk-resume-progress">
+          <div class="walk-resume-progress-track"><div class="walk-resume-progress-fill" style="width:${total > 0 ? Math.round((done / total) * 100) : 0}%"></div></div>
+          <div class="walk-resume-progress-text">${done}/${total}</div>
+        </div>
+        <div class="walk-resume-actions">
+          <button class="walk-resume-cancel" type="button">あとで</button>
+          <button class="walk-resume-go" type="button">${remaining === 0 ? '完走証を見る' : '▶ 続きを歩く'}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector('.walk-resume-cancel').addEventListener('click', () => {
+      overlay.remove();
+      // localStorage は残しておく：次回も提案するため
+    });
+    overlay.querySelector('.walk-resume-go').addEventListener('click', () => {
+      overlay.remove();
+      vib(20);
+      if (remaining === 0) {
+        // 既に完走済（もう完走モーダルが出てたケース）→ 完走証を再表示
+        showCertificate(course);
+        clearActiveWalkPersist();
+      } else {
+        applyRoute(courseToRoute(course));
+        setTimeout(() => startWalk(), 600);
+      }
+    });
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.remove();
+    });
   }
 
   function showPauseOverlay() {
