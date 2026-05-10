@@ -1949,19 +1949,7 @@
   function initMobilePanel() {
     const panel = $('#panel');
     const handle = $('#panel-handle');
-    // 📱 main-tabs はモバイルでは画面下に固定するので panel-inner から body へ移動
-    // (panel.collapsed { panel-inner: display:none } でタブが消える問題対策)
-    try {
-      const isMobile = window.matchMedia('(max-width: 768px)').matches;
-      const tabs = document.querySelector('.main-tabs');
-      if (isMobile && tabs && tabs.parentElement && !tabs.parentElement.classList.contains('main-tabs-mobile-host')) {
-        // 既に body 直下に move 済みでないか判定
-        if (!tabs.dataset.relocated) {
-          document.body.appendChild(tabs);
-          tabs.dataset.relocated = 'true';
-        }
-      }
-    } catch (e) { console.warn('main-tabs relocate failed', e); }
+    // main-tabs は HTML で body 直下に置いてあるので relocate 不要
     handle.addEventListener('click', () => {
       panel.classList.toggle('collapsed');
       const expanded = !panel.classList.contains('collapsed');

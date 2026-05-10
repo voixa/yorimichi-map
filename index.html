@@ -252,6 +252,13 @@
     </div>
   </div>
 
+  <!-- 🆕 Main tabs: ホーム / 探す / マイ - body直下で常時表示 -->
+  <nav class="main-tabs" role="tablist" aria-label="メインナビゲーション">
+    <button class="main-tab active" data-main-tab="home" role="tab" type="button">🏠 ホーム</button>
+    <button class="main-tab" data-main-tab="discover" role="tab" type="button">🎯 探す</button>
+    <button class="main-tab" data-main-tab="me" role="tab" type="button">👤 マイ</button>
+  </nav>
+
   <!-- Main layout -->
   <main class="layout">
     <!-- Side panel (becomes bottom-sheet on mobile) -->
@@ -266,13 +273,6 @@
       </button>
 
       <div class="panel-inner">
-
-        <!-- 🆕 Main tabs: ホーム / 探す / マイ -->
-        <nav class="main-tabs" role="tablist" aria-label="メインナビゲーション">
-          <button class="main-tab active" data-main-tab="home" role="tab" type="button">🏠 ホーム</button>
-          <button class="main-tab" data-main-tab="discover" role="tab" type="button">🎯 探す</button>
-          <button class="main-tab" data-main-tab="me" role="tab" type="button">👤 マイ</button>
-        </nav>
 
         <!-- 🚶 アクティブウォーク常時表示バー（歩行中のみ） -->
         <button class="active-walk-bar" id="active-walk-bar" type="button" hidden>

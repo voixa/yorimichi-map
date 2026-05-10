@@ -5374,16 +5374,29 @@ body.map-fullscreen #map-container {
   50% { box-shadow: 0 8px 28px rgba(22, 163, 74, 0.6); }
 }
 
+/* main-tabs: PC では panel 上部に配置、モバイルでは画面下に fixed */
 .main-tabs {
   display: flex;
   gap: 4px;
   background: var(--surface-2);
   border-radius: 12px;
   padding: 4px;
-  margin: 8px 0 12px;
-  position: sticky;
-  top: 0;
+  margin: 0;
   z-index: 50;
+}
+/* PC: panel の上に固定配置 (panel 幅と一致) */
+@media (min-width: 769px) {
+  .main-tabs {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    width: calc(var(--panel-w) - 24px);
+    box-shadow: var(--shadow-md);
+  }
+  /* panel-inner の上部に main-tabs 分の余白を作る */
+  .panel-inner {
+    padding-top: 64px;
+  }
 }
 .main-tab {
   flex: 1;
