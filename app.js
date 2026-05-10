@@ -9740,7 +9740,31 @@ ${hashtag}`;
 
   // ---------- Init ----------
 
+  // 📱 モーダル開閉時に body のスクロールを止める（iOS背景スクロール対策）
+  function setupModalScrollLock() {
+    const updateBodyLock = () => {
+      const anyOpen = Array.from(document.querySelectorAll('.modal-backdrop, .photo-viewer, .memo-prompt-overlay, .walk-pause-overlay, .walk-resume-overlay'))
+        .some(el => el && !el.hidden && el.offsetParent !== null);
+      document.body.classList.toggle('modal-open', anyOpen);
+    };
+    // 監視対象セレクタ（hidden 属性の変化を捕捉）
+    const observer = new MutationObserver(() => {
+      // microtask で連続変更をまとめる
+      requestAnimationFrame(updateBodyLock);
+    });
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['hidden', 'class'],
+      subtree: true,
+    });
+    // 子要素の追加削除（photo-viewer 等は動的生成）
+    new MutationObserver(() => requestAnimationFrame(updateBodyLock))
+      .observe(document.body, { childList: true });
+    updateBodyLock();
+  }
+
   async function init() {
+    setupModalScrollLock();
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('./sw.js').then(reg => {
         // Detect updates

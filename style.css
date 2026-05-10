@@ -8278,3 +8278,301 @@ body:has(.walk-hud:not([hidden])) .leaflet-bottom.leaflet-right {
   .capsule-machine { width: 160px; height: 240px; }
   .machine-globe { width: 150px; height: 150px; }
 }
+
+/* ============================================================
+   📱 Mobile UX Polish (Iteration 45)
+   safe-area / tap targets / sticky stacking / touch feedback
+   ============================================================ */
+
+/* Disable tap-highlight haze and improve touch responsiveness */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+button, a, .main-tab, .tab, [role="button"], input[type="button"], input[type="submit"] {
+  touch-action: manipulation;
+}
+
+/* Prevent unwanted text selection on UI chrome */
+.main-tabs, .walk-hud, .walk-hud-actions,
+.active-walk-bar, .panel-handle, .nearby-banner,
+.featured-card, .today-summary, .undo-toast, .peek-bar {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* iOS safe-area: bottom HUD + buttons must clear home indicator */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .walk-hud {
+    bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+  .undo-toast {
+    bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+  .peek-bar {
+    top: calc(12px + env(safe-area-inset-top));
+  }
+  body.map-fullscreen .map-fullscreen-btn {
+    top: calc(16px + env(safe-area-inset-top));
+  }
+  /* Panel bottom needs padding for home indicator only when not fullscreen */
+  @media (max-width: 768px) {
+    .panel {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+}
+
+/* Smoother momentum scrolling on iOS */
+.modal, .modal-backdrop > .modal, .panel-inner,
+.search-results-results, .me-feed, .walk-log-list,
+.album-grid, .photo-album-modal {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Walk HUD: 8 buttons overflow on small phones → horizontal scroll */
+@media (max-width: 768px) {
+  .walk-hud {
+    grid-template-columns: auto 1fr;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+  .walk-hud-actions {
+    grid-column: 1 / -1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 4px 2px;
+    margin: 0 -4px;
+    /* Hide scrollbar but allow scroll */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+  }
+  .walk-hud-actions::-webkit-scrollbar { display: none; }
+  .walk-hud-btn {
+    flex-shrink: 0;
+    min-width: 44px;
+    width: 44px;
+    height: 44px;
+  }
+  .walk-hud-arrow {
+    width: 44px;
+    height: 44px;
+    font-size: 30px;
+  }
+  .walk-hud-name { font-size: 15px; }
+  .walk-hud-meta {
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 11px;
+  }
+}
+
+/* Active walk bar: keep above main-tabs sticky on mobile */
+@media (max-width: 768px) {
+  .active-walk-bar {
+    /* Inside .panel-inner that scrolls; main-tabs is sticky top:0,
+       so active-walk-bar should be sticky right below the tabs */
+    top: 52px;  /* main-tabs height ≈ 44px + small gap */
+    padding: 8px 12px;
+    margin: 6px 0 8px;
+  }
+  .awb-emoji {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+  }
+  .awb-name { font-size: 12px; }
+  .awb-progress-bar { width: 50px; }
+  .awb-cta { padding: 4px 8px; font-size: 10px; }
+}
+
+/* Main tabs: better tap target on mobile */
+@media (max-width: 768px) {
+  .main-tab {
+    min-height: 44px;
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+  .main-tabs {
+    padding: 4px;
+    margin: 6px 0 10px;
+  }
+}
+
+/* Modal scroll lock: when modal open, body shouldn't scroll behind */
+body.modal-open {
+  overflow: hidden !important;
+}
+
+/* Modal backdrop: fix iOS height issue with dynamic toolbar */
+@media (max-width: 768px) {
+  .modal-backdrop {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+  .modal {
+    max-height: 92dvh;
+    overflow-y: auto;
+  }
+  /* Memo prompt must not be cut off by keyboard */
+  .memo-prompt-overlay {
+    align-items: flex-start;
+    padding-top: 12vh;
+  }
+  .memo-prompt-card {
+    max-height: 70dvh;
+    overflow-y: auto;
+  }
+}
+
+/* Map fullscreen button: bigger tap target on mobile */
+@media (max-width: 768px) {
+  .map-fullscreen-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 22px;
+  }
+}
+
+/* Touch feedback on all primary buttons - subtle scale on press */
+@media (hover: none) and (pointer: coarse) {
+  .btn-primary:active,
+  .btn-secondary:active,
+  .featured-pick:active,
+  .nearby-item:active,
+  .me-fav-item:active,
+  .search-result-item:active,
+  .cd-stop:active,
+  .walk-hud-btn:active,
+  .me-shortcut:active,
+  .col-card:active {
+    transform: scale(0.96);
+    transition: transform 0.08s ease;
+  }
+}
+
+/* Prevent layout shift when scrollbar appears (PC) */
+html { scrollbar-gutter: stable; }
+
+/* Performance: hint compositor for elements with frequent transform */
+.walk-hud-arrow,
+.walk-hud-progress-fill,
+.awb-progress-fill,
+.user-pulse,
+.poi-marker,
+.poi-marker.numbered,
+.toast,
+.undo-toast,
+.peek-bar,
+.active-walk-bar,
+.walk-pause-overlay,
+.modal {
+  will-change: transform;
+}
+
+/* Inputs: prevent iOS zoom on focus */
+input[type="text"],
+input[type="search"],
+input[type="email"],
+input[type="number"],
+input[type="tel"],
+textarea,
+select {
+  font-size: 16px;  /* iOS zooms in if <16px */
+}
+@media (min-width: 769px) {
+  /* PC: smaller font is fine, no zoom there */
+  input[type="text"], input[type="search"], textarea, select { font-size: 14px; }
+}
+
+/* Better focus rings for keyboard nav (PC) */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Prevent double-tap zoom on iOS for buttons */
+button, a, .main-tab, .walk-hud-btn, .nearby-item, .featured-pick {
+  touch-action: manipulation;
+}
+
+/* Pre-walk briefing: shrink on mobile */
+@media (max-width: 768px) {
+  .pre-walk-briefing { padding: 10px 12px; gap: 10px; }
+  .pwb-icon { width: 32px; height: 32px; font-size: 18px; }
+  .pwb-text { font-size: 12px; }
+}
+
+/* Today summary: tighter on mobile */
+@media (max-width: 768px) {
+  .today-summary { padding: 12px; margin: 6px 0 10px; }
+  .today-summary-icon { width: 40px; height: 40px; font-size: 26px; }
+  .today-summary-greeting { font-size: 13px; }
+  .today-summary-cell { padding: 8px 4px; }
+  .today-summary-num { font-size: 17px; }
+  .today-summary-label-sm { font-size: 9px; }
+}
+
+/* Nearby banner items: better mobile layout */
+@media (max-width: 768px) {
+  .nearby-item {
+    grid-template-columns: 28px 1fr 50px auto !important;
+    gap: 8px;
+    padding: 8px 10px;
+  }
+  .nearby-item-emoji { width: 28px; height: 28px; font-size: 18px; }
+  .nearby-item-name { font-size: 12px; }
+  .nearby-item-meta { font-size: 10px; }
+  .nearby-item-dist { font-size: 10px; padding: 3px 6px; }
+}
+
+/* Course detail: improve scroll on mobile */
+@media (max-width: 768px) {
+  #course-detail-modal .modal {
+    padding: 16px 14px;
+  }
+  .cd-name { font-size: 18px; }
+  .cd-stops-title { font-size: 13px; }
+  .cd-stop { padding: 6px 8px; gap: 6px; }
+  .cd-stop-name { font-size: 12px; }
+  .cd-stop-desc { font-size: 10px; }
+}
+
+/* Photo viewer nav arrows: bigger tap target */
+@media (max-width: 768px) {
+  .photo-viewer-nav {
+    width: 56px;
+    height: 80px;
+  }
+  .photo-viewer-nav.prev { left: 4px; }
+  .photo-viewer-nav.next { right: 4px; }
+}
+
+/* Better walk-log spacing on mobile */
+@media (max-width: 768px) {
+  .walk-log-controls { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .walk-log-select { padding: 10px 8px; font-size: 12px; }
+  .walk-cal-cell { width: 12px; height: 12px; }
+}
+
+/* Fix "active-walk-bar over main-tabs" stacking on mobile */
+.main-tabs { z-index: 50; }
+.active-walk-bar { z-index: 49; }
+
+/* Prevent scroll-bounce on map area */
+.map-wrap, #map { overscroll-behavior: contain; }
+
+/* Improve sticky header behavior in panel-inner on mobile */
+@media (max-width: 768px) {
+  .panel-inner {
+    /* Ensure smooth scroll for sticky elements inside */
+    -webkit-overflow-scrolling: touch;
+    scroll-padding-top: 56px;
+  }
+}
