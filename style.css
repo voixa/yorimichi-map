@@ -8411,7 +8411,7 @@ button, a, .main-tab, .tab, [role="button"], input[type="button"], input[type="s
     top: auto !important;
     margin: 0 !important;
     padding: 4px;
-    z-index: 7500;
+    z-index: 8500; /* walk-hud(8000) より上 */
     background: var(--surface);
     box-shadow: 0 -4px 16px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08);
     border-radius: 16px;
@@ -8421,9 +8421,9 @@ button, a, .main-tab, .tab, [role="button"], input[type="button"], input[type="s
   [data-theme="dark"] .main-tabs {
     background: rgba(31, 31, 39, 0.95);
   }
-  /* 散歩中は walk-hud が下にあるので main-tabs を更に上にずらす */
+  /* 散歩中は walk-hud が下にあるので main-tabs を更に上にずらす（HUD 高 ≈ 200px + 余裕） */
   body.walking .main-tabs {
-    bottom: calc(208px + env(safe-area-inset-bottom, 0px)); /* HUD 高 + マージン */
+    bottom: calc(228px + env(safe-area-inset-bottom, 0px));
   }
   /* fullscreen 時は底に */
   body.map-fullscreen .main-tabs {
@@ -8431,7 +8431,7 @@ button, a, .main-tab, .tab, [role="button"], input[type="button"], input[type="s
   }
   /* 散歩 + fullscreen の組合せ */
   body.walking.map-fullscreen .main-tabs {
-    bottom: calc(208px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(228px + env(safe-area-inset-bottom, 0px));
   }
   /* active-walk-bar は panel-inner の中で sticky のまま */
   .active-walk-bar {
@@ -8443,9 +8443,8 @@ button, a, .main-tab, .tab, [role="button"], input[type="button"], input[type="s
     padding-bottom: 80px !important;
   }
   body.walking .panel-inner {
-    padding-bottom: 280px !important;
+    padding-bottom: 290px !important;
   }
-  /* panel-handle の下にいきなり tab-panel になる（sticky の main-tabs は無いので） */
 }
 
 /* Modal scroll lock: when modal open, body shouldn't scroll behind */
@@ -8612,17 +8611,74 @@ button, a, .main-tab, .walk-hud-btn, .nearby-item, .featured-pick {
 .main-tabs { z-index: 50; }
 .active-walk-bar { z-index: 49; }
 
-/* Map recenter button: clear walk-hud (now 2-row on mobile) */
+/* Map recenter button: 散歩中は画面右上へ移動（メインタブと被らないように） */
 @media (max-width: 768px) {
   .map-recenter-btn {
-    bottom: calc(220px + env(safe-area-inset-bottom, 0px));
+    /* 散歩中以外は隠れているので位置は何でも良いが、常時 top に */
+    top: calc(76px + env(safe-area-inset-top, 0px));
+    bottom: auto;
     right: 12px;
     width: 44px;
     height: 44px;
   }
   body.map-fullscreen .map-recenter-btn {
-    /* In fullscreen, panel is gone; HUD only at bottom */
-    bottom: calc(180px + env(safe-area-inset-bottom, 0px));
+    top: calc(16px + env(safe-area-inset-top, 0px));
+  }
+}
+
+/* Photo viewer counter: respect safe-area top */
+.photo-viewer-counter {
+  top: calc(16px + env(safe-area-inset-top, 0px)) !important;
+  left: calc(16px + env(safe-area-inset-left, 0px)) !important;
+}
+.photo-viewer-close {
+  top: calc(16px + env(safe-area-inset-top, 0px)) !important;
+  right: calc(16px + env(safe-area-inset-right, 0px)) !important;
+}
+
+/* Panel-handle: subtle but findable */
+@media (max-width: 768px) {
+  .panel-handle {
+    background: var(--surface);
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+  }
+  .handle-bar {
+    background: var(--brand) !important;
+    opacity: 0.6 !important;
+  }
+}
+
+/* detail-card: don't overlap walk-hud during walking */
+@media (max-width: 768px) {
+  body.walking .detail-card {
+    max-height: 35vh;
+  }
+}
+
+/* Settings/profile/help modal: ensure max-height + scroll for small phones */
+@media (max-width: 768px) {
+  #settings-modal .modal,
+  #profile-modal .modal,
+  #help-modal .modal,
+  #photo-album-modal .modal,
+  #walk-log-modal .modal {
+    max-height: 88dvh;
+    padding-bottom: 24px;
+  }
+}
+
+/* Toast: 散歩中は HUD と被らないよう少し上に */
+@media (max-width: 768px) {
+  body.walking .toast {
+    top: calc(110px + env(safe-area-inset-top, 0px));
+  }
+}
+
+/* Walk-hud が画面上限に近すぎる時の調整：safe-area-inset-bottom を考慮 */
+@media (max-width: 768px) {
+  .walk-hud {
+    /* HUD 自体が overscroll で動かないよう pos:fixed のまま */
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   }
 }
 
