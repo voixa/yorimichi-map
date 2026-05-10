@@ -4255,85 +4255,143 @@ ${trkPts}
         <img src="${escapeHtml(p.url)}" alt="${escapeHtml(p.stopName)}" loading="lazy" />
         <div class="album-photo-meta">${escapeHtml(p.areaIcon || '')} ${escapeHtml(p.stopName)}</div>
       `;
-      tile.addEventListener('click', () => showPhotoViewer(p));
+      tile.addEventListener('click', () => showPhotoViewer(p, allPhotos, i));
       grid.appendChild(tile);
     });
   }
 
-  function showPhotoViewer(photo) {
+  function showPhotoViewer(photo, photoList, currentIdx) {
     if (document.querySelector('.photo-viewer')) return;
+    const list = Array.isArray(photoList) && photoList.length > 0 ? photoList : [photo];
+    let idx = (typeof currentIdx === 'number' && currentIdx >= 0) ? currentIdx : list.findIndex(p => p === photo);
+    if (idx < 0) idx = 0;
+
     const overlay = document.createElement('div');
     overlay.className = 'photo-viewer';
-    const hasCourse = photo.courseId && photo.stopIdx != null;
-    const currentDesc = photo.desc || '';
-    overlay.innerHTML = `
-      <button class="photo-viewer-close" aria-label="閉じる">✕</button>
-      <img src="${escapeHtml(photo.url)}" alt="${escapeHtml(photo.stopName)}" />
-      <div class="photo-viewer-info">
-        <div class="photo-viewer-name">${escapeHtml(photo.areaIcon || '')} ${escapeHtml(photo.stopName)}</div>
-        <div class="photo-viewer-course">${escapeHtml(photo.courseName)}</div>
-        <div class="photo-viewer-desc-wrap">
-          <div class="photo-viewer-desc-label">${currentDesc ? '✨ AI描写' : 'メモなし'}</div>
-          <div class="photo-viewer-desc" id="pv-desc">${currentDesc ? escapeHtml(currentDesc) : '<span style="opacity:0.6">説明はまだありません</span>'}</div>
-        </div>
-        ${hasCourse ? `
-          <div class="photo-viewer-actions">
-            <button class="pv-action" id="pv-regen" type="button">${currentDesc ? '🔄 再生成' : '✨ AIで生成'}</button>
-            <button class="pv-action" id="pv-edit" type="button">✏️ 編集</button>
-          </div>
-        ` : ''}
-      </div>
-    `;
-    overlay.addEventListener('click', (e) => {
-      // ボタン以外で閉じる
-      if (e.target === overlay || e.target.classList.contains('photo-viewer-close')) {
-        overlay.remove();
-      }
-    });
     document.body.appendChild(overlay);
-    if (!hasCourse) return;
-    // 再生成
-    overlay.querySelector('#pv-regen').addEventListener('click', async (ev) => {
-      ev.stopPropagation();
-      const btn = ev.currentTarget;
-      btn.disabled = true;
-      btn.textContent = '⏳ 生成中...';
-      try {
-        const desc = await describePhotoWithAI(photo.url, photo.stopName, photo.area || '');
-        if (desc) {
-          saveCoursePhoto(photo.courseId, photo.stopIdx, photo.url, desc);
-          photo.desc = desc;
-          const descEl = overlay.querySelector('#pv-desc');
-          if (descEl) descEl.textContent = desc;
-          const labelEl = overlay.querySelector('.photo-viewer-desc-label');
-          if (labelEl) labelEl.textContent = '✨ AI描写';
-          showToast('✨ AI描写を更新しました', 'success', 2200);
-          btn.textContent = '🔄 再生成';
-        } else {
-          showToast('AI描写の生成に失敗しました', 'error', 2500);
+
+    function render() {
+      const cur = list[idx];
+      const hasCourse = cur.courseId && cur.stopIdx != null;
+      const currentDesc = cur.desc || '';
+      const hasMulti = list.length > 1;
+      overlay.innerHTML = `
+        <button class="photo-viewer-close" aria-label="閉じる">✕</button>
+        ${hasMulti ? `
+          <button class="photo-viewer-nav prev" id="pv-prev" aria-label="前の写真">‹</button>
+          <button class="photo-viewer-nav next" id="pv-next" aria-label="次の写真">›</button>
+          <div class="photo-viewer-counter">${idx + 1} / ${list.length}</div>
+        ` : ''}
+        <img src="${escapeHtml(cur.url)}" alt="${escapeHtml(cur.stopName)}" />
+        <div class="photo-viewer-info">
+          <div class="photo-viewer-name">${escapeHtml(cur.areaIcon || '')} ${escapeHtml(cur.stopName)}</div>
+          <div class="photo-viewer-course">${escapeHtml(cur.courseName)}</div>
+          <div class="photo-viewer-desc-wrap">
+            <div class="photo-viewer-desc-label">${currentDesc ? '✨ AI描写' : 'メモなし'}</div>
+            <div class="photo-viewer-desc" id="pv-desc">${currentDesc ? escapeHtml(currentDesc) : '<span style="opacity:0.6">説明はまだありません</span>'}</div>
+          </div>
+          ${hasCourse ? `
+            <div class="photo-viewer-actions">
+              <button class="pv-action" id="pv-regen" type="button">${currentDesc ? '🔄 再生成' : '✨ AIで生成'}</button>
+              <button class="pv-action" id="pv-edit" type="button">✏️ 編集</button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+      attachActions(cur, hasCourse);
+      if (hasMulti) {
+        overlay.querySelector('#pv-prev').addEventListener('click', (e) => { e.stopPropagation(); go(-1); });
+        overlay.querySelector('#pv-next').addEventListener('click', (e) => { e.stopPropagation(); go(1); });
+      }
+    }
+
+    function go(delta) {
+      idx = (idx + delta + list.length) % list.length;
+      vib(8);
+      render();
+    }
+
+    function attachActions(cur, hasCourse) {
+      if (!hasCourse) return;
+      const regen = overlay.querySelector('#pv-regen');
+      const editBtn = overlay.querySelector('#pv-edit');
+      if (regen) regen.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        const btn = ev.currentTarget;
+        btn.disabled = true;
+        btn.textContent = '⏳ 生成中...';
+        try {
+          const desc = await describePhotoWithAI(cur.url, cur.stopName, cur.area || '');
+          if (desc) {
+            saveCoursePhoto(cur.courseId, cur.stopIdx, cur.url, desc);
+            cur.desc = desc;
+            const descEl = overlay.querySelector('#pv-desc');
+            if (descEl) descEl.textContent = desc;
+            const labelEl = overlay.querySelector('.photo-viewer-desc-label');
+            if (labelEl) labelEl.textContent = '✨ AI描写';
+            showToast('✨ AI描写を更新しました', 'success', 2200);
+            btn.textContent = '🔄 再生成';
+          } else {
+            showToast('AI描写の生成に失敗しました', 'error', 2500);
+            btn.textContent = '✨ AIで生成';
+          }
+        } catch (e) {
+          showToast('生成に失敗しました', 'error', 2500);
           btn.textContent = '✨ AIで生成';
+        } finally {
+          btn.disabled = false;
         }
-      } catch (e) {
-        showToast('生成に失敗しました', 'error', 2500);
-        btn.textContent = '✨ AIで生成';
-      } finally {
-        btn.disabled = false;
+      });
+      if (editBtn) editBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const newDesc = prompt('説明を編集（最大120字）', cur.desc || '');
+        if (newDesc == null) return;
+        const trimmed = String(newDesc).trim().slice(0, 120);
+        saveCoursePhoto(cur.courseId, cur.stopIdx, cur.url, trimmed);
+        cur.desc = trimmed;
+        const descEl = overlay.querySelector('#pv-desc');
+        if (descEl) descEl.textContent = trimmed || '説明なし';
+        const labelEl = overlay.querySelector('.photo-viewer-desc-label');
+        if (labelEl) labelEl.textContent = trimmed ? '✏️ メモ' : 'メモなし';
+        showToast('💾 説明を保存しました', 'success', 2000);
+      });
+    }
+
+    function close() {
+      try { overlay.remove(); } catch {}
+      window.removeEventListener('keydown', onKey);
+    }
+
+    function onKey(e) {
+      if (e.key === 'Escape') close();
+      else if (e.key === 'ArrowLeft') go(-1);
+      else if (e.key === 'ArrowRight') go(1);
+    }
+    window.addEventListener('keydown', onKey);
+
+    // タッチスワイプ
+    let touchStartX = null;
+    overlay.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0]?.clientX ?? null;
+    }, { passive: true });
+    overlay.addEventListener('touchend', (e) => {
+      if (touchStartX == null) return;
+      const endX = e.changedTouches[0]?.clientX ?? touchStartX;
+      const dx = endX - touchStartX;
+      if (Math.abs(dx) > 50) {
+        if (dx < 0) go(1);
+        else go(-1);
+      }
+      touchStartX = null;
+    }, { passive: true });
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay || e.target.classList.contains('photo-viewer-close')) {
+        close();
       }
     });
-    // 編集
-    overlay.querySelector('#pv-edit').addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const newDesc = prompt('説明を編集（最大120字）', photo.desc || '');
-      if (newDesc == null) return;
-      const trimmed = String(newDesc).trim().slice(0, 120);
-      saveCoursePhoto(photo.courseId, photo.stopIdx, photo.url, trimmed);
-      photo.desc = trimmed;
-      const descEl = overlay.querySelector('#pv-desc');
-      if (descEl) descEl.textContent = trimmed || '説明なし';
-      const labelEl = overlay.querySelector('.photo-viewer-desc-label');
-      if (labelEl) labelEl.textContent = trimmed ? '✏️ メモ' : 'メモなし';
-      showToast('💾 説明を保存しました', 'success', 2000);
-    });
+
+    render();
   }
 
   // 月別アクティビティカレンダー描画（GitHub草スタイル）
@@ -7941,18 +7999,55 @@ ${trkPts}
     } catch { return null; }
   }
 
+  // 🔔 距離アラート用の音 + 振動（声OFFでも動作）
+  function playProximityChime(level) {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      // level: 'far' (200m) | 'near' (100m) | 'arrived' (50m)
+      if (level === 'far') {
+        playTone(audioCtx, 660, 0.12, 'sine', 0.08);
+        vib(20);
+      } else if (level === 'near') {
+        playTone(audioCtx, 880, 0.1, 'sine', 0.1);
+        setTimeout(() => playTone(audioCtx, 880, 0.1, 'sine', 0.1), 130);
+        vib([30, 50, 30]);
+      } else if (level === 'arrived') {
+        // ベル風2連
+        playTone(audioCtx, 1320, 0.1, 'triangle', 0.12);
+        setTimeout(() => playTone(audioCtx, 1760, 0.15, 'triangle', 0.12), 100);
+        setTimeout(() => playTone(audioCtx, 1320, 0.2, 'triangle', 0.1), 240);
+        vib([50, 60, 50, 60, 100]);
+      }
+    } catch {}
+  }
+
   function maybeAnnounceDistance(userLoc, nextStop) {
     if (!state.activeWalk) return;
-    if (!voice.enabled) return;
     if (!userLoc || !nextStop || nextStop.lat == null || nextStop.lng == null) return;
     const dM = haversineKm(userLoc, nextStop) * 1000;
-    state.activeWalk.voiceState = state.activeWalk.voiceState || { announcedThresholds: new Set(), introPlayed: new Set(), nextStopIdx: -1 };
+    state.activeWalk.voiceState = state.activeWalk.voiceState || { announcedThresholds: new Set(), introPlayed: new Set(), nextStopIdx: -1, chimedThresholds: new Set() };
     const vs = state.activeWalk.voiceState;
     // 次スポット番号が変わったらリセット
     if (vs.nextStopIdx !== nextStop._idx) {
       vs.announcedThresholds = new Set();
+      vs.chimedThresholds = vs.chimedThresholds || new Set();
+      vs.chimedThresholds.clear();
       vs.nextStopIdx = nextStop._idx;
     }
+    // 🔔 音 + 振動アラート（声OFFでも動作）
+    const CHIME_LEVELS = [
+      { th: 200, level: 'far' },
+      { th: 100, level: 'near' },
+      { th: 50, level: 'arrived' },
+    ];
+    for (const cl of CHIME_LEVELS) {
+      if (dM < cl.th && !vs.chimedThresholds.has(cl.th)) {
+        vs.chimedThresholds.add(cl.th);
+        playProximityChime(cl.level);
+        break;
+      }
+    }
+    if (!voice.enabled) return;
     // 50m手前で初めて → AIスポット紹介
     if (dM < 60 && !vs.introPlayed.has(nextStop._idx)) {
       vs.introPlayed.add(nextStop._idx);
@@ -8387,6 +8482,7 @@ ${trkPts}
     // 累積距離 + 経過時間を更新
     const totalDistEl = $('#walk-hud-totaldist');
     const elapsedEl = $('#walk-hud-elapsed');
+    const paceEl = $('#walk-hud-pace');
     if (state.activeWalk?.startedAt) {
       const elapsed = Math.floor((Date.now() - state.activeWalk.startedAt) / 1000);
       const mm = Math.floor(elapsed / 60);
@@ -8399,6 +8495,23 @@ ${trkPts}
           totalDistEl.hidden = false;
         } else {
           totalDistEl.hidden = true;
+        }
+      }
+      // 🏃 ペース表示（5分以上 + 100m以上歩いた場合のみ表示）
+      if (paceEl) {
+        if (elapsed >= 60 * 2 && totalKm >= 0.1) {
+          const hours = elapsed / 3600;
+          const kmh = totalKm / hours;
+          // ペースに応じてアイコン
+          let icon = '🏃';
+          if (kmh < 3) icon = '🚶'; // ゆっくり
+          else if (kmh < 5) icon = '🚶‍♀️'; // 標準
+          else if (kmh < 7) icon = '🏃'; // 速め
+          else icon = '⚡'; // 走ってる？
+          paceEl.textContent = `${icon} ${kmh.toFixed(1)}km/h`;
+          paceEl.hidden = false;
+        } else {
+          paceEl.hidden = true;
         }
       }
     }

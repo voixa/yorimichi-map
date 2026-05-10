@@ -4273,6 +4273,41 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
   margin-top: 16px;
   max-width: 600px;
 }
+/* Photo viewer navigation arrows */
+.photo-viewer-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 64px;
+  background: rgba(0,0,0,0.5);
+  border: 0;
+  color: white;
+  font-size: 36px;
+  font-weight: 300;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  z-index: 2;
+  transition: background 0.15s ease;
+}
+.photo-viewer-nav:hover { background: rgba(0,0,0,0.75); }
+.photo-viewer-nav.prev { left: 12px; }
+.photo-viewer-nav.next { right: 12px; }
+.photo-viewer-counter {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 800;
+  z-index: 2;
+}
 .photo-viewer-name { font-weight: 800; font-size: 16px; }
 .photo-viewer-course { font-size: 12px; opacity: 0.7; margin-top: 2px; }
 .photo-viewer-desc-wrap {
@@ -7136,6 +7171,7 @@ body:has(.walk-hud:not([hidden])) .leaflet-bottom.leaflet-right {
 .walk-hud-elapsed { color: #fff; font-weight: 700; opacity: 0.85; }
 .walk-hud-totaldist { color: #ffb380; font-weight: 700; }
 .walk-hud-eta { color: #fcd34d; font-weight: 800; }
+.walk-hud-pace { color: #4ade80; font-weight: 800; }
 
 /* Active state for headup toggle */
 .walk-hud-btn.active {
