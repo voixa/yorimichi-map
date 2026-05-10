@@ -83,6 +83,10 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+/* iOS Safari の動的ツールバー対応 (アドレスバーが現れた時のはみ出し防止) */
+@supports (height: 100dvh) {
+  html, body { height: 100dvh; }
+}
 
 button {
   font-family: inherit;
@@ -8388,7 +8392,7 @@ button, a, .main-tab, .tab, [role="button"], input[type="button"], input[type="s
   .awb-cta { padding: 4px 8px; font-size: 10px; }
 }
 
-/* Main tabs: better tap target on mobile */
+/* Main tabs: better tap target on mobile + don't cover panel-handle */
 @media (max-width: 768px) {
   .main-tab {
     min-height: 44px;
@@ -8398,6 +8402,12 @@ button, a, .main-tab, .tab, [role="button"], input[type="button"], input[type="s
   .main-tabs {
     padding: 4px;
     margin: 6px 0 10px;
+    /* panel-handle (36px high, sticky top:0) のすぐ下に固定 */
+    top: 36px;
+  }
+  /* active-walk-bar はさらに下 */
+  .active-walk-bar {
+    top: calc(36px + 44px + 12px); /* handle + tabs + gap */
   }
 }
 
@@ -8564,6 +8574,40 @@ button, a, .main-tab, .walk-hud-btn, .nearby-item, .featured-pick {
 /* Fix "active-walk-bar over main-tabs" stacking on mobile */
 .main-tabs { z-index: 50; }
 .active-walk-bar { z-index: 49; }
+
+/* Map recenter button: clear walk-hud (now 2-row on mobile) */
+@media (max-width: 768px) {
+  .map-recenter-btn {
+    bottom: calc(220px + env(safe-area-inset-bottom, 0px));
+    right: 12px;
+    width: 44px;
+    height: 44px;
+  }
+  body.map-fullscreen .map-recenter-btn {
+    /* In fullscreen, panel is gone; HUD only at bottom */
+    bottom: calc(180px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Toast: switch to fixed positioning so it shows on viewport, not panel */
+.toast {
+  position: fixed !important;
+  bottom: auto !important;
+  top: 90px;
+  left: 50% !important;
+  z-index: 9000 !important;
+  max-width: calc(100% - 24px);
+  white-space: normal;
+  text-align: center;
+  line-height: 1.4;
+}
+@media (max-width: 768px) {
+  .toast {
+    top: calc(90px + env(safe-area-inset-top, 0px));
+    font-size: 12px;
+    padding: 8px 14px;
+  }
+}
 
 /* Prevent scroll-bounce on map area */
 .map-wrap, #map { overscroll-behavior: contain; }
