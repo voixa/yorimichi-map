@@ -8339,6 +8339,8 @@ ${trkPts}
     if (recenter) recenter.hidden = false;
     // 常時表示バー
     try { updateActiveWalkBar(); } catch {}
+    // body.walking でレイアウト切替（main-tabs の位置調整など）
+    document.body.classList.add('walking');
   }
 
   // 🧭 ヘッドアップ表示（地図を進行方向に回転）
@@ -8408,6 +8410,7 @@ ${trkPts}
       state._headupEnabled = false;
       try { clearMapHeading(); } catch {}
     }
+    document.body.classList.remove('walking');
   }
 
   // 🚶 アクティブウォークの常時表示バー更新

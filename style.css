@@ -8392,23 +8392,60 @@ button, a, .main-tab, .tab, [role="button"], input[type="button"], input[type="s
   .awb-cta { padding: 4px 8px; font-size: 10px; }
 }
 
-/* Main tabs: better tap target on mobile + don't cover panel-handle */
+/* Main tabs: floating bottom bar on mobile (常に見える) */
 @media (max-width: 768px) {
   .main-tab {
     min-height: 44px;
-    padding: 10px 8px;
-    font-size: 13px;
+    padding: 8px 4px;
+    font-size: 11px;
+    flex-direction: column;
+    line-height: 1.2;
+    gap: 2px;
   }
+  /* main-tabs を画面下に常駐させる（panel が畳まれても見える） */
   .main-tabs {
+    position: fixed !important;
+    left: 8px;
+    right: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    top: auto !important;
+    margin: 0 !important;
     padding: 4px;
-    margin: 6px 0 10px;
-    /* panel-handle (36px high, sticky top:0) のすぐ下に固定 */
-    top: 36px;
+    z-index: 7500;
+    background: var(--surface);
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08);
+    border-radius: 16px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
-  /* active-walk-bar はさらに下 */
+  [data-theme="dark"] .main-tabs {
+    background: rgba(31, 31, 39, 0.95);
+  }
+  /* 散歩中は walk-hud が下にあるので main-tabs を更に上にずらす */
+  body.walking .main-tabs {
+    bottom: calc(208px + env(safe-area-inset-bottom, 0px)); /* HUD 高 + マージン */
+  }
+  /* fullscreen 時は底に */
+  body.map-fullscreen .main-tabs {
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+  /* 散歩 + fullscreen の組合せ */
+  body.walking.map-fullscreen .main-tabs {
+    bottom: calc(208px + env(safe-area-inset-bottom, 0px));
+  }
+  /* active-walk-bar は panel-inner の中で sticky のまま */
   .active-walk-bar {
-    top: calc(36px + 44px + 12px); /* handle + tabs + gap */
+    top: 0;
+    margin-top: 4px;
   }
+  /* panel-inner には main-tabs が固定化したので余白を追加（コンテンツが tabs に隠れないよう） */
+  .panel-inner {
+    padding-bottom: 80px !important;
+  }
+  body.walking .panel-inner {
+    padding-bottom: 280px !important;
+  }
+  /* panel-handle の下にいきなり tab-panel になる（sticky の main-tabs は無いので） */
 }
 
 /* Modal scroll lock: when modal open, body shouldn't scroll behind */
