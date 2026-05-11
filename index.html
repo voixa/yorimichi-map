@@ -445,6 +445,12 @@
         <!-- ====== ホームタブ（再編：優先度順） ====== -->
         <div class="tab-panel" data-tab-panel="home">
 
+        <!-- ⚠️ 天気警告（猛暑/寒波/強雨/雷） -->
+        <section class="weather-warning" id="weather-warning" hidden>
+          <span class="ww-icon" id="ww-icon">⚠️</span>
+          <span class="ww-text" id="ww-text">—</span>
+        </section>
+
         <!-- 📅 今日のサマリーカード（経験者向け・最上部・welcome-card と排他） -->
         <section class="today-summary" id="today-summary" hidden>
           <div class="today-summary-header">
@@ -510,6 +516,15 @@
             <span class="ha-icon">📂</span>
             <span class="ha-label">全コース一覧<br><small>自分で選びたい</small></span>
           </button>
+        </section>
+
+        <!-- ❤️ お気に入りリマインダー（未完走のものがあれば） -->
+        <section class="fav-reminder" id="fav-reminder" hidden>
+          <div class="fr-header">
+            <span class="fr-icon">❤️</span>
+            <span class="fr-text" id="fr-text">—</span>
+          </div>
+          <button class="fr-btn" id="fr-btn" type="button">→ お気に入りを見る</button>
         </section>
 
         <!-- 🆕 最近完走したコース（横スクロール） -->
@@ -1761,6 +1776,10 @@
         <div class="cert-walk-count" id="cert-walk-count" hidden></div>
         <div class="cert-course-name" id="cert-course">—</div>
         <div class="cert-area" id="cert-area">—</div>
+        <div class="cert-replay" id="cert-replay">
+          <button class="cert-replay-btn" id="cert-replay-btn" type="button">▶ 歩いた軌跡を再生</button>
+          <div class="cert-replay-canvas" id="cert-replay-canvas"></div>
+        </div>
         <div class="cert-stamps" id="cert-stamps"></div>
         <div class="cert-footer">
           <span id="cert-date">—</span>

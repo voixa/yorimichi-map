@@ -6979,6 +6979,33 @@ html.text-size-xlarge .modal-title { font-size: 22px; }
 }
 [data-theme="dark"] .ai-suggest-mic { background: rgba(108, 99, 255, 0.15); color: #a5b4fc; }
 
+/* 🎬 Cert walk replay */
+.cert-replay {
+  margin: 12px 0;
+  text-align: center;
+}
+.cert-replay-btn {
+  background: linear-gradient(135deg, #6c63ff, #ff4081);
+  color: white;
+  border: 0;
+  padding: 8px 20px;
+  border-radius: 100px;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  margin-bottom: 8px;
+}
+.cert-replay-btn:disabled { opacity: 0.7; }
+.cert-replay-canvas {
+  margin: 0 auto;
+  max-width: 320px;
+  background: rgba(255, 248, 225, 0.5);
+  border-radius: 12px;
+  padding: 8px;
+}
+.cr-svg { display: block; margin: 0 auto; }
+
 /* 📔 Walk journal in cert modal */
 .walk-journal {
   background: linear-gradient(135deg, #f5ecd9, #ede0c5);
@@ -7084,6 +7111,77 @@ html.text-size-xlarge .modal-title { font-size: 22px; }
 }
 @media (max-width: 768px) {
   .nsl-name { max-width: 130px; font-size: 12px; }
+}
+
+/* ⚠️ Weather warning banner */
+.weather-warning {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  margin: 8px 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.weather-warning[hidden] { display: none; }
+.weather-warning.ww-danger {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: white;
+  animation: ww-pulse 2s ease-in-out infinite;
+}
+.weather-warning.ww-warn {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #78350f;
+  border-left: 4px solid #f59e0b;
+}
+.weather-warning.ww-mild {
+  background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+  color: #5a3a00;
+  border-left: 3px solid #fb923c;
+}
+.weather-warning.ww-cold {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1e3a8a;
+  border-left: 4px solid #3b82f6;
+}
+[data-theme="dark"] .weather-warning.ww-warn { background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.08)); color: #fde68a; }
+[data-theme="dark"] .weather-warning.ww-mild { background: linear-gradient(135deg, rgba(251, 146, 60, 0.15), rgba(251, 146, 60, 0.08)); color: #fed7aa; }
+[data-theme="dark"] .weather-warning.ww-cold { background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.08)); color: #bfdbfe; }
+.ww-icon { font-size: 24px; flex-shrink: 0; }
+.ww-text { flex: 1; min-width: 0; }
+@keyframes ww-pulse {
+  0%, 100% { box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3); }
+  50% { box-shadow: 0 4px 20px rgba(220, 38, 38, 0.6); }
+}
+
+/* ❤️ Favorites reminder */
+.fav-reminder {
+  background: linear-gradient(135deg, rgba(255, 64, 129, 0.08), rgba(255, 126, 61, 0.06));
+  border: 1px solid rgba(255, 64, 129, 0.25);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 8px 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.fr-header { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.fr-icon { font-size: 20px; }
+.fr-text { font-size: 12px; color: var(--text); }
+.fr-text strong { color: #ff4081; }
+.fr-btn {
+  background: linear-gradient(135deg, #ff7e3d, #ff4081);
+  color: white;
+  border: 0;
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-weight: 800;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
 }
 
 /* 🏅 Recent completions horizontal scroller */

@@ -6577,6 +6577,83 @@ ${trkPts}
     };
   }
 
+  // ❤️ お気に入りリマインダー（未完走のお気に入りがあれば）
+  function renderFavoritesReminder() {
+    const sec = document.getElementById('fav-reminder');
+    if (!sec) return;
+    const favIds = [...(state.favoriteCourses || [])];
+    const unwalked = favIds.filter(id => !state.completedCourses.has(id));
+    if (unwalked.length === 0) { sec.hidden = true; return; }
+    const c = (window.YORIMICHI_COURSES || []).find(x => x.id === unwalked[0]);
+    if (!c) { sec.hidden = true; return; }
+    const textEl = document.getElementById('fr-text');
+    if (textEl) {
+      if (unwalked.length === 1) {
+        textEl.innerHTML = `<strong>${escapeHtml(tField(c, 'name'))}</strong> をお気に入りに入れたまま、まだ歩いていません`;
+      } else {
+        textEl.innerHTML = `お気に入りの<strong>${unwalked.length}コース</strong>、まだ歩いていません`;
+      }
+    }
+    const btn = document.getElementById('fr-btn');
+    if (btn) btn.onclick = () => {
+      vib(10);
+      // マイタブに切替してお気に入りセクションへ
+      document.querySelector('.main-tab[data-main-tab="me"]')?.click();
+      setTimeout(() => {
+        const favSec = document.getElementById('me-favorites');
+        if (favSec) favSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 350);
+    };
+    sec.hidden = false;
+  }
+
+  // ⚠️ 天気警告バナー（猛暑・寒波・強雨・雷）
+  function renderWeatherWarning() {
+    const sec = document.getElementById('weather-warning');
+    if (!sec) return;
+    let weatherCode = null, temp = null;
+    try {
+      const w = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY) || 'null');
+      if (w && Date.now() - w.fetchedAt < WEATHER_CACHE_TTL_MS) {
+        weatherCode = w.code;
+        temp = w.temp;
+      }
+    } catch {}
+    let icon = '⚠️', text = '', show = false, cls = '';
+    // 雷 / 大雨
+    if (weatherCode != null && weatherCode >= 95) {
+      icon = '⛈️';
+      text = '雷雨の警告。屋外散歩は控えて、屋内コースをチェック！';
+      show = true; cls = 'ww-danger';
+    } else if (weatherCode != null && weatherCode >= 80 && weatherCode <= 86) {
+      icon = '🌧️';
+      text = 'にわか雨予報。傘を忘れずに、屋内多めコースがおすすめです';
+      show = true; cls = 'ww-warn';
+    } else if (typeof temp === 'number' && temp >= 32) {
+      icon = '🌡️';
+      text = `猛暑日 (${Math.round(temp)}℃)。水分補給と日陰を意識して、午前か夕方に散歩しよう`;
+      show = true; cls = 'ww-warn';
+    } else if (typeof temp === 'number' && temp <= 3) {
+      icon = '🥶';
+      text = `気温が低めです (${Math.round(temp)}℃)。暖かい服装と短めコースで`;
+      show = true; cls = 'ww-cold';
+    } else if (typeof temp === 'number' && temp >= 28) {
+      icon = '☀️';
+      text = `今日は暑め (${Math.round(temp)}℃)。こまめに水分を`;
+      show = true; cls = 'ww-mild';
+    }
+    if (show) {
+      const iconEl = document.getElementById('ww-icon');
+      const textEl = document.getElementById('ww-text');
+      if (iconEl) iconEl.textContent = icon;
+      if (textEl) textEl.textContent = text;
+      sec.className = `weather-warning ${cls}`;
+      sec.hidden = false;
+    } else {
+      sec.hidden = true;
+    }
+  }
+
   // 🍀 今日のラッキーコース（日付シードで決定的に1コース選択）
   function getDailyLuckyCourse() {
     const courses = (window.YORIMICHI_COURSES || []);
@@ -8168,6 +8245,8 @@ ${trkPts}
     try { renderHomeQuickActions(); } catch {}
     try { renderCommunityBanner(); } catch {}
     try { renderRecentCompletions(); } catch {}
+    try { renderWeatherWarning(); } catch {}
+    try { renderFavoritesReminder(); } catch {}
     try { renderStatusBar(); } catch {}
     // 📍 GPS取得後に近場コースを推薦（非同期、失敗しても無視）
     setTimeout(() => { renderNearbyBanner().catch(() => {}); }, 1500);
@@ -8260,10 +8339,12 @@ ${trkPts}
       try { localStorage.setItem(MAIN_TAB_KEY, name); } catch {}
       // タブ切替時に該当タブの内容を更新
       if (name === 'home') {
+        try { renderWeatherWarning(); } catch {}
         try { renderTodaySummary(); } catch {}
         try { renderLuckyCourse(); } catch {}
         try { renderHomeQuickActions(); } catch {}
         try { renderRecentCompletions(); } catch {}
+        try { renderFavoritesReminder(); } catch {}
         try { renderCommunityBanner(); } catch {}
         try { renderWelcomeCard(); } catch {}
         try { renderStreakBadge(); } catch {}
@@ -11077,10 +11158,93 @@ ${route.themeIcon} ${route.themeName} ・ ${route.stops.length}スポット ・ 
     saveBtn.disabled = false;
   }
 
+  // 🎬 完走コースの軌跡アニメ再生
+  function setupWalkReplay(course) {
+    const replayBtn = document.getElementById('cert-replay-btn');
+    const canvas = document.getElementById('cert-replay-canvas');
+    if (!replayBtn || !canvas) return;
+    const stops = (course.stops || []).filter(s => s.lat != null && s.lng != null);
+    if (stops.length < 2) {
+      replayBtn.style.display = 'none';
+      return;
+    }
+    replayBtn.style.display = '';
+    canvas.innerHTML = '';
+    const W = 280, H = 160;
+    const lats = stops.map(s => s.lat);
+    const lngs = stops.map(s => s.lng);
+    const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+    const dLat = Math.max(maxLat - minLat, 0.001);
+    const dLng = Math.max(maxLng - minLng, 0.001);
+    const pad = 16;
+    const points = stops.map(s => ({
+      x: pad + ((s.lng - minLng) / dLng) * (W - pad * 2),
+      y: pad + (1 - (s.lat - minLat) / dLat) * (H - pad * 2),
+      emoji: s.emoji || '📍',
+      name: s.name,
+    }));
+    const pathD = points.map((p, i) => (i === 0 ? `M${p.x},${p.y}` : `L${p.x},${p.y}`)).join(' ');
+    canvas.innerHTML = `
+      <svg class="cr-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
+        <path d="${pathD}" fill="none" stroke="rgba(255,126,61,0.2)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+        <path id="cr-path-anim" d="${pathD}" fill="none" stroke="#ff7e3d" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" />
+        ${points.map((p, i) => `
+          <g class="cr-pt" data-i="${i}" style="opacity:0">
+            <circle cx="${p.x}" cy="${p.y}" r="10" fill="#ff7e3d" stroke="white" stroke-width="2" />
+            <text x="${p.x}" y="${p.y + 4}" fill="white" font-size="11" font-weight="800" text-anchor="middle">${i + 1}</text>
+          </g>
+        `).join('')}
+        <text id="cr-current-name" x="${W / 2}" y="${H - 6}" fill="#5a3a00" font-size="11" font-weight="700" text-anchor="middle"></text>
+      </svg>
+    `;
+    let replaying = false;
+    replayBtn.onclick = () => {
+      if (replaying) return;
+      replaying = true;
+      replayBtn.disabled = true;
+      replayBtn.textContent = '▶ 再生中…';
+      const path = canvas.querySelector('#cr-path-anim');
+      const pts = canvas.querySelectorAll('.cr-pt');
+      const nameEl = canvas.querySelector('#cr-current-name');
+      // パスをリセット → アニメ
+      if (path) {
+        path.style.transition = 'none';
+        path.style.strokeDashoffset = '100';
+      }
+      pts.forEach(p => { p.style.opacity = '0'; });
+      // path を 3秒で
+      requestAnimationFrame(() => {
+        if (path) {
+          path.style.transition = 'stroke-dashoffset 3s linear';
+          path.style.strokeDashoffset = '0';
+        }
+        // 各 pt を順に 600ms 間隔で点灯
+        pts.forEach((p, i) => {
+          setTimeout(() => {
+            p.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            p.style.opacity = '1';
+            p.style.transformOrigin = `${points[i].x}px ${points[i].y}px`;
+            p.style.transform = 'scale(1.15)';
+            setTimeout(() => { p.style.transform = 'scale(1)'; }, 250);
+            if (nameEl) nameEl.textContent = points[i].name;
+          }, 400 + (i * (2400 / Math.max(1, pts.length - 1))));
+        });
+        setTimeout(() => {
+          replaying = false;
+          replayBtn.disabled = false;
+          replayBtn.textContent = '↻ もう一度再生';
+        }, 3400);
+      });
+    };
+  }
+
   function showCertificate(course) {
     $('#cert-modal').hidden = false;
     $('#cert-course').textContent = tField(course, 'name');
     $('#cert-area').textContent = `${course.areaIcon} ${tField(course, 'areaName')}`;
+    // 🎬 軌跡アニメ
+    setupWalkReplay(course);
     // 📔 散歩日記のセットアップ
     setupWalkJournal(course);
     // ウォークレポートを非同期生成
