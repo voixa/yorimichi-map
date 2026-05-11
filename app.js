@@ -2591,6 +2591,27 @@
                  return hr >= 18;
                });
       }
+      if (mood === 'date') {
+        // デート: 写真映え + カフェ + 夕焼け + 60-150分
+        const goodMin = min >= 60 && min <= 150;
+        const datey = tags.some(t => /カフェ|写真映え|夕焼|デート|ロマンチック|並木|散歩|路地/i.test(t));
+        const hasCafeOrView = c.stops.some(s => ['cafe', 'viewpoint', 'park', 'shrine'].includes(s.cat));
+        return (goodMin && (datey || hasCafeOrView));
+      }
+      if (mood === 'solo') {
+        // 一人時間: 静か系、寺・神社・自然・本屋
+        const peaceful = tags.some(t => /静|落ち着|一人|読書|本|和|庭園|寺|神社|散歩/i.test(t));
+        const hasPeaceful = c.stops.some(s => ['shrine', 'temple', 'park', 'museum', 'art', 'bakery'].includes(s.cat));
+        return peaceful || hasPeaceful;
+      }
+      if (mood === 'family') {
+        // 家族: 30-90分、難易度低、公園多め
+        const goodMin = min >= 30 && min <= 90;
+        const stopsOk = stops >= 3 && stops <= 6;
+        const familyTags = tags.some(t => /公園|家族|子供|親子|平|歴史|学/i.test(t));
+        const hasPark = c.stops.some(s => ['park', 'museum', 'shrine'].includes(s.cat));
+        return (goodMin && stopsOk) || familyTags || hasPark;
+      }
       return true;
     });
   }
@@ -3872,6 +3893,83 @@ ${trkPts}
   }
 
   // ===== Me tab render =====
+  // 🔗 任意のコースを Web Share / クリップボードコピー
+  async function quickShareCourse(course, e) {
+    if (e) e.stopPropagation();
+    if (!course) return;
+    vib(15);
+    const url = `${location.origin}${location.pathname}?couple=${encodeURIComponent(course.id)}`;
+    const text = `${tField(course, 'name')} を歩こう 👣\n${url}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: tField(course, 'name'),
+          text,
+          url,
+        });
+        showToast('📤 シェアしました', 'success', 2200);
+        return;
+      }
+    } catch (err) {
+      if (err?.name === 'AbortError') return;
+    }
+    // クリップボードへフォールバック
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('📋 リンクをコピーしました', 'success', 2200);
+    } catch {
+      showToast('シェア機能が使えません', 'error', 2200);
+    }
+  }
+
+  // 🎯 月間散歩目標
+  function getMonthlyGoal() {
+    try { return parseInt(localStorage.getItem('yorimichi-monthly-goal') || '0', 10); } catch { return 0; }
+  }
+  function setMonthlyGoal(n) {
+    try { localStorage.setItem('yorimichi-monthly-goal', String(n)); } catch {}
+  }
+  function renderMonthlyGoal() {
+    const sec = document.getElementById('monthly-goal');
+    if (!sec) return;
+    const goal = getMonthlyGoal();
+    // 完走0回でかつ未設定なら隠す
+    if (state.completedCourses.size === 0 && goal === 0) { sec.hidden = true; return; }
+    sec.hidden = false;
+    const thisMonth = (new Date()).toISOString().slice(0, 7);
+    const monthlyCount = (state.walkHistory || []).filter(h => (h.date || '').startsWith(thisMonth) && h.completed).length;
+    const pct = goal > 0 ? Math.min(100, Math.round((monthlyCount / goal) * 100)) : 0;
+    const progressEl = document.getElementById('mg-progress-text');
+    const fillEl = document.getElementById('mg-fill');
+    const statusEl = document.getElementById('mg-status');
+    if (goal === 0) {
+      progressEl.textContent = `今月 ${monthlyCount}回 ・ 目標未設定`;
+      fillEl.style.width = '0%';
+      statusEl.textContent = '「設定」を押して目標を立てよう';
+    } else {
+      progressEl.textContent = `${monthlyCount} / ${goal}回`;
+      fillEl.style.width = `${pct}%`;
+      if (monthlyCount >= goal) {
+        statusEl.textContent = '🎉 目標達成おめでとう！';
+      } else {
+        const remaining = goal - monthlyCount;
+        const d = new Date();
+        const daysLeft = (new Date(d.getFullYear(), d.getMonth() + 1, 0)).getDate() - d.getDate() + 1;
+        statusEl.textContent = `あと${remaining}回 / 残${daysLeft}日`;
+      }
+    }
+    const editBtn = document.getElementById('mg-edit-btn');
+    if (editBtn) editBtn.onclick = () => {
+      const cur = String(getMonthlyGoal() || '');
+      const next = prompt('今月の散歩目標回数を入力（0でリセット）:', cur);
+      if (next === null) return;
+      const n = Math.max(0, parseInt(next, 10) || 0);
+      setMonthlyGoal(n);
+      renderMonthlyGoal();
+      showToast(n > 0 ? `🎯 目標「${n}回」を設定しました` : '目標をリセットしました', 'success', 2200);
+    };
+  }
+
   // 🌏 楽しい距離比較（累計歩行距離を有名ルートと比較）
   const DISTANCE_COMPARISONS = [
     { name: '東京〜横浜', km: 30, emoji: '🚃' },
@@ -4466,6 +4564,9 @@ ${trkPts}
         <div class="me-stat-label">連続日数</div>
       </div>
     `;
+
+    // 🎯 月間目標
+    renderMonthlyGoal();
 
     // 📊 詳細統計ダッシュボード
     renderDetailedStats();
@@ -6265,6 +6366,8 @@ ${trkPts}
     document.getElementById('lucky-tagline').textContent = tags[day % tags.length];
     const btn = document.getElementById('lucky-card-btn');
     if (btn) btn.onclick = () => showCourseDetail(c);
+    const sBtn = document.getElementById('lucky-share-btn');
+    if (sBtn) sBtn.onclick = (e) => quickShareCourse(c, e);
     sec.hidden = false;
   }
 
@@ -6520,6 +6623,8 @@ ${trkPts}
         document.querySelector('.main-tab[data-main-tab="discover"]')?.click();
       };
     }
+    const featSBtn = $('#featured-share-btn');
+    if (featSBtn) featSBtn.onclick = (e) => quickShareCourse(reco, e);
     card.hidden = false;
   }
 

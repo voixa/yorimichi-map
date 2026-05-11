@@ -510,15 +510,18 @@
         <!-- 🍀 今日のラッキーコース（日替わり） -->
         <section class="lucky-course" id="lucky-course" hidden>
           <div class="lucky-ribbon">🍀 今日のラッキーコース</div>
-          <button class="lucky-card-btn" id="lucky-card-btn" type="button">
-            <span class="lucky-emoji" id="lucky-emoji">🌳</span>
-            <div class="lucky-body">
-              <div class="lucky-title" id="lucky-title">—</div>
-              <div class="lucky-meta" id="lucky-meta">—</div>
-              <div class="lucky-tagline" id="lucky-tagline">—</div>
-            </div>
-            <span class="lucky-cta">詳細 →</span>
-          </button>
+          <div class="lucky-card-wrap">
+            <button class="lucky-card-btn" id="lucky-card-btn" type="button">
+              <span class="lucky-emoji" id="lucky-emoji">🌳</span>
+              <div class="lucky-body">
+                <div class="lucky-title" id="lucky-title">—</div>
+                <div class="lucky-meta" id="lucky-meta">—</div>
+                <div class="lucky-tagline" id="lucky-tagline">—</div>
+              </div>
+              <span class="lucky-cta">詳細 →</span>
+            </button>
+            <button class="card-quick-share" id="lucky-share-btn" type="button" aria-label="シェア">📤</button>
+          </div>
         </section>
 
         <!-- 📍 現在地に近いコース（GPS取得後に表示） -->
@@ -534,15 +537,18 @@
         <!-- 🥈 統合おすすめカード（reco + today-pick） -->
         <section class="featured-card" id="featured-card" hidden>
           <div class="featured-label" id="featured-label">✨ 今日のあなた向け</div>
-          <button class="featured-pick" id="featured-pick" type="button">
-            <span class="featured-emoji" id="featured-emoji">🌳</span>
-            <div class="featured-body">
-              <div class="featured-title" id="featured-title">—</div>
-              <div class="featured-meta" id="featured-meta">—</div>
-            </div>
-            <span class="featured-thumb" id="featured-thumb"></span>
-            <span class="featured-cta">歩く →</span>
-          </button>
+          <div class="featured-wrap">
+            <button class="featured-pick" id="featured-pick" type="button">
+              <span class="featured-emoji" id="featured-emoji">🌳</span>
+              <div class="featured-body">
+                <div class="featured-title" id="featured-title">—</div>
+                <div class="featured-meta" id="featured-meta">—</div>
+              </div>
+              <span class="featured-thumb" id="featured-thumb"></span>
+              <span class="featured-cta">歩く →</span>
+            </button>
+            <button class="card-quick-share" id="featured-share-btn" type="button" aria-label="シェア">📤</button>
+          </div>
         </section>
 
         <!-- 🥉 デイリーミッション -->
@@ -883,6 +889,20 @@
             <!-- populated by JS -->
           </div>
 
+          <!-- 🎯 月間目標 -->
+          <section class="monthly-goal" id="monthly-goal" hidden>
+            <div class="mg-header">
+              <span class="mg-icon">🎯</span>
+              <div class="mg-text">
+                <div class="mg-label">今月の散歩目標</div>
+                <div class="mg-progress-text" id="mg-progress-text">— / —</div>
+              </div>
+              <button class="mg-edit" id="mg-edit-btn" type="button">設定</button>
+            </div>
+            <div class="mg-bar"><div class="mg-fill" id="mg-fill"></div></div>
+            <div class="mg-status" id="mg-status">—</div>
+          </section>
+
           <!-- 📊 詳細統計ダッシュボード -->
           <details class="me-detail-stats" id="me-detail-stats">
             <summary class="me-detail-summary">
@@ -1113,6 +1133,9 @@
             <button class="mood-chip" data-mood="food" type="button">🍜 グルメ</button>
             <button class="mood-chip" data-mood="view" type="button">📸 絶景</button>
             <button class="mood-chip" data-mood="night" type="button">🌃 夜散歩</button>
+            <button class="mood-chip" data-mood="date" type="button">💑 デート</button>
+            <button class="mood-chip" data-mood="solo" type="button">🧘 一人時間</button>
+            <button class="mood-chip" data-mood="family" type="button">👨‍👩‍👧 家族</button>
           </div>
         </div>
 
