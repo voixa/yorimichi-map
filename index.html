@@ -641,6 +641,26 @@
           <button class="mode-help-btn" id="mode-help-btn" type="button" aria-label="モードの違いを見る">？</button>
         </div>
 
+        <!-- 🤖 AI コース提案 -->
+        <section class="ai-suggest-section">
+          <div class="ai-suggest-title">
+            <span class="ai-suggest-icon">🤖</span>
+            <span>AIに相談してコースを選ぶ</span>
+          </div>
+          <div class="ai-suggest-input-row">
+            <input type="text" id="ai-suggest-input" class="ai-suggest-input" placeholder="例: 30分でカフェ巡り、雨でもOK"
+                   maxlength="120" />
+            <button class="ai-suggest-btn" id="ai-suggest-btn" type="button">✨ 提案</button>
+          </div>
+          <div class="ai-suggest-presets">
+            <button class="ai-preset" data-preset="雨の日に1時間で屋内中心" type="button">☔ 雨の日</button>
+            <button class="ai-preset" data-preset="30分の短い散歩で写真映えするところ" type="button">📸 30分写真</button>
+            <button class="ai-preset" data-preset="夕方から夜にかけてゆっくり散歩したい" type="button">🌅 夕方</button>
+            <button class="ai-preset" data-preset="グルメ多めで食べ歩きしたい" type="button">🍜 グルメ</button>
+          </div>
+          <div class="ai-suggest-results" id="ai-suggest-results" hidden></div>
+        </section>
+
         <!-- 🔎 全コース・スポット検索 -->
         <div class="course-search-wrap">
           <input

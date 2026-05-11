@@ -703,6 +703,107 @@ def spot_guide():
         return jsonify({"error": "server_error"}), 502
 
 
+@app.route("/api/course-suggest", methods=["POST"])
+def course_suggest():
+    """ユーザーの自然言語リクエストに基づき、コース一覧から最大3件を提案"""
+    if not gemini_client:
+        return jsonify({"error": "ai_disabled"}), 503
+    data = request.get_json(silent=True) or {}
+    user_request = (data.get("request") or "").strip()[:280]
+    candidates = data.get("candidates") or []  # フロントから既存コース一覧を渡す
+    if not user_request:
+        return jsonify({"error": "no_request"}), 400
+    if not isinstance(candidates, list) or len(candidates) == 0:
+        return jsonify({"error": "no_candidates"}), 400
+    # 各候補の要約を構築（IDだけは確実に渡す）
+    rows = []
+    for i, c in enumerate(candidates[:40]):
+        if not isinstance(c, dict): continue
+        cid = str(c.get("id") or "")[:60]
+        if not cid: continue
+        rows.append({
+            "id": cid,
+            "name": str(c.get("name") or "")[:80],
+            "area": str(c.get("area") or "")[:40],
+            "min": int(c.get("min") or 0),
+            "stops": int(c.get("stops") or 0),
+            "tags": [str(t)[:20] for t in (c.get("tags") or [])][:8],
+            "desc": str(c.get("desc") or "")[:140],
+        })
+    if not rows:
+        return jsonify({"error": "no_valid_candidates"}), 400
+
+    course_list = "\n".join([
+        f"- id={r['id']} | {r['name']} ({r['area']}) | 約{r['min']}分・{r['stops']}スポット | tags=[{','.join(r['tags'])}] | {r['desc']}"
+        for r in rows
+    ])
+    prompt = (
+        "あなたは散歩コーディネーター。ユーザーのリクエストに合うコースを下記リストから最大3件選び、理由を添えて返してください。\n"
+        "\n"
+        f"【ユーザーのリクエスト】\n{user_request}\n"
+        "\n"
+        "【選択可能なコース】\n"
+        f"{course_list}\n"
+        "\n"
+        "【ルール】\n"
+        "- id は提示されたものを必ずそのまま返す（IDの捏造禁止）\n"
+        "- リクエストに最も合う 1〜3 件を厳選\n"
+        "- 各コースに「なぜおすすめか」を 50-80字で書く（ユーザーリクエストの要素に触れる）\n"
+        "- 該当が無ければ空配列\n"
+        "\n"
+        'JSON: {"picks": [{"id":"...","reason":"..."}]}'
+    )
+    try:
+        config_kwargs = dict(
+            temperature=0.6,
+            max_output_tokens=2048,
+            response_mime_type="application/json",
+            response_schema=genai_types.Schema(
+                type=genai_types.Type.OBJECT,
+                required=["picks"],
+                properties={
+                    "picks": genai_types.Schema(
+                        type=genai_types.Type.ARRAY,
+                        items=genai_types.Schema(
+                            type=genai_types.Type.OBJECT,
+                            required=["id", "reason"],
+                            properties={
+                                "id": genai_types.Schema(type=genai_types.Type.STRING),
+                                "reason": genai_types.Schema(type=genai_types.Type.STRING),
+                            },
+                        ),
+                    ),
+                },
+            ),
+        )
+        try:
+            config_kwargs["thinking_config"] = genai_types.ThinkingConfig(thinking_budget=0)
+        except Exception:
+            pass
+        config = genai_types.GenerateContentConfig(**config_kwargs)
+        response = gemini_client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=config,
+        )
+        text = (response.text or "").strip()
+        if not text:
+            return jsonify({"error": "empty"}), 502
+        result = json.loads(text)
+        picks = result.get("picks") or []
+        valid_ids = {r["id"] for r in rows}
+        cleaned = []
+        for p in picks[:3]:
+            if not isinstance(p, dict): continue
+            pid = str(p.get("id") or "")
+            if pid in valid_ids:
+                cleaned.append({"id": pid, "reason": str(p.get("reason", ""))[:200]})
+        return jsonify({"picks": cleaned})
+    except Exception as e:
+        logger.exception("course_suggest failed")
+        return jsonify({"error": "server_error"}), 502
+
+
 @app.route("/api/submit-spot", methods=["POST"])
 def submit_spot():
     """ユーザー投稿のスポット情報を受け取って Firestore に保存（モデレーション待ち）"""

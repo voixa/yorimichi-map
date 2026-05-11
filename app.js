@@ -3872,6 +3872,32 @@ ${trkPts}
   }
 
   // ===== Me tab render =====
+  // 🌏 楽しい距離比較（累計歩行距離を有名ルートと比較）
+  const DISTANCE_COMPARISONS = [
+    { name: '東京〜横浜', km: 30, emoji: '🚃' },
+    { name: '東京〜熱海', km: 100, emoji: '♨️' },
+    { name: '東京〜京都', km: 460, emoji: '🏯' },
+    { name: '東京〜大阪', km: 520, emoji: '🍻' },
+    { name: '東京〜広島', km: 800, emoji: '⛩' },
+    { name: '東京〜福岡', km: 1100, emoji: '🍜' },
+    { name: '東京〜札幌', km: 1170, emoji: '🦌' },
+    { name: '東京〜那覇', km: 1550, emoji: '🌺' },
+    { name: '東京〜サンフランシスコ', km: 8300, emoji: '🌉' },
+  ];
+  function pickDistanceComparison(totalKm) {
+    if (totalKm < 1) return null;
+    // ちょうどよい比較先を選ぶ（達成率10-80%が望ましい）
+    for (let i = 0; i < DISTANCE_COMPARISONS.length; i++) {
+      const c = DISTANCE_COMPARISONS[i];
+      const ratio = totalKm / c.km;
+      if (ratio >= 0.05 && ratio <= 1.5) {
+        return { ...c, ratio, achieved: ratio >= 1 };
+      }
+    }
+    // 全部超えてたら最大ターゲット
+    return { ...DISTANCE_COMPARISONS[DISTANCE_COMPARISONS.length - 1], ratio: totalKm / DISTANCE_COMPARISONS[DISTANCE_COMPARISONS.length - 1].km, achieved: false };
+  }
+
   // 📊 詳細統計ダッシュボード（月別グラフ・曜日分布・ベスト記録）
   function renderDetailedStats() {
     const monthlyEl = $('#me-monthly-chart');
@@ -3931,18 +3957,55 @@ ${trkPts}
     if (stats.bestDow) records.push({ icon: '📅', label: 'よく歩く曜日', value: `${stats.bestDow}曜日 (${stats.bestDowN}回)` });
     if (lifetime.mostCourse) records.push({ icon: '🏆', label: 'お気に入りコース', value: `${tField(lifetime.mostCourse, 'name')} (${lifetime.mostCourseCount}回)` });
     if (lifetime.mostArea) records.push({ icon: '📍', label: 'よく歩くエリア', value: `${lifetime.mostArea.icon || ''} ${tField(lifetime.mostArea, 'name')}` });
-    if (records.length > 0) {
-      bestEl.innerHTML = `
-        <div class="me-stats-title">🏅 ベスト記録</div>
-        <div class="me-best-list">
-          ${records.map(r => `
-            <div class="me-best-row">
-              <span class="me-best-icon">${r.icon}</span>
-              <span class="me-best-label">${escapeHtml(r.label)}</span>
-              <span class="me-best-value">${escapeHtml(r.value)}</span>
+    // 🌏 累計歩行距離の楽しい比較
+    // 大まかな距離見積もり: 完走コースの estimatedMin × 80m/分 を合計 (実際の歩数計とは別)
+    let estimatedTotalKm = 0;
+    Object.entries(state.walkCounts || {}).forEach(([cid, count]) => {
+      const c = (window.YORIMICHI_COURSES || []).find(x => x.id === cid);
+      if (!c) return;
+      // estimatedMin × 4 km/h = km、× 回数
+      const km = ((c.estimatedMin || 30) / 60) * 4 * (count || 0);
+      estimatedTotalKm += km;
+    });
+    const comparison = pickDistanceComparison(estimatedTotalKm);
+    let distHtml = '';
+    if (comparison) {
+      const pct = Math.min(100, Math.round(comparison.ratio * 100));
+      const remainingKm = Math.max(0, comparison.km - estimatedTotalKm);
+      distHtml = `
+        <div class="me-stats-title" style="margin-top:16px;">🌏 累計歩行距離の旅</div>
+        <div class="me-distance-comparison">
+          <div class="me-dc-header">
+            <span class="me-dc-emoji">${comparison.emoji}</span>
+            <div class="me-dc-text">
+              <div class="me-dc-title">${escapeHtml(comparison.name)} ${comparison.achieved ? '達成！🎉' : ''}</div>
+              <div class="me-dc-meta">累計 ${estimatedTotalKm.toFixed(1)}km / 目標 ${comparison.km}km</div>
             </div>
-          `).join('')}
+            <div class="me-dc-percent">${pct}%</div>
+          </div>
+          <div class="me-dc-bar">
+            <div class="me-dc-fill" style="width:${pct}%"></div>
+          </div>
+          ${!comparison.achieved ? `<div class="me-dc-remaining">あと ${remainingKm.toFixed(1)}km !</div>` : ''}
         </div>
+      `;
+    }
+
+    if (records.length > 0 || distHtml) {
+      bestEl.innerHTML = `
+        ${records.length > 0 ? `
+          <div class="me-stats-title">🏅 ベスト記録</div>
+          <div class="me-best-list">
+            ${records.map(r => `
+              <div class="me-best-row">
+                <span class="me-best-icon">${r.icon}</span>
+                <span class="me-best-label">${escapeHtml(r.label)}</span>
+                <span class="me-best-value">${escapeHtml(r.value)}</span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        ${distHtml}
       `;
     } else {
       bestEl.innerHTML = '';
@@ -5898,6 +5961,75 @@ ${trkPts}
   }
 
   // 統合おすすめカード（reco-banner + today-pick の代替）
+  // 🤖 AI コース提案
+  async function requestAiCourseSuggestion(userText) {
+    const resultsEl = document.getElementById('ai-suggest-results');
+    if (!resultsEl) return;
+    if (!userText || !userText.trim()) return;
+    resultsEl.hidden = false;
+    resultsEl.innerHTML = `<div class="ai-loading"><span class="loader-spinner-small"></span> AIが考え中...</div>`;
+    // 候補（モバイルでもサイズを抑える）
+    const allCourses = (window.YORIMICHI_COURSES || []);
+    const candidates = allCourses.slice(0, 30).map(c => ({
+      id: c.id,
+      name: tField(c, 'name'),
+      area: tField(c, 'areaName'),
+      min: c.estimatedMin || 0,
+      stops: (c.stops || []).length,
+      tags: (c.tags || []).slice(0, 6),
+      desc: (tField(c, 'description') || '').slice(0, 140),
+    }));
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 12000);
+      const res = await fetch(`${API_BASE}/api/course-suggest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request: userText, candidates }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      if (!res.ok) throw new Error('AI request failed');
+      const data = await res.json();
+      const picks = data.picks || [];
+      if (picks.length === 0) {
+        resultsEl.innerHTML = `<div class="ai-no-result">該当するコースがありませんでした。<br>条件を変えてもう一度試してみてください。</div>`;
+        return;
+      }
+      resultsEl.innerHTML = `
+        <div class="ai-result-header">✨ AI からの提案 (${picks.length}件)</div>
+        ${picks.map(p => {
+          const c = allCourses.find(x => x.id === p.id);
+          if (!c) return '';
+          const done = state.completedCourses.has(c.id);
+          return `
+            <div class="ai-result-card">
+              <button class="ai-result-btn" type="button" data-course-id="${escapeHtml(c.id)}">
+                <span class="ai-result-emoji">${c.themeIcon || c.areaIcon || '🌳'}</span>
+                <span class="ai-result-body">
+                  <span class="ai-result-name">${escapeHtml(tField(c, 'name'))}${done ? ' <span class="ai-result-done">完走</span>' : ''}</span>
+                  <span class="ai-result-meta">${c.areaIcon || ''} ${escapeHtml(tField(c, 'areaName'))} ・ 約${c.estimatedMin}分</span>
+                </span>
+                <span class="ai-result-cta">詳細 →</span>
+              </button>
+              <div class="ai-result-reason">💡 ${escapeHtml(p.reason || '')}</div>
+            </div>
+          `;
+        }).join('')}
+      `;
+      resultsEl.querySelectorAll('.ai-result-btn').forEach(el => {
+        el.addEventListener('click', () => {
+          const cid = el.getAttribute('data-course-id');
+          const c = allCourses.find(x => x.id === cid);
+          if (c) showCourseDetail(c);
+        });
+      });
+    } catch (e) {
+      console.warn('AI suggest failed', e);
+      resultsEl.innerHTML = `<div class="ai-no-result">⚠️ 通信に失敗しました。時間をおいて再度試してください。</div>`;
+    }
+  }
+
   // 🔎 コース・スポット横断検索
   function runCourseSearch(query) {
     const resultsEl = $('#course-search-results');
@@ -11315,6 +11447,31 @@ ${hashtag}`;
     const wlSort = $('#walk-log-sort');
     if (wlFilter) wlFilter.addEventListener('change', () => renderWalkLog());
     if (wlSort) wlSort.addEventListener('change', () => renderWalkLog());
+
+    // 🤖 AI コース提案
+    const aiBtn = $('#ai-suggest-btn');
+    const aiInput = $('#ai-suggest-input');
+    if (aiBtn && aiInput) {
+      const submit = () => {
+        const v = aiInput.value.trim();
+        if (!v) {
+          showToast('リクエストを入力してください', 'info', 2000);
+          aiInput.focus();
+          return;
+        }
+        requestAiCourseSuggestion(v);
+      };
+      aiBtn.addEventListener('click', submit);
+      aiInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); submit(); }
+      });
+      $$('.ai-preset').forEach(p => {
+        p.addEventListener('click', () => {
+          aiInput.value = p.dataset.preset || '';
+          submit();
+        });
+      });
+    }
 
     // 🔎 コース検索
     const searchInput = $('#course-search-input');
