@@ -689,6 +689,7 @@
           <div class="ai-suggest-input-row">
             <input type="text" id="ai-suggest-input" class="ai-suggest-input" placeholder="例: 30分でカフェ巡り、雨でもOK"
                    maxlength="120" />
+            <button class="ai-suggest-mic" id="ai-suggest-mic" type="button" aria-label="音声入力" title="マイクで話す">🎤</button>
             <button class="ai-suggest-btn" id="ai-suggest-btn" type="button">✨ 提案</button>
           </div>
           <div class="ai-suggest-presets">
@@ -1454,6 +1455,15 @@
             <option value="en">English</option>
           </select>
         </label>
+        <label class="settings-row">
+          <span>文字サイズ</span>
+          <select id="settings-textsize" class="settings-select">
+            <option value="small">小</option>
+            <option value="normal" selected>標準</option>
+            <option value="large">大</option>
+            <option value="xlarge">特大</option>
+          </select>
+        </label>
       </div>
 
       <div class="settings-group">
@@ -1752,6 +1762,19 @@
       </div>
 
       <!-- 完走後の次のアクション3択 -->
+      <!-- 📔 散歩日記 -->
+      <div class="walk-journal" id="walk-journal">
+        <div class="wj-header">
+          <span class="wj-icon">📔</span>
+          <span class="wj-title">今日の散歩日記</span>
+        </div>
+        <textarea id="walk-journal-input" class="wj-input" placeholder="今日の散歩はどうでしたか？気付いたこと、印象に残ったスポット、誰かとシェアしたい感想…（任意・200字まで）" maxlength="200"></textarea>
+        <div class="wj-actions">
+          <span class="wj-counter"><span id="wj-counter-num">0</span>/200</span>
+          <button class="wj-save" id="wj-save-btn" type="button">💾 日記を保存</button>
+        </div>
+      </div>
+
       <div class="next-actions" id="next-actions">
         <div class="next-actions-label">他にも：</div>
         <div class="next-actions-grid">

@@ -6866,6 +6866,97 @@ body.map-fullscreen #map-container {
 .coin-h-neg { color: #dc2626; }
 .coin-h-balance { color: var(--text-muted); font-size: 10px; text-align: right; }
 
+/* 📝 文字サイズ調整 (Accessibility) */
+html.text-size-small body { font-size: 13px; }
+html.text-size-large body { font-size: 17px; }
+html.text-size-xlarge body { font-size: 19px; }
+html.text-size-large .modal-title,
+html.text-size-xlarge .modal-title { font-size: 22px; }
+
+/* 🎤 AI mic button */
+.ai-suggest-mic {
+  background: white;
+  color: #6c63ff;
+  border: 1.5px solid rgba(108, 99, 255, 0.3);
+  width: 42px;
+  padding: 0;
+  border-radius: 10px;
+  font-size: 18px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+.ai-suggest-mic:hover { background: rgba(108, 99, 255, 0.08); }
+.ai-suggest-mic.listening {
+  background: #dc2626;
+  color: white;
+  border-color: #dc2626;
+  animation: mic-pulse 1s ease-in-out infinite;
+}
+@keyframes mic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.5); }
+  50% { box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
+}
+[data-theme="dark"] .ai-suggest-mic { background: rgba(108, 99, 255, 0.15); color: #a5b4fc; }
+
+/* 📔 Walk journal in cert modal */
+.walk-journal {
+  background: linear-gradient(135deg, #f5ecd9, #ede0c5);
+  border-radius: 14px;
+  padding: 14px;
+  margin: 16px 0;
+  border-left: 4px solid #8b6914;
+}
+[data-theme="dark"] .walk-journal {
+  background: linear-gradient(135deg, rgba(139, 105, 20, 0.15), rgba(139, 105, 20, 0.08));
+}
+.wj-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 800;
+  font-size: 13px;
+  color: #5a3a00;
+}
+[data-theme="dark"] .wj-header { color: #ffd589; }
+.wj-icon { font-size: 18px; }
+.wj-input {
+  width: 100%;
+  background: rgba(255,255,255,0.7);
+  border: 1px solid rgba(139, 105, 20, 0.3);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: "Hiragino Mincho ProN", serif;
+  font-size: 13px;
+  color: var(--text);
+  resize: vertical;
+  min-height: 80px;
+  box-sizing: border-box;
+}
+[data-theme="dark"] .wj-input { background: rgba(255,255,255,0.1); }
+.wj-input:focus { outline: none; border-color: #8b6914; }
+.wj-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+.wj-counter { font-size: 10px; color: var(--text-muted); }
+.wj-save {
+  background: linear-gradient(135deg, #8b6914, #d4af37);
+  color: white;
+  border: 0;
+  padding: 8px 16px;
+  border-radius: 100px;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.wj-save:disabled { opacity: 0.7; cursor: default; }
+
 /* 🌐 Community banner (TikTok + spot submission promo) */
 .community-banner {
   background: linear-gradient(135deg, #1f1f2c 0%, #2d1f4d 100%);

@@ -4510,6 +4510,18 @@ ${trkPts}
       });
     });
 
+    // 散歩日記
+    getWalkJournals().forEach(j => {
+      events.push({
+        type: 'journal',
+        date: j.date || '',
+        ts: j.at || Date.now(),
+        emoji: '📔',
+        title: '今日の散歩日記',
+        body: `${j.courseName || ''} - ${j.text || ''}`.slice(0, 80),
+      });
+    });
+
     if (events.length === 0) {
       titleEl.hidden = true;
       feedEl.hidden = true;
@@ -5406,6 +5418,22 @@ ${trkPts}
     }
   }
   // ===== Settings consolidation =====
+  // 📝 文字サイズ反映
+  function applyTextSize(size) {
+    const root = document.documentElement;
+    root.classList.remove('text-size-small', 'text-size-large', 'text-size-xlarge');
+    if (size === 'small') root.classList.add('text-size-small');
+    else if (size === 'large') root.classList.add('text-size-large');
+    else if (size === 'xlarge') root.classList.add('text-size-xlarge');
+    // normal はクラスなし
+  }
+  function loadTextSize() {
+    try {
+      const s = localStorage.getItem('yorimichi-textsize') || 'normal';
+      applyTextSize(s);
+    } catch {}
+  }
+
   function openSettingsModal() {
     const modal = $('#settings-modal');
     if (!modal) return;
@@ -5421,6 +5449,10 @@ ${trkPts}
     const langSel = $('#settings-lang');
     if (langSel) {
       try { langSel.value = localStorage.getItem('yorimichi-lang') || 'ja'; } catch {}
+    }
+    const tsSel = $('#settings-textsize');
+    if (tsSel) {
+      try { tsSel.value = localStorage.getItem('yorimichi-textsize') || 'normal'; } catch {}
     }
     const voiceCb = $('#settings-voice');
     if (voiceCb) voiceCb.checked = !!voice.enabled;
@@ -5470,6 +5502,12 @@ ${trkPts}
       persist('yorimichi-lang', v);
       // 即時反映: i18n関数が既存
       try { if (typeof setLanguage === 'function') setLanguage(v); } catch {}
+    });
+
+    const tsSel = $('#settings-textsize');
+    if (tsSel) tsSel.addEventListener('change', () => {
+      persist('yorimichi-textsize', tsSel.value);
+      applyTextSize(tsSel.value);
     });
 
     const voiceCb = $('#settings-voice');
@@ -8413,6 +8451,8 @@ ${trkPts}
     'yorimichi-whats-new-version', 'yorimichi-gear-reminder-day',
     'yorimichi-rated-courses', 'yorimichi-rating-bonus-day',
     'yorimichi-missions',
+    'yorimichi-monthly-goal', 'yorimichi-walk-journals',
+    'yorimichi-textsize',
   ];
   // 動的キー（コース毎のメモ・写真）も含める
   function getDynamicDataKeys() {
@@ -10838,10 +10878,46 @@ ${route.themeIcon} ${route.themeName} ・ ${route.stops.length}スポット ・ 
     }
   }
 
+  // 📔 散歩日記
+  function getWalkJournals() {
+    try { return JSON.parse(localStorage.getItem('yorimichi-walk-journals') || '[]'); } catch { return []; }
+  }
+  function saveWalkJournal(courseId, courseName, date, text) {
+    const list = getWalkJournals();
+    list.push({ courseId, courseName, date, text, at: Date.now() });
+    try { localStorage.setItem('yorimichi-walk-journals', JSON.stringify(list.slice(-100))); } catch {}
+  }
+  function setupWalkJournal(course) {
+    const input = document.getElementById('walk-journal-input');
+    const counter = document.getElementById('wj-counter-num');
+    const saveBtn = document.getElementById('wj-save-btn');
+    if (!input || !saveBtn) return;
+    input.value = '';
+    if (counter) counter.textContent = '0';
+    input.oninput = () => { if (counter) counter.textContent = String(input.value.length); };
+    saveBtn.onclick = () => {
+      const text = input.value.trim();
+      if (!text) {
+        showToast('日記を入力してください', 'info', 2000);
+        return;
+      }
+      const today = getResetDate();
+      saveWalkJournal(course.id, tField(course, 'name'), today, text);
+      saveBtn.textContent = '✅ 保存しました';
+      saveBtn.disabled = true;
+      vib(20);
+      showToast('📔 日記を保存しました', 'success', 2500);
+    };
+    saveBtn.textContent = '💾 日記を保存';
+    saveBtn.disabled = false;
+  }
+
   function showCertificate(course) {
     $('#cert-modal').hidden = false;
     $('#cert-course').textContent = tField(course, 'name');
     $('#cert-area').textContent = `${course.areaIcon} ${tField(course, 'areaName')}`;
+    // 📔 散歩日記のセットアップ
+    setupWalkJournal(course);
     // ウォークレポートを非同期生成
     const reportEl = $('#walk-report');
     const reportText = $('#walk-report-text');
@@ -11358,6 +11434,7 @@ ${hashtag}`;
     } catch (e) {}
     loadStreak();
     loadCompletion();
+    loadTextSize();
 
     // Walking session
     loadVoicePref();
@@ -11661,6 +11738,61 @@ ${hashtag}`;
     const wlSort = $('#walk-log-sort');
     if (wlFilter) wlFilter.addEventListener('change', () => renderWalkLog());
     if (wlSort) wlSort.addEventListener('change', () => renderWalkLog());
+
+    // 🎤 AI 音声入力（Web Speech API）
+    const micBtn = $('#ai-suggest-mic');
+    if (micBtn) {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRec) {
+        micBtn.style.display = 'none';
+      } else {
+        let recognition = null;
+        let listening = false;
+        micBtn.addEventListener('click', () => {
+          const input = document.getElementById('ai-suggest-input');
+          if (listening && recognition) {
+            try { recognition.stop(); } catch {}
+            return;
+          }
+          recognition = new SpeechRec();
+          recognition.lang = 'ja-JP';
+          recognition.interimResults = true;
+          recognition.continuous = false;
+          recognition.onstart = () => {
+            listening = true;
+            micBtn.classList.add('listening');
+            micBtn.textContent = '🔴';
+            if (input) input.placeholder = '聞いてます…話してください';
+          };
+          recognition.onresult = (event) => {
+            let final = '';
+            let interim = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+              const t = event.results[i][0].transcript;
+              if (event.results[i].isFinal) final += t;
+              else interim += t;
+            }
+            if (input) input.value = final + interim;
+          };
+          recognition.onerror = () => {
+            showToast('音声入力エラー', 'error', 2000);
+          };
+          recognition.onend = () => {
+            listening = false;
+            micBtn.classList.remove('listening');
+            micBtn.textContent = '🎤';
+            if (input) input.placeholder = '例: 30分でカフェ巡り、雨でもOK';
+            // 終了時に自動提案
+            if (input && input.value.trim()) {
+              setTimeout(() => $('#ai-suggest-btn')?.click(), 200);
+            }
+          };
+          try { recognition.start(); } catch (e) {
+            showToast('マイクが使えませんでした', 'error', 2500);
+          }
+        });
+      }
+    }
 
     // 🤖 AI コース提案
     const aiBtn = $('#ai-suggest-btn');
