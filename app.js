@@ -3951,6 +3951,93 @@ ${trkPts}
     }
   }
 
+  // ✨ AI週次サマリー（最大週1回キャッシュ、日曜以降に表示）
+  async function renderWeeklySummary() {
+    const sec = document.getElementById('weekly-summary');
+    if (!sec) return;
+    const history = state.walkHistory || [];
+    if (history.length === 0) { sec.hidden = true; return; }
+    // 直近7日の実績
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 7);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    const weekWalks = history.filter(h => (h.date || '') >= cutoffStr);
+    if (weekWalks.length === 0) { sec.hidden = true; return; }
+    sec.hidden = false;
+    // キャッシュ確認
+    let cache = null;
+    try { cache = JSON.parse(localStorage.getItem('yorimichi-weekly-summary-cache') || 'null'); } catch {}
+    const weekStartStr = cutoffStr;
+    if (cache && cache.weekStart === weekStartStr && cache.walks === weekWalks.length) {
+      document.getElementById('ws-content').textContent = cache.summary;
+      document.getElementById('ws-meta').textContent = `📅 直近7日 ・ ${weekWalks.length}回散歩`;
+      const refreshBtn = document.getElementById('ws-refresh-btn');
+      if (refreshBtn) refreshBtn.onclick = () => {
+        try { localStorage.removeItem('yorimichi-weekly-summary-cache'); } catch {}
+        renderWeeklySummary();
+      };
+      return;
+    }
+    // 新規生成
+    document.getElementById('ws-content').innerHTML = `<span class="loader-spinner-small"></span> AIが今週を振り返り中...`;
+    document.getElementById('ws-meta').textContent = '';
+    const completed = weekWalks.filter(h => h.completed).length;
+    const totalMin = weekWalks.reduce((s, h) => {
+      const c = (window.YORIMICHI_COURSES || []).find(x => x.id === h.courseId);
+      return s + (c?.estimatedMin || 30);
+    }, 0);
+    const courses = weekWalks.map(h => {
+      const c = (window.YORIMICHI_COURSES || []).find(x => x.id === h.courseId);
+      return c ? tField(c, 'name') : null;
+    }).filter(Boolean);
+    // エリア集計
+    const areaCount = {};
+    weekWalks.forEach(h => {
+      const c = (window.YORIMICHI_COURSES || []).find(x => x.id === h.courseId);
+      if (c?.area) areaCount[c.area] = (areaCount[c.area] || 0) + 1;
+    });
+    const topArea = Object.entries(areaCount).sort((a, b) => b[1] - a[1])[0];
+    const topAreaObj = topArea ? (window.YORIMICHI_AREAS || []).find(a => a.id === topArea[0]) : null;
+    const areaSummary = topAreaObj ? `${topAreaObj.icon || ''} ${tField(topAreaObj, 'name')}` : '';
+
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 12000);
+      const res = await fetch(`${API_BASE}/api/weekly-summary`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walks_count: weekWalks.length,
+          completed_count: completed,
+          total_min: totalMin,
+          course_names: [...new Set(courses)],
+          streak: state.loginStreak || 0,
+          area_summary: areaSummary,
+        }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      if (!res.ok) throw new Error('failed');
+      const data = await res.json();
+      const summary = data.summary || '今週も散歩おつかれさまでした。';
+      document.getElementById('ws-content').textContent = summary;
+      document.getElementById('ws-meta').textContent = `📅 直近7日 ・ ${weekWalks.length}回散歩 ・ ${completed}完走`;
+      // キャッシュ
+      try {
+        localStorage.setItem('yorimichi-weekly-summary-cache', JSON.stringify({
+          weekStart: weekStartStr, walks: weekWalks.length, summary, generatedAt: Date.now(),
+        }));
+      } catch {}
+    } catch (e) {
+      document.getElementById('ws-content').textContent = `今週は${weekWalks.length}回散歩しました ・ ${completed}コース完走。お疲れさまです 🌟`;
+    }
+    const refreshBtn = document.getElementById('ws-refresh-btn');
+    if (refreshBtn) refreshBtn.onclick = () => {
+      try { localStorage.removeItem('yorimichi-weekly-summary-cache'); } catch {}
+      renderWeeklySummary();
+    };
+  }
+
   // 🏆 全コース完走度
   function renderCompletionProgress() {
     const sec = document.getElementById('completion-progress');
@@ -4791,6 +4878,9 @@ ${trkPts}
         <div class="me-stat-label">連続日数</div>
       </div>
     `;
+
+    // ✨ AI週次サマリー
+    renderWeeklySummary().catch(() => {});
 
     // 🏆 完走度
     renderCompletionProgress();
@@ -9285,8 +9375,39 @@ ${trkPts}
       $('#gps-explain').hidden = false;
       return;
     }
-    // 🎒 もちものリマインダー（天気・時間・距離に応じて）
-    showGearReminder(() => beginWalk(true));
+    // 🎒 もちものリマインダー → 3-2-1 カウントダウン → 散歩開始
+    showGearReminder(() => showWalkCountdown(() => beginWalk(true)));
+  }
+
+  // 🎬 3-2-1 出発カウントダウン
+  function showWalkCountdown(onDone) {
+    const overlay = document.createElement('div');
+    overlay.className = 'walk-countdown-overlay';
+    overlay.innerHTML = `<div class="wc-num" id="wc-num">3</div><div class="wc-label">出発まで</div>`;
+    document.body.appendChild(overlay);
+    let n = 3;
+    const numEl = overlay.querySelector('#wc-num');
+    vib(20);
+    try { playSfx('click'); } catch {}
+    const tick = () => {
+      n--;
+      if (n <= 0) {
+        if (numEl) numEl.textContent = '🚶';
+        overlay.querySelector('.wc-label').textContent = '出発！';
+        vib(80);
+        try { playSfx('stamp'); } catch {}
+        setTimeout(() => {
+          try { overlay.remove(); } catch {}
+          onDone();
+        }, 800);
+      } else {
+        if (numEl) numEl.textContent = String(n);
+        vib(20);
+        try { playSfx('click'); } catch {}
+        setTimeout(tick, 800);
+      }
+    };
+    setTimeout(tick, 800);
   }
 
   // 🎒 散歩前の「もちもの」リマインダー

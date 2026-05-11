@@ -703,6 +703,76 @@ def spot_guide():
         return jsonify({"error": "server_error"}), 502
 
 
+@app.route("/api/weekly-summary", methods=["POST"])
+def weekly_summary():
+    """直近7日の散歩実績から AIで週次サマリーを生成"""
+    if not gemini_client:
+        return jsonify({"error": "ai_disabled"}), 503
+    data = request.get_json(silent=True) or {}
+    walks_count = int(data.get("walks_count") or 0)
+    completed_count = int(data.get("completed_count") or 0)
+    total_min = int(data.get("total_min") or 0)
+    course_names = data.get("course_names") or []
+    if not isinstance(course_names, list): course_names = []
+    course_names = [str(n)[:60] for n in course_names][:6]
+    streak = int(data.get("streak") or 0)
+    area_summary = (data.get("area_summary") or "")[:80]
+    if walks_count == 0:
+        return jsonify({"error": "no_walks"}), 400
+    prompt = (
+        "あなたは散歩コーチ。ユーザーの先週の散歩実績を見て、温かい振り返りメッセージを書いてください。\n"
+        "\n"
+        f"【先週の実績】\n"
+        f"- 散歩回数: {walks_count}回\n"
+        f"- 完走コース数: {completed_count}\n"
+        f"- 総歩行時間: 約{total_min}分\n"
+        f"- 連続日数: {streak}日\n"
+        f"- 訪れたコース例: {' / '.join(course_names[:4]) if course_names else 'なし'}\n"
+        f"- よく歩いたエリア: {area_summary}\n"
+        "\n"
+        "【出力】120-180字の振り返りメッセージ。以下を盛り込む：\n"
+        "1. 実績を具体的に褒める（数字を1つは引用）\n"
+        "2. 来週のさりげない提案やヒント（強制感なく）\n"
+        "3. 二人称「あなた」で温かい口調\n"
+        "\n"
+        "【ルール】\n"
+        "- 「お疲れさまでした」など労いを含める\n"
+        "- 押し付けがましくない\n"
+        "- 商標・著名人は使わない\n"
+        "\n"
+        'JSON: {"summary": "..."}'
+    )
+    try:
+        config_kwargs = dict(
+            temperature=0.8,
+            max_output_tokens=1024,
+            response_mime_type="application/json",
+            response_schema=genai_types.Schema(
+                type=genai_types.Type.OBJECT,
+                required=["summary"],
+                properties={"summary": genai_types.Schema(type=genai_types.Type.STRING)},
+            ),
+        )
+        try:
+            config_kwargs["thinking_config"] = genai_types.ThinkingConfig(thinking_budget=0)
+        except Exception:
+            pass
+        config = genai_types.GenerateContentConfig(**config_kwargs)
+        response = gemini_client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=config,
+        )
+        text = (response.text or "").strip()
+        if not text:
+            return jsonify({"error": "empty"}), 502
+        result = json.loads(text)
+        return jsonify({"summary": str(result.get("summary", ""))[:300]})
+    except Exception as e:
+        logger.exception("weekly_summary failed")
+        return jsonify({"error": "server_error"}), 502
+
+
 @app.route("/api/course-suggest", methods=["POST"])
 def course_suggest():
     """ユーザーの自然言語リクエストに基づき、コース一覧から最大3件を提案"""

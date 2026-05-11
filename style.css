@@ -6733,6 +6733,78 @@ body.map-fullscreen #map-container {
   flex-shrink: 0;
 }
 
+/* 🎬 Walk countdown overlay */
+.walk-countdown-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 20, 28, 0.85);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  animation: wpo-fade-in 0.25s ease-out;
+}
+.wc-num {
+  font-size: 160px;
+  font-weight: 900;
+  line-height: 1;
+  background: linear-gradient(135deg, #ff7e3d, #ff4081);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: wc-pop 0.8s ease-out forwards;
+  text-shadow: 0 0 40px rgba(255, 126, 61, 0.5);
+}
+.wc-label {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  margin-top: 12px;
+}
+@keyframes wc-pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  50% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ✨ Weekly summary */
+.weekly-summary {
+  background: linear-gradient(135deg, rgba(108, 99, 255, 0.08), rgba(255, 64, 129, 0.06));
+  border: 1px solid rgba(108, 99, 255, 0.25);
+  border-radius: 14px;
+  padding: 14px;
+  margin: 8px 0 12px;
+}
+.ws-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.ws-icon { font-size: 18px; }
+.ws-title { flex: 1; font-weight: 800; font-size: 13px; color: #6c63ff; }
+[data-theme="dark"] .ws-title { color: #a5b4fc; }
+.ws-refresh {
+  background: rgba(108, 99, 255, 0.1);
+  border: 0;
+  color: #6c63ff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+}
+.ws-content {
+  font-family: "Hiragino Mincho ProN", serif;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+}
+.ws-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  font-weight: 600;
+}
+
 /* ✨ What's New modal */
 .whats-new-overlay {
   position: fixed;
