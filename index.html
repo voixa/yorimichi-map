@@ -245,8 +245,9 @@
         <button class="btn-secondary" id="show-settings" type="button">⚙️ 設定</button>
         <button class="btn-secondary" id="show-help" type="button">❓ ヘルプ・よくある質問</button>
         <button class="btn-secondary" id="show-tutorial" type="button">📚 チュートリアル再表示</button>
-        <button class="btn-secondary" id="data-export" type="button">📤 エクスポート</button>
-        <button class="btn-secondary" id="data-import" type="button">📥 インポート</button>
+        <button class="btn-secondary" id="show-whats-new" type="button">✨ 新機能を見る</button>
+        <button class="btn-secondary" id="data-export" type="button">📤 バックアップ保存</button>
+        <button class="btn-secondary" id="data-import" type="button">📥 バックアップ復元</button>
         <button class="btn-secondary danger" id="data-reset" type="button">🗑 全リセット</button>
       </div>
     </div>
@@ -471,6 +472,18 @@
               <div class="qs-sub">エリア・モード自動 → ガチャ → 地図セットまで一気に</div>
             </div>
             <span class="qs-arrow">→</span>
+          </button>
+        </section>
+
+        <!-- 🆕 ガチャ直接アクセス（経験者向け2列ボタン） -->
+        <section class="home-quick-actions" id="home-quick-actions" hidden>
+          <button class="home-action gacha-action" id="home-gacha-btn" type="button">
+            <span class="ha-icon">🎰</span>
+            <span class="ha-label">ガチャを引く<br><small>気分・時間で選べる</small></span>
+          </button>
+          <button class="home-action courses-action" id="home-courses-btn" type="button">
+            <span class="ha-icon">📂</span>
+            <span class="ha-label">全コース一覧<br><small>自分で選びたい</small></span>
           </button>
         </section>
 
@@ -1300,6 +1313,10 @@
   <!-- マップ全画面トグル -->
   <button class="map-fullscreen-btn" id="map-fullscreen-btn" type="button" aria-label="地図を全画面表示">
     ⛶
+  </button>
+  <!-- 過去軌跡トグル -->
+  <button class="map-history-btn" id="map-history-btn" type="button" aria-label="歩いた軌跡を表示" title="歩いた軌跡">
+    👣
   </button>
 
   <!-- ============ Walk Log Modal ============ -->

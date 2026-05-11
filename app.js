@@ -6041,6 +6041,70 @@ ${trkPts}
     </svg>`;
   }
 
+  // 👣 過去の歩行軌跡をマップに重ねる
+  function togglePastWalkTrails() {
+    if (!state.map) return;
+    if (state._trailLayer) {
+      try { state.map.removeLayer(state._trailLayer); } catch {}
+      state._trailLayer = null;
+      const btn = document.getElementById('map-history-btn');
+      if (btn) btn.classList.remove('active');
+      showToast('👣 軌跡を非表示', 'info', 1800);
+      return;
+    }
+    // 完走したコースのルートを薄く重ねる
+    const completedIds = [...state.completedCourses];
+    if (completedIds.length === 0) {
+      showToast('まだ完走したコースがありません', 'info', 2200);
+      return;
+    }
+    const layer = L.layerGroup().addTo(state.map);
+    const allCourses = (window.YORIMICHI_COURSES || []);
+    let lineCount = 0;
+    completedIds.forEach(id => {
+      const c = allCourses.find(x => x.id === id);
+      if (!c) return;
+      const stops = c.stops.filter(s => s.lat != null && s.lng != null);
+      if (stops.length < 2) return;
+      // 完走回数で線の濃さを変える
+      const count = state.walkCounts?.[id] || 1;
+      const opacity = Math.min(0.85, 0.35 + count * 0.12);
+      const line = L.polyline(stops.map(s => [s.lat, s.lng]), {
+        color: '#ff7e3d',
+        weight: 4,
+        opacity,
+        dashArray: '10, 8',
+        lineCap: 'round',
+      });
+      // 線をクリックでコース名表示
+      line.bindTooltip(`👣 ${tField(c, 'name')} (${count}回)`, { sticky: true, opacity: 0.95 });
+      layer.addLayer(line);
+      lineCount++;
+    });
+    state._trailLayer = layer;
+    const btn = document.getElementById('map-history-btn');
+    if (btn) btn.classList.add('active');
+    showToast(`👣 ${lineCount}コースの軌跡を表示`, 'success', 2500);
+  }
+
+  // 🎰 ホームのガチャ＆コース一覧 ショートカット
+  function renderHomeQuickActions() {
+    const sec = document.getElementById('home-quick-actions');
+    if (!sec) return;
+    // 経験者（完走1回以上）のみ表示
+    if (state.completedCourses.size === 0) { sec.hidden = true; return; }
+    sec.hidden = false;
+    const g = document.getElementById('home-gacha-btn');
+    const c = document.getElementById('home-courses-btn');
+    if (g) g.onclick = () => { vib(10); showGachaModal(); };
+    if (c) c.onclick = () => {
+      vib(10);
+      // 全コース一覧モーダルを直接開く（既存ボタンのリスナー再利用）
+      const showAllBtn = document.getElementById('show-all-courses');
+      if (showAllBtn) showAllBtn.click();
+    };
+  }
+
   // 🍀 今日のラッキーコース（日付シードで決定的に1コース選択）
   function getDailyLuckyCourse() {
     const courses = (window.YORIMICHI_COURSES || []);
@@ -7625,6 +7689,7 @@ ${trkPts}
     try { renderFeaturedCard(); } catch {}
     try { renderTodaySummary(); } catch {}
     try { renderLuckyCourse(); } catch {}
+    try { renderHomeQuickActions(); } catch {}
     try { renderStatusBar(); } catch {}
     // 📍 GPS取得後に近場コースを推薦（非同期、失敗しても無視）
     setTimeout(() => { renderNearbyBanner().catch(() => {}); }, 1500);
@@ -7719,6 +7784,7 @@ ${trkPts}
       if (name === 'home') {
         try { renderTodaySummary(); } catch {}
         try { renderLuckyCourse(); } catch {}
+        try { renderHomeQuickActions(); } catch {}
         try { renderWelcomeCard(); } catch {}
         try { renderStreakBadge(); } catch {}
         try { renderFeaturedCard(); } catch {}
@@ -11014,6 +11080,9 @@ ${hashtag}`;
         setTimeout(() => state.map.invalidateSize(), 350);
       }
     });
+    // 👣 過去軌跡トグル
+    const histBtn = $('#map-history-btn');
+    if (histBtn) histBtn.addEventListener('click', togglePastWalkTrails);
 
     // Walk HUD ボタン
     const hudEnd = $('#walk-hud-end');
@@ -11197,6 +11266,12 @@ ${hashtag}`;
     // Data management
     $('#data-export').addEventListener('click', exportData);
     $('#data-import').addEventListener('click', importData);
+    // ✨ What's New 強制表示
+    const wnBtn = $('#show-whats-new');
+    if (wnBtn) wnBtn.addEventListener('click', () => {
+      try { localStorage.removeItem('yorimichi-whats-new-version'); } catch {}
+      showWhatsNewModal();
+    });
     $('#data-reset').addEventListener('click', resetData);
     // 撮影アルバム
     const albumBtn = $('#show-photo-album');
