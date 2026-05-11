@@ -804,6 +804,34 @@ def course_suggest():
         return jsonify({"error": "server_error"}), 502
 
 
+@app.route("/api/report-spot", methods=["POST"])
+def report_spot():
+    """ユーザーが不適切なスポット/コース要素を報告"""
+    data = request.get_json(silent=True) or {}
+    target_type = (data.get("target_type") or "").strip()[:20]  # 'course' | 'stop' | 'submission'
+    target_id = (data.get("target_id") or "").strip()[:120]
+    reason = (data.get("reason") or "").strip()[:200]
+    detail = (data.get("detail") or "").strip()[:400]
+    if not target_type or not target_id or not reason:
+        return jsonify({"error": "missing_fields"}), 400
+    report = {
+        "target_type": target_type,
+        "target_id": target_id,
+        "reason": reason,
+        "detail": detail,
+        "reported_at": datetime.utcnow().isoformat() + "Z",
+        "status": "open",
+    }
+    if firestore_client:
+        try:
+            doc_ref = firestore_client.collection("spot_reports").document()
+            doc_ref.set(report)
+            return jsonify({"ok": True, "id": doc_ref.id})
+        except Exception as e:
+            logger.exception("report_spot firestore failed")
+    return jsonify({"ok": True, "id": None})
+
+
 @app.route("/api/submit-spot", methods=["POST"])
 def submit_spot():
     """ユーザー投稿のスポット情報を受け取って Firestore に保存（モデレーション待ち）"""

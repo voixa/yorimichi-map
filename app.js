@@ -700,6 +700,7 @@
         <a class="add-btn wiki-btn" id="detail-nav" target="_blank" rel="noopener">📱 ナビ起動</a>
       </div>
       ${state.activeWalk && !isVisited ? `<button class="add-btn" id="detail-checkin" style="background:#16a34a;margin-top:8px;width:100%">✓ チェックイン</button>` : ''}
+      <button class="detail-report-btn" id="detail-report" type="button">🚨 このスポットを報告</button>
     `;
     // AIスポットガイドを非同期取得（キャッシュあり）
     requestSpotGuide(stop.name, state.origin?.shortLabel || '', cat?.label || '').then(g => {
@@ -729,6 +730,10 @@
         checkInStop(idx, true);
         $('#detail-card').hidden = true;
       };
+    }
+    const reportBtn = $('#detail-report');
+    if (reportBtn) {
+      reportBtn.onclick = () => reportTarget('stop', stop.name || '', stop.name || 'スポット');
     }
   }
 
@@ -4255,6 +4260,39 @@ ${trkPts}
     }).join('');
   }
 
+  // 🚨 不適切なスポット/コース要素を報告
+  async function reportTarget(targetType, targetId, targetName) {
+    const reasons = [
+      '不正確な情報（営業終了など）',
+      '不快な内容・誹謗中傷',
+      '営業目的の宣伝',
+      '不適切な写真',
+      'その他',
+    ];
+    const reasonText = reasons.map((r, i) => `${i + 1}. ${r}`).join('\n');
+    const choice = prompt(`「${targetName}」を報告します。\n理由番号を入力してください:\n${reasonText}`);
+    if (!choice) return;
+    const idx = parseInt(choice, 10) - 1;
+    if (idx < 0 || idx >= reasons.length) return;
+    const reason = reasons[idx];
+    const detail = prompt('詳細（任意・最大200字）:') || '';
+    try {
+      await fetch(`${API_BASE}/api/report-spot`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          target_type: targetType,
+          target_id: targetId,
+          reason,
+          detail: String(detail).slice(0, 200),
+        }),
+      });
+      showToast('🙏 報告ありがとうございました。確認します', 'success', 3500);
+    } catch (e) {
+      showToast('送信に失敗しました', 'error', 2500);
+    }
+  }
+
   // 📋 自分の投稿スポット一覧
   function renderMySubmissionsList() {
     const listEl = document.getElementById('my-submissions-list');
@@ -6506,6 +6544,49 @@ ${trkPts}
       <polyline points="${polyline}" fill="none" stroke="${stroke}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
       ${dots}
     </svg>`;
+  }
+
+  // 📍 自分の投稿スポットをマップに重ねる
+  function toggleSubmittedSpots() {
+    if (!state.map) return;
+    if (state._submissionsLayer) {
+      try { state.map.removeLayer(state._submissionsLayer); } catch {}
+      state._submissionsLayer = null;
+      const btn = document.getElementById('map-submissions-btn');
+      if (btn) btn.classList.remove('active');
+      showToast('📍 投稿スポットを非表示', 'info', 1800);
+      return;
+    }
+    let list = [];
+    try { list = JSON.parse(localStorage.getItem('yorimichi-submitted-spots') || '[]'); } catch {}
+    const withCoords = list.filter(s => s.coords?.lat && s.coords?.lng);
+    if (withCoords.length === 0) {
+      showToast('座標付きの投稿がまだありません', 'info', 2500);
+      return;
+    }
+    const layer = L.layerGroup().addTo(state.map);
+    withCoords.forEach(s => {
+      const html = `<span class="sub-pin-emoji">📍</span>`;
+      const marker = L.marker([s.coords.lat, s.coords.lng], {
+        icon: makeIcon(html, 'submitted-spot-marker', 32),
+      });
+      marker.bindPopup(`
+        <div style="min-width:180px;">
+          <div style="font-weight:800;font-size:13px;">📍 ${escapeHtml(s.name || '無名')}</div>
+          ${s.area ? `<div style="font-size:11px;color:#888;">${escapeHtml(s.area)}</div>` : ''}
+          <div style="font-size:12px;margin-top:6px;">${escapeHtml(s.desc || '')}</div>
+          <div style="font-size:10px;margin-top:6px;color:#f59e0b;">⏳ 承認待ち</div>
+        </div>
+      `);
+      layer.addLayer(marker);
+    });
+    state._submissionsLayer = layer;
+    const btn = document.getElementById('map-submissions-btn');
+    if (btn) btn.classList.add('active');
+    showToast(`📍 ${withCoords.length}件の投稿を表示`, 'success', 2500);
+    // ビューポート合わせ
+    const bounds = L.latLngBounds(withCoords.map(s => [s.coords.lat, s.coords.lng]));
+    if (withCoords.length > 1) state.map.fitBounds(bounds, { padding: [40, 40] });
   }
 
   // 👣 過去の歩行軌跡をマップに重ねる
@@ -11935,6 +12016,9 @@ ${hashtag}`;
     // 👣 過去軌跡トグル
     const histBtn = $('#map-history-btn');
     if (histBtn) histBtn.addEventListener('click', togglePastWalkTrails);
+    // 📍 投稿スポットトグル
+    const subsBtn = $('#map-submissions-btn');
+    if (subsBtn) subsBtn.addEventListener('click', toggleSubmittedSpots);
 
     // Walk HUD ボタン
     const hudEnd = $('#walk-hud-end');
