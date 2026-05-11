@@ -4255,6 +4255,49 @@ ${trkPts}
     }).join('');
   }
 
+  // 📋 自分の投稿スポット一覧
+  function renderMySubmissionsList() {
+    const listEl = document.getElementById('my-submissions-list');
+    if (!listEl) return;
+    let list = [];
+    try { list = JSON.parse(localStorage.getItem('yorimichi-submitted-spots') || '[]'); } catch {}
+    if (list.length === 0) {
+      listEl.innerHTML = `
+        <div class="ms-empty">
+          <div style="font-size:48px;opacity:0.4;margin-bottom:12px;">📍</div>
+          <div style="font-weight:700;color:var(--text);">まだ投稿がありません</div>
+          <div style="font-size:12px;margin-top:6px;color:var(--text-muted);">「📍 スポット投稿」からお気に入りの場所を投稿してください</div>
+        </div>
+      `;
+      return;
+    }
+    // 新しい順
+    const sorted = list.slice().reverse();
+    listEl.innerHTML = sorted.map((s, i) => {
+      const d = s.client_at ? new Date(s.client_at) : null;
+      const dateStr = d ? `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
+      const photoHtml = s.photo ? `<img class="ms-photo" src="${escapeHtml(s.photo)}" alt="" loading="lazy" />` : '';
+      const tagsHtml = (s.tags || []).slice(0, 4).map(t => `<span class="ms-tag">#${escapeHtml(t)}</span>`).join('');
+      const tiktokHtml = s.tiktok_url ? `<a class="ms-tiktok" href="${escapeHtml(s.tiktok_url)}" target="_blank" rel="noopener">🎵 TikTok</a>` : '';
+      return `
+        <div class="ms-item">
+          ${photoHtml}
+          <div class="ms-body">
+            <div class="ms-name">📍 ${escapeHtml(s.name || '')}</div>
+            ${s.area ? `<div class="ms-area">${escapeHtml(s.area)}</div>` : ''}
+            <div class="ms-desc">${escapeHtml(s.desc || '')}</div>
+            ${tagsHtml ? `<div class="ms-tags">${tagsHtml}</div>` : ''}
+            <div class="ms-meta">
+              <span class="ms-status">⏳ 承認待ち</span>
+              <span class="ms-date">${escapeHtml(dateStr)}</span>
+              ${tiktokHtml}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
   // 📍「今ここを投稿」 - ウォーク中ボタンから呼ばれる
   async function openSpotSubmitHere() {
     const modal = document.getElementById('spot-submit-modal');
@@ -4383,6 +4426,7 @@ ${trkPts}
       const addr = document.getElementById('spot-addr-input')?.value.trim();
       const desc = document.getElementById('spot-desc-input')?.value.trim();
       const author = document.getElementById('spot-author-input')?.value.trim();
+      const tiktokUrl = document.getElementById('spot-tiktok-input')?.value.trim();
       const tags = Array.from(document.querySelectorAll('#spot-tag-chips input:checked')).map(c => c.value);
       if (!name || !desc) {
         showToast('スポット名と魅力は必須です', 'error', 3000);
@@ -4399,10 +4443,16 @@ ${trkPts}
           coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         } catch {}
       }
+      // TikTok URL バリデーション（簡易）
+      let validTiktokUrl = '';
+      if (tiktokUrl && /^https?:\/\/(www\.)?(vm\.|m\.)?tiktok\.com\//.test(tiktokUrl)) {
+        validTiktokUrl = tiktokUrl;
+      }
       const payload = {
         name, cat, area, addr, desc, author, tags,
         coords,
-        photo: _spotPhotoDataUrl, // data:image/jpeg;base64,...
+        photo: _spotPhotoDataUrl,
+        tiktok_url: validTiktokUrl,
         client_at: new Date().toISOString(),
       };
       // localStorage に投稿履歴を残す
@@ -6561,19 +6611,38 @@ ${trkPts}
     // 完走0回ユーザーには見せない（welcomeカード優先）
     if (state.completedCourses.size === 0) { sec.hidden = true; return; }
     sec.hidden = false;
+    // 投稿数があれば表示文言を変える
+    try {
+      const list = JSON.parse(localStorage.getItem('yorimichi-submitted-spots') || '[]');
+      const subtitle = document.getElementById('cb-subtitle');
+      if (subtitle && list.length > 0) {
+        subtitle.textContent = `🙏 ${list.length}件 投稿いただきありがとうございます`;
+      }
+    } catch {}
     const tk = document.getElementById('cb-tiktok-btn');
     const sb = document.getElementById('cb-submit-btn');
-    if (tk) tk.onclick = () => {
+    const my = document.getElementById('cb-my-btn');
+    const tiktokOpen = () => {
       vib(10);
       const tiktokUrl = 'https://www.tiktok.com/tag/%E8%A1%97%E6%AD%A9%E3%81%8D%E3%82%AC%E3%83%81%E3%83%A3%E3%82%B9%E3%83%9D%E3%83%83%E3%83%88';
       window.open(tiktokUrl, '_blank', 'noopener');
       try { navigator.clipboard?.writeText('#街歩きガチャスポット #街歩きガチャ'); } catch {}
       showToast('📋 ハッシュタグもコピーしました', 'info', 2500);
     };
+    if (tk) {
+      tk.onclick = tiktokOpen;
+      tk.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tiktokOpen(); } };
+    }
     if (sb) sb.onclick = () => {
       vib(10);
       const modal = document.getElementById('spot-submit-modal');
       if (modal) modal.hidden = false;
+    };
+    if (my) my.onclick = () => {
+      vib(10);
+      renderMySubmissionsList();
+      const m = document.getElementById('my-submissions-modal');
+      if (m) m.hidden = false;
     };
   }
 
@@ -8461,6 +8530,12 @@ ${trkPts}
       $('#journal-modal').hidden = false;
     });
     $('#journal-close')?.addEventListener('click', () => { $('#journal-modal').hidden = true; });
+    // 📋 あなたの投稿スポット一覧
+    $('#ms-my-submissions')?.addEventListener('click', () => {
+      renderMySubmissionsList();
+      $('#my-submissions-modal').hidden = false;
+    });
+    $('#my-submissions-close')?.addEventListener('click', () => { $('#my-submissions-modal').hidden = true; });
     // 📍 オススメスポット投稿
     $('#ms-spot-submit')?.addEventListener('click', () => {
       $('#spot-submit-modal').hidden = false;

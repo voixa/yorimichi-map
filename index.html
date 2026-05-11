@@ -253,6 +253,16 @@
     </div>
   </div>
 
+  <!-- ============ あなたの投稿スポット一覧モーダル ============ -->
+  <div class="modal-backdrop" id="my-submissions-modal" hidden>
+    <div class="modal my-submissions-modal" role="dialog" aria-label="あなたの投稿スポット" aria-modal="true">
+      <button class="modal-close" id="my-submissions-close" type="button" aria-label="閉じる">✕</button>
+      <h2 class="modal-title">📍 あなたの投稿スポット</h2>
+      <p class="modal-sub">投稿いただいたスポット一覧です。承認後に公式コースに登場します。</p>
+      <div class="my-submissions-list" id="my-submissions-list"></div>
+    </div>
+  </div>
+
   <!-- ============ 散歩日記モーダル ============ -->
   <div class="modal-backdrop" id="journal-modal" hidden>
     <div class="modal journal-modal" role="dialog" aria-label="散歩日記" aria-modal="true">
@@ -368,6 +378,10 @@
         <label class="spot-form-row">
           <span>あなたの名前（任意・公開されません）</span>
           <input type="text" id="spot-author-input" maxlength="30" placeholder="例: yorimichi_lover" />
+        </label>
+        <label class="spot-form-row">
+          <span>🎵 TikTok 動画URL（任意・このスポットを紹介してる動画）</span>
+          <input type="url" id="spot-tiktok-input" maxlength="200" placeholder="https://www.tiktok.com/@user/video/..." />
         </label>
         <div class="spot-submit-notice">
           ※ ご投稿いただいた内容は管理者が確認の上、誹謗中傷・営業目的・著作権侵害がないものを採用します。<br>
@@ -537,16 +551,24 @@
         <section class="community-banner" id="community-banner" hidden>
           <div class="cb-header">
             <span class="cb-icon">🌐</span>
-            <span class="cb-title">みんなで街歩きを盛り上げよう</span>
+            <div class="cb-title-wrap">
+              <span class="cb-title">みんなで街歩きを盛り上げよう</span>
+              <span class="cb-subtitle" id="cb-subtitle">あなたの投稿で新しいコースが生まれます</span>
+            </div>
+          </div>
+          <div class="cb-tiktok-card" id="cb-tiktok-btn" role="button" tabindex="0">
+            <div class="cb-tk-tag">🎵 TikTok で募集中</div>
+            <div class="cb-tk-hashtag">#街歩きガチャスポット</div>
+            <div class="cb-tk-desc">この hashtag で TikTok に投稿すると、人気のスポットは公式コースに採用されます</div>
           </div>
           <div class="cb-actions">
-            <button class="cb-action" id="cb-tiktok-btn" type="button">
-              <span class="cb-action-icon">🎵</span>
-              <span class="cb-action-label">TikTok でスポット推薦</span>
-            </button>
             <button class="cb-action" id="cb-submit-btn" type="button">
               <span class="cb-action-icon">📍</span>
-              <span class="cb-action-label">あなたの推しを投稿</span>
+              <span class="cb-action-label">スポットを投稿</span>
+            </button>
+            <button class="cb-action" id="cb-my-btn" type="button">
+              <span class="cb-action-icon">📋</span>
+              <span class="cb-action-label">あなたの投稿</span>
             </button>
           </div>
         </section>
@@ -1059,6 +1081,10 @@
             <button class="me-shortcut" id="ms-spot-submit" type="button">
               <span class="ms-emoji">📍</span>
               <span class="ms-label">スポット投稿<br><small style="color:var(--text-muted);font-weight:500;">あなたの推し</small></span>
+            </button>
+            <button class="me-shortcut" id="ms-my-submissions" type="button">
+              <span class="ms-emoji">📋</span>
+              <span class="ms-label">投稿一覧<br><small style="color:var(--text-muted);font-weight:500;">過去の投稿</small></span>
             </button>
             <button class="me-shortcut" id="ms-couple" type="button">
               <span class="ms-emoji">💑</span>

@@ -815,6 +815,9 @@ def submit_spot():
     # 写真 data URL は最大 ~500KB に制限（過大データ防止）
     photo_raw = data.get("photo") or ""
     photo = photo_raw if isinstance(photo_raw, str) and photo_raw.startswith("data:image") and len(photo_raw) <= 700_000 else None
+    # TikTok URL は tiktok.com ドメインのみ許可
+    tiktok_raw = (data.get("tiktok_url") or "").strip()[:200]
+    tiktok_url = tiktok_raw if _re.match(r'^https?://(www\.|vm\.|m\.)?tiktok\.com/', tiktok_raw) else ""
     spot = {
         "name": name,
         "cat": (data.get("cat") or "other")[:20],
@@ -825,6 +828,7 @@ def submit_spot():
         "tags": [str(t)[:20] for t in (data.get("tags") or [])][:8],
         "coords": data.get("coords"),
         "photo": photo,
+        "tiktok_url": tiktok_url,
         "client_at": data.get("client_at"),
         "submitted_at": datetime.utcnow().isoformat() + "Z",
         "status": "pending",  # pending | approved | rejected
