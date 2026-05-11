@@ -252,6 +252,19 @@
     </div>
   </div>
 
+  <!-- ============ 全コース一覧モーダル ============ -->
+  <div class="modal-backdrop" id="all-courses-modal" hidden>
+    <div class="modal all-courses-modal" role="dialog" aria-label="全コース一覧" aria-modal="true">
+      <button class="modal-close" id="all-courses-close" type="button" aria-label="閉じる">✕</button>
+      <h2 class="modal-title">📂 全コース一覧</h2>
+      <p class="modal-sub">タップして詳細を見る</p>
+      <input type="search" id="all-courses-search" class="course-search-input" placeholder="🔎 コース名・スポット名で絞り込み…" />
+      <div class="all-courses-list" id="all-courses-list">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </div>
+
   <!-- 🆕 Main tabs: ホーム / 探す / マイ - body直下で常時表示 -->
   <nav class="main-tabs" role="tablist" aria-label="メインナビゲーション">
     <button class="main-tab active" data-main-tab="home" role="tab" type="button">🏠 ホーム</button>
@@ -902,6 +915,24 @@
           <button class="quick-mode" data-quickmode="undiscovered" type="button">🔍 未発見</button>
           <button class="quick-mode" data-quickmode="rare-up" type="button">✨ レアUP</button>
         </div>
+
+        <!-- 🆕 気分セレクター（ガチャの傾向を変える） -->
+        <div class="mood-section" id="mood-section">
+          <div class="mood-label">今の気分は？（任意）</div>
+          <div class="mood-chips">
+            <button class="mood-chip active" data-mood="" type="button">🎲 おまかせ</button>
+            <button class="mood-chip" data-mood="chill" type="button">😌 まったり</button>
+            <button class="mood-chip" data-mood="active" type="button">🏃 アクティブ</button>
+            <button class="mood-chip" data-mood="food" type="button">🍜 グルメ</button>
+            <button class="mood-chip" data-mood="view" type="button">📸 絶景</button>
+            <button class="mood-chip" data-mood="night" type="button">🌃 夜散歩</button>
+          </div>
+        </div>
+
+        <!-- 🆕 全コース一覧ボタン -->
+        <button class="all-courses-btn" id="show-all-courses" type="button">
+          📂 全コース一覧から選ぶ
+        </button>
 
         <!-- Theme selection (route / stroll mode のみ表示) -->
         <div class="theme-chips" id="theme-chips" hidden>

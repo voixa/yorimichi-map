@@ -2542,12 +2542,66 @@
   state.lastPlanContext = null; // 'origin+dest' to detect changes
 
   let quickMode = 'all'; // 'all' | 'undiscovered' | 'rare-up'
+  let gachaMood = ''; // '' | 'chill' | 'active' | 'food' | 'view' | 'night'
+
+  // 気分に応じてコースをフィルタリング
+  function filterByMood(courses, mood) {
+    if (!mood) return courses;
+    return courses.filter(c => {
+      const tags = [...(c.tags || []), ...(c.stops || []).flatMap(s => s.tags || [])].map(t => String(t).toLowerCase());
+      const min = c.estimatedMin || 0;
+      const stops = (c.stops || []).length;
+      if (mood === 'chill') {
+        // まったり: 短時間 + 屋内多め
+        const indoorRatio = stops > 0 ? (c.stops.filter(s => ['cafe','shop','museum','art','bakery'].includes(s.cat)).length / stops) : 0;
+        return min <= 60 || indoorRatio >= 0.4;
+      }
+      if (mood === 'active') {
+        return min >= 60 || stops >= 5;
+      }
+      if (mood === 'food') {
+        return c.stops.some(s => ['cafe', 'shop', 'bakery'].includes(s.cat)) ||
+               tags.some(t => /カフェ|グルメ|食|スイーツ|ベーカリー|ラーメン|和菓子|ランチ|レストラン/i.test(t));
+      }
+      if (mood === 'view') {
+        return c.stops.some(s => ['viewpoint', 'shrine', 'temple', 'park'].includes(s.cat)) ||
+               tags.some(t => /絶景|眺望|写真映え|夜景|フォトジェニック|景観/i.test(t));
+      }
+      if (mood === 'night') {
+        return tags.some(t => /夜|ナイト|night|バー|居酒屋/i.test(t)) ||
+               c.stops.some(s => {
+                 if (!s.bestTime) return false;
+                 const m = String(s.bestTime).match(/(\d{1,2}):/);
+                 if (!m) return false;
+                 const hr = parseInt(m[1], 10);
+                 return hr >= 18;
+               });
+      }
+      return true;
+    });
+  }
+
+  // 直近5回のガチャでヒットしたコース/エリアを記録（重複防止）
+  function getRecentGachaPulls() {
+    try { return JSON.parse(localStorage.getItem('yorimichi-recent-pulls') || '[]'); } catch { return []; }
+  }
+  function rememberGachaPull(courseId, area) {
+    const recent = getRecentGachaPulls();
+    recent.push({ courseId, area, at: Date.now() });
+    const trimmed = recent.slice(-5);
+    try { localStorage.setItem('yorimichi-recent-pulls', JSON.stringify(trimmed)); } catch {}
+  }
 
   function pickOneCourse() {
     let pool = [...getCourseCandidates()];
     if (quickMode === 'undiscovered' || $('#pool-undiscovered-only')?.checked) {
       const undisc = pool.filter(c => !state.discoveredCourses.has(c.id));
       if (undisc.length >= 1) pool = undisc;
+    }
+    // 気分フィルタ
+    if (gachaMood) {
+      const moodPool = filterByMood(pool, gachaMood);
+      if (moodPool.length >= 1) pool = moodPool;
     }
     if (pool.length === 0) return null;
 
@@ -2556,28 +2610,59 @@
     const wantSR = gacha.pullsSinceSR >= 9;
     if (wantLR) {
       const lrPool = pool.filter(c => c.rarity === 'legendary');
-      if (lrPool.length > 0) return courseToRoute(lrPool[Math.floor(Math.random() * lrPool.length)]);
+      if (lrPool.length > 0) {
+        const picked = lrPool[Math.floor(Math.random() * lrPool.length)];
+        rememberGachaPull(picked.id, picked.area);
+        return courseToRoute(picked);
+      }
     }
     if (wantSR) {
       const srPool = pool.filter(c => c.rarity === 'legendary' || c.rarity === 'sr');
-      if (srPool.length > 0) return courseToRoute(srPool[Math.floor(Math.random() * srPool.length)]);
-    }
-
-    if (quickMode === 'rare-up') {
-      const weights = pool.map(c => {
-        const r = c.rarity || 'r';
-        return r === 'legendary' ? 10 : r === 'sr' ? 5 : r === 'r' ? 2 : 1;
-      });
-      const total = weights.reduce((a, b) => a + b, 0);
-      let pick = Math.random() * total;
-      for (let i = 0; i < pool.length; i++) {
-        pick -= weights[i];
-        if (pick <= 0) return courseToRoute(pool[i]);
+      if (srPool.length > 0) {
+        const picked = srPool[Math.floor(Math.random() * srPool.length)];
+        rememberGachaPull(picked.id, picked.area);
+        return courseToRoute(picked);
       }
-      return courseToRoute(pool[pool.length - 1]);
     }
 
-    return courseToRoute(pool[Math.floor(Math.random() * pool.length)]);
+    // 🎰 重み付き抽選 + 多様性ボーナス（直近5回引いたエリア/コースを冷却）
+    const recent = getRecentGachaPulls();
+    const recentCourseIds = new Set(recent.map(r => r.courseId));
+    const recentAreaCount = {};
+    recent.forEach(r => { recentAreaCount[r.area] = (recentAreaCount[r.area] || 0) + 1; });
+
+    const weights = pool.map(c => {
+      let w = 1;
+      // レア度
+      if (quickMode === 'rare-up') {
+        const r = c.rarity || 'r';
+        w = r === 'legendary' ? 10 : r === 'sr' ? 5 : r === 'r' ? 2 : 1;
+      } else {
+        // 通常: 軽くレア度を反映（極端な偏り防止）
+        const r = c.rarity || 'r';
+        w = r === 'legendary' ? 1.5 : r === 'sr' ? 1.3 : r === 'r' ? 1.1 : 1;
+      }
+      // 直近で引いたコースは大幅減（5回連続同じが出ない）
+      if (recentCourseIds.has(c.id)) w *= 0.15;
+      // 直近で引いたエリアも軽く減（神保町連発を防ぐ）
+      const areaHits = recentAreaCount[c.area] || 0;
+      if (areaHits >= 2) w *= 0.35;
+      else if (areaHits >= 1) w *= 0.65;
+      // 未完走を優遇
+      if (!state.completedCourses.has(c.id)) w *= 1.4;
+      // 未発見をさらに優遇
+      if (!state.discoveredCourses.has(c.id)) w *= 1.5;
+      return Math.max(0.05, w);
+    });
+    const total = weights.reduce((a, b) => a + b, 0);
+    let pick = Math.random() * total;
+    let chosen = pool[pool.length - 1];
+    for (let i = 0; i < pool.length; i++) {
+      pick -= weights[i];
+      if (pick <= 0) { chosen = pool[i]; break; }
+    }
+    rememberGachaPull(chosen.id, chosen.area);
+    return courseToRoute(chosen);
   }
 
   /**
@@ -6999,8 +7084,22 @@ ${trkPts}
     }
     $$('.main-tab').forEach(tab => {
       tab.addEventListener('click', () => {
-        vib(8); // 軽いタップフィードバック
+        vib(8);
         setMainTab(tab.dataset.mainTab);
+        // 📱 モバイルでパネル畳まれてたら自動で開く（ホームに戻れないバグ対策）
+        try {
+          const panel = document.getElementById('panel');
+          if (panel && panel.classList.contains('collapsed') && window.matchMedia('(max-width: 768px)').matches) {
+            panel.classList.remove('collapsed');
+            const handle = document.getElementById('panel-handle');
+            if (handle) handle.setAttribute('aria-expanded', 'true');
+            // map-fullscreen も解除
+            document.body.classList.remove('map-fullscreen');
+            const fsBtn = document.getElementById('map-fullscreen-btn');
+            if (fsBtn) fsBtn.textContent = '⛶';
+            if (state.map) setTimeout(() => state.map.invalidateSize(), 250);
+          }
+        } catch {}
       });
     });
 
@@ -8399,8 +8498,7 @@ ${trkPts}
   function hideWalkHud() {
     const hud = $('#walk-hud');
     if (hud) hud.hidden = true;
-    const recenter = $('#map-recenter-btn');
-    if (recenter) recenter.hidden = true;
+    // recenter ボタンは散歩終了後も「現在地に戻る」用途で表示し続ける（hidden = true にしない）
     // 終了時は一時停止オーバーレイ + 常時バーも消す + ヘッドアップ解除
     try { hidePauseOverlay(); } catch {}
     try {
@@ -10017,6 +10115,36 @@ ${hashtag}`;
     $('#walk-start').addEventListener('click', startWalk);
     $('#walk-stop').addEventListener('click', stopWalk);
 
+    // 📍 常時 GPS で現在地マーカーを表示（散歩中以外でも）
+    if (navigator.geolocation && state.map) {
+      try {
+        const updateUserDot = (pos) => {
+          const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          if (!state.userMarker) {
+            const icon = L.divIcon({
+              html: '<div class="user-pulse"></div>',
+              className: 'user-loc',
+              iconSize: [24, 24],
+              iconAnchor: [12, 12],
+            });
+            state.userMarker = L.marker([loc.lat, loc.lng], { icon, zIndexOffset: 1000 }).addTo(state.map);
+          } else {
+            state.userMarker.setLatLng([loc.lat, loc.lng]);
+          }
+        };
+        navigator.geolocation.getCurrentPosition(updateUserDot, () => {}, { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 });
+        // 低精度の継続ウォッチ（バッテリー優しく）。散歩中の高精度ウォッチは別途上書き
+        state._ambientGpsWatchId = navigator.geolocation.watchPosition(updateUserDot, () => {}, {
+          enableHighAccuracy: false,
+          timeout: 30000,
+          maximumAge: 60000,
+        });
+      } catch (e) { console.warn('ambient GPS failed', e); }
+    }
+    // 「現在地に戻る」ボタンも常時表示（散歩していなくても）
+    const persistentRecenter = $('#map-recenter-btn');
+    if (persistentRecenter) persistentRecenter.hidden = false;
+
     // 「現在地に戻る」ボタン
     const recenterBtn = $('#map-recenter-btn');
     if (recenterBtn) recenterBtn.addEventListener('click', () => {
@@ -10361,6 +10489,88 @@ ${hashtag}`;
         $('#capsule-hint').textContent = labels[quickMode];
         renderPoolPreview();
       });
+    });
+
+    // 気分（mood）チップ
+    $$('.mood-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        $$('.mood-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        gachaMood = chip.dataset.mood || '';
+        renderPoolPreview();
+      });
+    });
+
+    // 📂 全コース一覧モーダル
+    const showAllBtn = $('#show-all-courses');
+    const allCoursesModal = $('#all-courses-modal');
+    const allCoursesClose = $('#all-courses-close');
+    const allCoursesList = $('#all-courses-list');
+    const allCoursesSearch = $('#all-courses-search');
+    function renderAllCoursesList(query) {
+      if (!allCoursesList) return;
+      const q = String(query || '').trim().toLowerCase();
+      const courses = (window.YORIMICHI_COURSES || []).slice().sort((a, b) => {
+        const ad = state.completedCourses.has(a.id) ? 1 : 0;
+        const bd = state.completedCourses.has(b.id) ? 1 : 0;
+        if (ad !== bd) return ad - bd; // 未完走を先頭に
+        return String(tField(a, 'areaName') || '').localeCompare(tField(b, 'areaName') || '');
+      });
+      const filtered = q ? courses.filter(c => {
+        const haystack = [tField(c, 'name'), tField(c, 'description'), tField(c, 'areaName'),
+          ...(c.tags || []),
+          ...(c.stops || []).flatMap(s => [s.name, s.desc])
+        ].join(' ').toLowerCase();
+        return haystack.includes(q);
+      }) : courses;
+      if (filtered.length === 0) {
+        allCoursesList.innerHTML = '<div class="search-empty">該当するコースがありません</div>';
+        return;
+      }
+      allCoursesList.innerHTML = filtered.map(c => {
+        const done = state.completedCourses.has(c.id);
+        const fav = isFavorite(c.id);
+        const thumb = buildCourseThumbSvg(c, { w: 56, h: 36 });
+        return `
+          <button class="all-courses-item" type="button" data-course-id="${escapeHtml(c.id)}">
+            <span class="aci-emoji">${c.themeIcon || c.areaIcon || '🌳'}</span>
+            <span class="aci-body">
+              <span class="aci-name">${escapeHtml(tField(c, 'name'))}${fav ? ' ❤️' : ''}${done ? ' <span class="aci-done">完走</span>' : ''}</span>
+              <span class="aci-meta">${c.areaIcon || ''} ${escapeHtml(tField(c, 'areaName'))} ・ 約${c.estimatedMin || '?'}分 ・ ${c.stops.length}スポット</span>
+            </span>
+            <span class="aci-thumb">${thumb}</span>
+          </button>
+        `;
+      }).join('');
+      allCoursesList.querySelectorAll('.all-courses-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const cid = el.getAttribute('data-course-id');
+          const c = (window.YORIMICHI_COURSES || []).find(x => x.id === cid);
+          if (!c) return;
+          if (allCoursesModal) allCoursesModal.hidden = true;
+          showCourseDetail(c);
+        });
+      });
+    }
+    if (showAllBtn) showAllBtn.addEventListener('click', () => {
+      if (allCoursesModal) {
+        allCoursesModal.hidden = false;
+        renderAllCoursesList('');
+        if (allCoursesSearch) allCoursesSearch.value = '';
+      }
+    });
+    if (allCoursesClose) allCoursesClose.addEventListener('click', () => {
+      if (allCoursesModal) allCoursesModal.hidden = true;
+    });
+    if (allCoursesSearch) {
+      let acsTimer = null;
+      allCoursesSearch.addEventListener('input', () => {
+        clearTimeout(acsTimer);
+        acsTimer = setTimeout(() => renderAllCoursesList(allCoursesSearch.value), 200);
+      });
+    }
+    if (allCoursesModal) allCoursesModal.addEventListener('click', (e) => {
+      if (e.target === allCoursesModal) allCoursesModal.hidden = true;
     });
 
     // Handle PWA shortcut URL params
