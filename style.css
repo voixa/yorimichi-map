@@ -6368,6 +6368,287 @@ body.map-fullscreen #map-container {
   flex-shrink: 0;
 }
 
+/* 📍 Spot submit form */
+.spot-submit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+.spot-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.spot-form-row .req { color: #dc2626; }
+.spot-form-row input,
+.spot-form-row textarea,
+.spot-form-row select {
+  background: var(--surface-1, white);
+  border: 1.5px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: inherit;
+  color: var(--text);
+}
+.spot-form-row input:focus,
+.spot-form-row textarea:focus,
+.spot-form-row select:focus {
+  outline: none;
+  border-color: var(--brand);
+}
+.spot-tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.spot-tag-chip {
+  background: var(--surface-2);
+  padding: 6px 10px;
+  border-radius: 100px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.spot-tag-chip input { display: none; }
+.spot-tag-chip:has(input:checked) {
+  background: linear-gradient(135deg, #ff7e3d, #ff4081);
+  color: white;
+}
+.spot-submit-notice {
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  padding: 10px 12px;
+  border-radius: 8px;
+  line-height: 1.6;
+}
+
+/* 💑 Couple share modal */
+.couple-modal { max-width: 420px; }
+.couple-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-muted);
+}
+.couple-course-display {
+  background: linear-gradient(135deg, #fff8e1, #ffe082);
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+  margin: 16px 0;
+}
+[data-theme="dark"] .couple-course-display {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.08));
+}
+.couple-course-emoji { font-size: 36px; }
+.couple-course-name { font-weight: 800; font-size: 16px; color: #5a3a00; margin-top: 4px; }
+[data-theme="dark"] .couple-course-name { color: #ffd589; }
+.couple-course-meta { font-size: 12px; color: #8a6a40; margin-top: 2px; }
+[data-theme="dark"] .couple-course-meta { color: #ffe8b0; }
+.couple-qr-wrap {
+  text-align: center;
+  padding: 16px;
+  background: white;
+  border-radius: 14px;
+  margin: 16px 0;
+}
+.couple-qr-wrap canvas {
+  border-radius: 8px;
+}
+.couple-qr-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  line-height: 1.4;
+}
+.couple-link-wrap {
+  display: flex;
+  gap: 6px;
+}
+.couple-link-wrap input {
+  flex: 1;
+  background: var(--surface-2);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--text);
+}
+
+/* 📷 Vintage photo album (デジカメ風) */
+.album-style-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--surface-2);
+  border-radius: 100px;
+  padding: 4px;
+  margin: 12px 0;
+}
+.album-style-tab {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  padding: 8px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+.album-style-tab.active {
+  background: var(--brand);
+  color: white;
+  box-shadow: 0 2px 8px rgba(255, 126, 61, 0.3);
+}
+
+.album-vintage {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 8px 0;
+}
+.album-page {
+  background:
+    repeating-linear-gradient(0deg, transparent 0, transparent 30px, rgba(0,0,0,0.02) 30px, rgba(0,0,0,0.02) 31px),
+    linear-gradient(to bottom, #f5ecd9 0%, #ede0c5 100%);
+  border-radius: 8px;
+  padding: 18px 14px;
+  box-shadow:
+    0 2px 6px rgba(0,0,0,0.1),
+    inset 0 0 30px rgba(120, 80, 30, 0.08);
+  position: relative;
+}
+[data-theme="dark"] .album-page {
+  background: linear-gradient(to bottom, #2a2520 0%, #1e1a17 100%);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 0 30px rgba(0,0,0,0.4);
+}
+/* Spiral binding effect on left */
+.album-page::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  background:
+    radial-gradient(circle at 50% 12px, rgba(0,0,0,0.3) 2px, transparent 3px),
+    radial-gradient(circle at 50% 36px, rgba(0,0,0,0.3) 2px, transparent 3px),
+    radial-gradient(circle at 50% 60px, rgba(0,0,0,0.3) 2px, transparent 3px),
+    radial-gradient(circle at 50% 84px, rgba(0,0,0,0.3) 2px, transparent 3px),
+    radial-gradient(circle at 50% 108px, rgba(0,0,0,0.3) 2px, transparent 3px),
+    radial-gradient(circle at 50% 132px, rgba(0,0,0,0.3) 2px, transparent 3px),
+    linear-gradient(to right, rgba(0,0,0,0.08), transparent);
+  background-size: 12px 24px;
+  background-repeat: repeat-y;
+  border-radius: 8px 0 0 8px;
+}
+.album-page-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-left: 18px;
+  border-bottom: 1px dashed rgba(120, 80, 30, 0.4);
+  padding-bottom: 8px;
+}
+[data-theme="dark"] .album-page-header { border-bottom-color: rgba(255,200,150,0.3); }
+.album-page-emoji {
+  font-size: 22px;
+}
+.album-page-title {
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #5a3a00;
+  flex: 1;
+}
+[data-theme="dark"] .album-page-title { color: #ffd589; }
+.album-page-count {
+  font-size: 10px;
+  font-weight: 800;
+  color: #8a6a40;
+  background: rgba(255,255,255,0.5);
+  padding: 3px 8px;
+  border-radius: 100px;
+}
+[data-theme="dark"] .album-page-count { background: rgba(255,255,255,0.1); color: #ffe8b0; }
+.album-page-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  padding-left: 18px;
+}
+.polaroid {
+  background: white;
+  padding: 8px 8px 28px;
+  box-shadow:
+    0 4px 12px rgba(0,0,0,0.18),
+    0 1px 3px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+  width: 140px;
+}
+.polaroid::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 8px;
+  background: rgba(255, 215, 100, 0.5);
+  border-radius: 2px;
+  opacity: 0.7;
+}
+.polaroid:hover {
+  transform: scale(1.06) rotate(0deg) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  z-index: 5;
+}
+.polaroid-img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background-size: cover;
+  background-position: center;
+  background-color: #888;
+  filter: contrast(1.05) saturate(0.92) sepia(0.06);
+}
+.polaroid-caption {
+  margin-top: 6px;
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", "Caveat", "Permanent Marker", cursive;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2a2520;
+  text-align: center;
+  line-height: 1.3;
+  min-height: 18px;
+}
+.polaroid-caption em {
+  font-style: italic;
+  font-weight: 400;
+  opacity: 0.75;
+  font-size: 9px;
+}
+[data-theme="dark"] .polaroid {
+  background: #efebe2;
+  color: #2a2520;
+}
+@media (max-width: 768px) {
+  .polaroid { width: calc(50% - 8px); padding: 6px 6px 22px; }
+  .polaroid-caption { font-size: 10px; }
+  .album-page-photos { gap: 12px; }
+}
+
 /* 🎰 Gacha mood selector */
 .mood-section {
   margin: 12px 0;

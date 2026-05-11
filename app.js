@@ -3462,6 +3462,8 @@
     fitToEndpoints();
     saveStateToHash();
 
+    // 直近に適用したコースID（カップル共有等で参照）
+    if (route.isCurated && route.courseId) state._lastAppliedCourseId = route.courseId;
     // 🌤 出発前ブリーフィング（curated コースのみ・非同期）
     if (route.isCurated && route.courseId) {
       const course = (window.YORIMICHI_COURSES || []).find(c => c.id === route.courseId);
@@ -3927,6 +3929,119 @@ ${trkPts}
     }
   }
 
+  // 📍 ユーザーのスポット投稿フォーム
+  function setupSpotSubmitForm() {
+    const form = document.getElementById('spot-submit-form');
+    if (!form || form.dataset.bound) return;
+    form.dataset.bound = '1';
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('spot-name-input')?.value.trim();
+      const cat = document.getElementById('spot-cat-input')?.value;
+      const area = document.getElementById('spot-area-input')?.value.trim();
+      const addr = document.getElementById('spot-addr-input')?.value.trim();
+      const desc = document.getElementById('spot-desc-input')?.value.trim();
+      const author = document.getElementById('spot-author-input')?.value.trim();
+      const tags = Array.from(document.querySelectorAll('#spot-tag-chips input:checked')).map(c => c.value);
+      if (!name || !desc) {
+        showToast('スポット名と魅力は必須です', 'error', 3000);
+        return;
+      }
+      // 位置情報を取得（できれば）
+      let coords = null;
+      try {
+        const pos = await new Promise((resolve, reject) => {
+          if (!navigator.geolocation) return reject(new Error('no gps'));
+          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 });
+        });
+        coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      } catch {}
+      const payload = {
+        name, cat, area, addr, desc, author, tags,
+        coords,
+        client_at: new Date().toISOString(),
+      };
+      // localStorage に投稿履歴を残す
+      try {
+        const list = JSON.parse(localStorage.getItem('yorimichi-submitted-spots') || '[]');
+        list.push(payload);
+        localStorage.setItem('yorimichi-submitted-spots', JSON.stringify(list.slice(-50)));
+      } catch {}
+      // バックエンドへPOST（あれば。失敗してもローカル保存はOK）
+      try {
+        await fetch(`${API_BASE}/api/submit-spot`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } catch (e) { console.warn('submit-spot POST failed', e); }
+      showToast('🙏 投稿ありがとうございます！承認後コースに登場するかも', 'success', 4500);
+      form.reset();
+      const modal = document.getElementById('spot-submit-modal');
+      if (modal) modal.hidden = true;
+    });
+  }
+
+  // 💑 カップル共有モーダル
+  function showCoupleModal() {
+    const modal = document.getElementById('couple-modal');
+    if (!modal) return;
+    modal.hidden = false;
+    const noWalk = document.getElementById('couple-no-walk');
+    const active = document.getElementById('couple-active');
+    // 現在のコースを取得
+    let course = null;
+    if (state.activeWalk?.courseId) {
+      course = (window.YORIMICHI_COURSES || []).find(c => c.id === state.activeWalk.courseId);
+    }
+    if (!course && state.selected && state.selected.length > 0) {
+      // 最近 applyRoute したコース
+      const courseId = state._lastAppliedCourseId;
+      if (courseId) course = (window.YORIMICHI_COURSES || []).find(c => c.id === courseId);
+    }
+    if (!course) {
+      if (noWalk) noWalk.hidden = false;
+      if (active) active.hidden = true;
+      return;
+    }
+    if (noWalk) noWalk.hidden = true;
+    if (active) active.hidden = false;
+    document.getElementById('couple-course-emoji').textContent = course.themeIcon || course.areaIcon || '🌳';
+    document.getElementById('couple-course-name').textContent = tField(course, 'name');
+    document.getElementById('couple-course-meta').textContent = `${course.areaIcon || ''} ${tField(course, 'areaName')} ・ 約${course.estimatedMin}分`;
+    // 共有 URL: ホスト + ?couple=courseId
+    const shareUrl = `${location.origin}${location.pathname}?couple=${encodeURIComponent(course.id)}`;
+    const linkInput = document.getElementById('couple-link-input');
+    if (linkInput) linkInput.value = shareUrl;
+    // QR コード生成
+    const canvas = document.getElementById('couple-qr-canvas');
+    if (canvas && typeof loadQRImage === 'function') {
+      loadQRImage(shareUrl, 200).then(img => {
+        if (!img) return;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, 200, 200);
+        ctx.drawImage(img, 0, 0, 200, 200);
+      }).catch(() => {});
+    }
+    // コピーボタン
+    const copyBtn = document.getElementById('couple-copy-btn');
+    if (copyBtn) copyBtn.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        showToast('📋 リンクをコピーしました', 'success', 2000);
+      } catch {
+        showToast('コピー失敗', 'error', 2000);
+      }
+    };
+    // LINEシェアボタン
+    const lineBtn = document.getElementById('couple-line-btn');
+    if (lineBtn) lineBtn.onclick = () => {
+      const txt = `${tField(course, 'name')} を一緒に歩こう 👣\n${shareUrl}`;
+      const url = `https://line.me/R/msg/text/?${encodeURIComponent(txt)}`;
+      window.open(url, '_blank', 'noopener');
+    };
+  }
+
   // 📰 統合旅ログフィード（歩行履歴 + 写真撮影 + メモ書き）
   function renderJourneyFeed() {
     const titleEl = $('#me-feed-title');
@@ -4270,8 +4385,10 @@ ${trkPts}
   }
 
   // ===== Photo album =====
+  let _albumStyle = (localStorage.getItem('yorimichi-album-style') || 'vintage');
+
   function renderPhotoAlbum() {
-    const grid = $('#album-grid');
+    const grid = $('#album-content') || $('#album-grid');
     const stats = $('#album-stats');
     if (!grid || !stats) return;
 
@@ -4334,16 +4451,57 @@ ${trkPts}
       return;
     }
 
-    allPhotos.forEach((p, i) => {
-      const tile = document.createElement('div');
-      tile.className = 'album-photo';
-      tile.innerHTML = `
-        <img src="${escapeHtml(p.url)}" alt="${escapeHtml(p.stopName)}" loading="lazy" />
-        <div class="album-photo-meta">${escapeHtml(p.areaIcon || '')} ${escapeHtml(p.stopName)}</div>
-      `;
-      tile.addEventListener('click', () => showPhotoViewer(p, allPhotos, i));
-      grid.appendChild(tile);
-    });
+    if (_albumStyle === 'vintage') {
+      // 📷 ヴィンテージ表示：コースごとにグループ化、ポラロイド/フィルム風
+      const groups = {};
+      allPhotos.forEach((p, i) => {
+        const key = p.courseId;
+        if (!groups[key]) groups[key] = { courseName: p.courseName, areaIcon: p.areaIcon, photos: [] };
+        groups[key].photos.push({ ...p, _idx: i });
+      });
+      grid.className = 'album-vintage';
+      grid.innerHTML = Object.values(groups).map(g => `
+        <div class="album-page">
+          <div class="album-page-header">
+            <span class="album-page-emoji">${escapeHtml(g.areaIcon || '📷')}</span>
+            <div class="album-page-title">${escapeHtml(g.courseName)}</div>
+            <div class="album-page-count">${g.photos.length}枚</div>
+          </div>
+          <div class="album-page-photos">
+            ${g.photos.map(p => {
+              // ランダムな軽い回転で「貼った感」演出（決定的にする）
+              const seed = (p.stopIdx * 17 + p.stopName.length) % 7;
+              const rot = (seed - 3) * 1.2; // -3.6 ~ +3.6 deg
+              return `
+                <div class="polaroid" style="transform: rotate(${rot.toFixed(1)}deg)" data-photo-idx="${p._idx}">
+                  <div class="polaroid-img" style="background-image:url('${escapeHtml(p.url)}')"></div>
+                  <div class="polaroid-caption">${escapeHtml(p.stopName)}${p.desc ? `<br><em>${escapeHtml(p.desc.slice(0, 50))}${p.desc.length > 50 ? '…' : ''}</em>` : ''}</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `).join('');
+      grid.querySelectorAll('.polaroid').forEach(el => {
+        el.addEventListener('click', () => {
+          const i = parseInt(el.getAttribute('data-photo-idx'), 10);
+          showPhotoViewer(allPhotos[i], allPhotos, i);
+        });
+      });
+    } else {
+      // ▦ グリッド表示
+      grid.className = 'album-grid';
+      allPhotos.forEach((p, i) => {
+        const tile = document.createElement('div');
+        tile.className = 'album-photo';
+        tile.innerHTML = `
+          <img src="${escapeHtml(p.url)}" alt="${escapeHtml(p.stopName)}" loading="lazy" />
+          <div class="album-photo-meta">${escapeHtml(p.areaIcon || '')} ${escapeHtml(p.stopName)}</div>
+        `;
+        tile.addEventListener('click', () => showPhotoViewer(p, allPhotos, i));
+        grid.appendChild(tile);
+      });
+    }
   }
 
   function showPhotoViewer(photo, photoList, currentIdx) {
@@ -7163,6 +7321,17 @@ ${trkPts}
     $('#ms-collection')?.addEventListener('click', () => showCollection());
     $('#ms-settings')?.addEventListener('click', () => openSettingsModal());
     $('#ms-help')?.addEventListener('click', () => { $('#help-modal').hidden = false; });
+    // 📍 オススメスポット投稿
+    $('#ms-spot-submit')?.addEventListener('click', () => {
+      $('#spot-submit-modal').hidden = false;
+    });
+    $('#spot-submit-close')?.addEventListener('click', () => { $('#spot-submit-modal').hidden = true; });
+    setupSpotSubmitForm();
+    // 💑 カップル共有
+    $('#ms-couple')?.addEventListener('click', () => {
+      showCoupleModal();
+    });
+    $('#couple-close')?.addEventListener('click', () => { $('#couple-modal').hidden = true; });
 
     // スクロールトップボタン
     const scrollBtn = $('#scroll-top-btn');
@@ -10367,6 +10536,21 @@ ${hashtag}`;
     });
     const albumClose = $('#photo-album-close');
     if (albumClose) albumClose.addEventListener('click', () => { $('#photo-album-modal').hidden = true; });
+    // アルバムスタイル切替
+    $$('.album-style-tab').forEach(tab => {
+      // 起動時の active 反映
+      if (tab.dataset.albumStyle === _albumStyle) {
+        $$('.album-style-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      }
+      tab.addEventListener('click', () => {
+        $$('.album-style-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        _albumStyle = tab.dataset.albumStyle;
+        try { localStorage.setItem('yorimichi-album-style', _albumStyle); } catch {}
+        renderPhotoAlbum();
+      });
+    });
 
     // 散歩履歴モーダル
     const walkLogBtn = $('#show-walk-log');
@@ -10577,6 +10761,19 @@ ${hashtag}`;
     const params = new URLSearchParams(location.search);
     if (params.has('gacha')) setTimeout(() => showGachaModal(), 800);
     if (params.has('collection')) setTimeout(() => showCollection(), 800);
+    // 💑 カップル共有: ?couple=courseId で受信
+    const coupleCourseId = params.get('couple');
+    if (coupleCourseId) {
+      setTimeout(() => {
+        const c = (window.YORIMICHI_COURSES || []).find(x => x.id === coupleCourseId);
+        if (c) {
+          if (confirm(`💑 パートナーから共有されたコース「${tField(c, 'name')}」をセットしますか？`)) {
+            applyRoute(courseToRoute(c));
+            showToast(`💑 「${tField(c, 'name')}」をセットしました！`, 'success', 3500);
+          }
+        }
+      }, 1200);
+    }
 
     // Course detail modal
     $('#course-detail-close').addEventListener('click', () => $('#course-detail-modal').hidden = true);

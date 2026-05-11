@@ -252,6 +252,101 @@
     </div>
   </div>
 
+  <!-- ============ カップル共有モーダル ============ -->
+  <div class="modal-backdrop" id="couple-modal" hidden>
+    <div class="modal couple-modal" role="dialog" aria-label="2人で歩く" aria-modal="true">
+      <button class="modal-close" id="couple-close" type="button" aria-label="閉じる">✕</button>
+      <div style="text-align:center; font-size:48px; margin-bottom:8px;">💑</div>
+      <h2 class="modal-title">2人で同じコースを歩く</h2>
+      <p class="modal-sub">パートナーや友達と同じコースを共有して、お互いの進捗を確認できます。</p>
+
+      <div id="couple-no-walk" class="couple-empty">
+        <p>まだコースを選んでいません。<br>先にガチャを引いてコースを設定してください。</p>
+      </div>
+
+      <div id="couple-active" hidden>
+        <div class="couple-course-display">
+          <div class="couple-course-emoji" id="couple-course-emoji">🌳</div>
+          <div class="couple-course-name" id="couple-course-name">—</div>
+          <div class="couple-course-meta" id="couple-course-meta">—</div>
+        </div>
+        <div class="couple-qr-wrap">
+          <canvas id="couple-qr-canvas" width="200" height="200"></canvas>
+          <p class="couple-qr-hint">パートナーにQRをスキャンしてもらうと、<br>同じコースが自動でセットされます</p>
+        </div>
+        <div class="couple-link-wrap">
+          <input type="text" id="couple-link-input" readonly />
+          <button class="btn-secondary" id="couple-copy-btn" type="button">📋 リンクコピー</button>
+        </div>
+        <button class="btn-share-line" id="couple-line-btn" type="button" style="width:100%; margin-top:8px;">📱 LINEで送る</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ オススメスポット投稿モーダル ============ -->
+  <div class="modal-backdrop" id="spot-submit-modal" hidden>
+    <div class="modal spot-submit-modal" role="dialog" aria-label="オススメスポット投稿" aria-modal="true">
+      <button class="modal-close" id="spot-submit-close" type="button" aria-label="閉じる">✕</button>
+      <h2 class="modal-title">📍 オススメスポットを投稿</h2>
+      <p class="modal-sub">あなたのお気に入りの場所を共有しましょう。承認後、他のユーザーのコースに登場するかもしれません。</p>
+      <form id="spot-submit-form" class="spot-submit-form">
+        <label class="spot-form-row">
+          <span>スポット名 <span class="req">*</span></span>
+          <input type="text" id="spot-name-input" required maxlength="60" placeholder="例: 神泉の隠れ家カフェ" />
+        </label>
+        <label class="spot-form-row">
+          <span>カテゴリ</span>
+          <select id="spot-cat-input">
+            <option value="cafe">☕ カフェ</option>
+            <option value="shop">🛍 ショップ</option>
+            <option value="food">🍱 食事</option>
+            <option value="bakery">🥐 ベーカリー</option>
+            <option value="park">🌳 公園</option>
+            <option value="viewpoint">📸 絶景</option>
+            <option value="shrine">⛩ 神社</option>
+            <option value="temple">🏯 寺</option>
+            <option value="museum">🏛 美術館・博物館</option>
+            <option value="art">🎨 アート</option>
+            <option value="bar">🍻 バー・居酒屋</option>
+            <option value="other">📌 その他</option>
+          </select>
+        </label>
+        <label class="spot-form-row">
+          <span>エリア</span>
+          <input type="text" id="spot-area-input" maxlength="40" placeholder="例: 渋谷区、京都市東山区" />
+        </label>
+        <label class="spot-form-row">
+          <span>住所 or 駅近</span>
+          <input type="text" id="spot-addr-input" maxlength="80" placeholder="例: ◯◯駅 徒歩5分" />
+        </label>
+        <label class="spot-form-row">
+          <span>このスポットの魅力（120字まで） <span class="req">*</span></span>
+          <textarea id="spot-desc-input" required maxlength="120" rows="3" placeholder="例: 古民家リノベのカフェ。ベイクドチーズケーキが絶品で、店主が地元の歴史にも詳しい。"></textarea>
+        </label>
+        <label class="spot-form-row">
+          <span>気分タグ（複数選択可）</span>
+          <div class="spot-tag-chips" id="spot-tag-chips">
+            <label class="spot-tag-chip"><input type="checkbox" value="まったり"><span>😌 まったり</span></label>
+            <label class="spot-tag-chip"><input type="checkbox" value="アクティブ"><span>🏃 アクティブ</span></label>
+            <label class="spot-tag-chip"><input type="checkbox" value="写真映え"><span>📸 写真映え</span></label>
+            <label class="spot-tag-chip"><input type="checkbox" value="夜OK"><span>🌃 夜OK</span></label>
+            <label class="spot-tag-chip"><input type="checkbox" value="雨でもOK"><span>☔ 雨でもOK</span></label>
+            <label class="spot-tag-chip"><input type="checkbox" value="地元の穴場"><span>💎 地元の穴場</span></label>
+          </div>
+        </label>
+        <label class="spot-form-row">
+          <span>あなたの名前（任意・公開されません）</span>
+          <input type="text" id="spot-author-input" maxlength="30" placeholder="例: yorimichi_lover" />
+        </label>
+        <div class="spot-submit-notice">
+          ※ ご投稿いただいた内容は管理者が確認の上、誹謗中傷・営業目的・著作権侵害がないものを採用します。<br>
+          ※ 位置情報を含めて送信されます（より正確なルート生成のため）。
+        </div>
+        <button type="submit" class="btn-primary" style="width: 100%;">📨 投稿する</button>
+      </form>
+    </div>
+  </div>
+
   <!-- ============ 全コース一覧モーダル ============ -->
   <div class="modal-backdrop" id="all-courses-modal" hidden>
     <div class="modal all-courses-modal" role="dialog" aria-label="全コース一覧" aria-modal="true">
@@ -786,6 +881,14 @@
               <span class="ms-emoji">⚙️</span>
               <span class="ms-label">設定<br><small style="color:var(--text-muted);font-weight:500;">テーマ・音声</small></span>
             </button>
+            <button class="me-shortcut" id="ms-spot-submit" type="button">
+              <span class="ms-emoji">📍</span>
+              <span class="ms-label">スポット投稿<br><small style="color:var(--text-muted);font-weight:500;">あなたの推し</small></span>
+            </button>
+            <button class="me-shortcut" id="ms-couple" type="button">
+              <span class="ms-emoji">💑</span>
+              <span class="ms-label">2人で歩く<br><small style="color:var(--text-muted);font-weight:500;">QRで共有</small></span>
+            </button>
             <button class="me-shortcut" id="ms-help" type="button">
               <span class="ms-emoji">❓</span>
               <span class="ms-label">ヘルプ<br><small style="color:var(--text-muted);font-weight:500;">FAQ・お問い合わせ</small></span>
@@ -1268,9 +1371,13 @@
   <div class="modal-backdrop" id="photo-album-modal" hidden>
     <div class="modal photo-album-modal" role="dialog" aria-label="撮影アルバム" aria-modal="true">
       <button class="modal-close" id="photo-album-close" type="button" aria-label="閉じる">✕</button>
-      <h2 class="modal-title">📷 撮影アルバム</h2>
+      <h2 class="modal-title">📷 思い出アルバム</h2>
       <p class="album-stats" id="album-stats">—</p>
-      <div class="album-grid" id="album-grid">
+      <div class="album-style-tabs">
+        <button class="album-style-tab active" data-album-style="vintage" type="button">📷 アナログ風</button>
+        <button class="album-style-tab" data-album-style="grid" type="button">▦ グリッド</button>
+      </div>
+      <div class="album-content" id="album-content">
         <!-- populated by JS -->
       </div>
     </div>

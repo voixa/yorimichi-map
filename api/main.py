@@ -18,6 +18,7 @@ Endpoints:
 import os
 import json
 import logging
+from datetime import datetime
 
 import stripe
 from flask import Flask, request, jsonify
@@ -700,6 +701,38 @@ def spot_guide():
     except Exception as e:
         logger.exception("spot_guide failed")
         return jsonify({"error": "server_error"}), 502
+
+
+@app.route("/api/submit-spot", methods=["POST"])
+def submit_spot():
+    """ユーザー投稿のスポット情報を受け取って Firestore に保存（モデレーション待ち）"""
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()[:80]
+    desc = (data.get("desc") or "").strip()[:200]
+    if not name or not desc:
+        return jsonify({"error": "name_and_desc_required"}), 400
+    spot = {
+        "name": name,
+        "cat": (data.get("cat") or "other")[:20],
+        "area": (data.get("area") or "")[:60],
+        "addr": (data.get("addr") or "")[:120],
+        "desc": desc,
+        "author": (data.get("author") or "")[:40],
+        "tags": [str(t)[:20] for t in (data.get("tags") or [])][:8],
+        "coords": data.get("coords"),
+        "client_at": data.get("client_at"),
+        "submitted_at": datetime.utcnow().isoformat() + "Z",
+        "status": "pending",  # pending | approved | rejected
+    }
+    if firestore_client:
+        try:
+            doc_ref = firestore_client.collection("user_submitted_spots").document()
+            doc_ref.set(spot)
+            return jsonify({"ok": True, "id": doc_ref.id})
+        except Exception as e:
+            logger.exception("submit_spot firestore failed")
+    # Firestore 無い時もエラーにせず受理だけ（フロントは localStorage で保持）
+    return jsonify({"ok": True, "id": None})
 
 
 @app.route("/api/pre-walk-briefing", methods=["POST"])
