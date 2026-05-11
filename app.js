@@ -6607,6 +6607,15 @@ ${trkPts}
     sec.hidden = false;
   }
 
+  // 冗長な天気表示を間引く（warning が出てるときは old banner を隠す）
+  function maybeHideRedundantWeather() {
+    const warning = document.getElementById('weather-warning');
+    const banner = document.getElementById('weather-banner');
+    if (warning && !warning.hidden && banner) {
+      banner.hidden = true;
+    }
+  }
+
   // ⚠️ 天気警告バナー（猛暑・寒波・強雨・雷）
   function renderWeatherWarning() {
     const sec = document.getElementById('weather-warning');
@@ -6652,6 +6661,8 @@ ${trkPts}
     } else {
       sec.hidden = true;
     }
+    // 冗長な weather-banner を間引く
+    setTimeout(() => maybeHideRedundantWeather(), 300);
   }
 
   // 🍀 今日のラッキーコース（日付シードで決定的に1コース選択）
@@ -10099,7 +10110,7 @@ ${trkPts}
           totalDistEl.hidden = true;
         }
       }
-      // 🏃 ペース表示（5分以上 + 100m以上歩いた場合のみ表示）
+      // 🏃 ペース表示（2分以上 + 100m以上歩いた場合のみ表示）
       if (paceEl) {
         if (elapsed >= 60 * 2 && totalKm >= 0.1) {
           const hours = elapsed / 3600;
@@ -10112,6 +10123,23 @@ ${trkPts}
           else icon = '⚡'; // 走ってる？
           paceEl.textContent = `${icon} ${kmh.toFixed(1)}km/h`;
           paceEl.hidden = false;
+          // 🔔 ペース通知（10分ごとに1回）
+          const aw = state.activeWalk;
+          if (aw) {
+            aw._lastPaceNotifyAt = aw._lastPaceNotifyAt || 0;
+            const now = Date.now();
+            if (now - aw._lastPaceNotifyAt > 10 * 60 * 1000 && elapsed >= 5 * 60) {
+              aw._lastPaceNotifyAt = now;
+              if (kmh < 2.5) {
+                showToast('🚶 ゆっくりペース。お疲れさまです', 'info', 3000);
+              } else if (kmh >= 6.5) {
+                showToast('⚡ ペース速め！水分補給を忘れずに', 'info', 3000);
+                vib(15);
+              } else if (kmh >= 4 && kmh <= 5.5) {
+                showToast('👍 良いペースです', 'success', 2500);
+              }
+            }
+          }
         } else {
           paceEl.hidden = true;
         }
