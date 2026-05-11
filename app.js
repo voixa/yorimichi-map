@@ -6521,6 +6521,39 @@ ${trkPts}
     };
   }
 
+  // 🏅 最近完走したコース（横スクロール、最大5件）
+  function renderRecentCompletions() {
+    const sec = document.getElementById('recent-completions');
+    const scroller = document.getElementById('rc-scroller');
+    if (!sec || !scroller) return;
+    const history = (state.walkHistory || []).filter(h => h.completed).slice().reverse().slice(0, 5);
+    if (history.length === 0) { sec.hidden = true; return; }
+    const allCourses = (window.YORIMICHI_COURSES || []);
+    const items = history.map(h => allCourses.find(c => c.id === h.courseId)).filter(Boolean);
+    // 重複排除（同じコースを何回完走してもこの行では1度）
+    const seen = new Set();
+    const unique = items.filter(c => { if (seen.has(c.id)) return false; seen.add(c.id); return true; });
+    if (unique.length === 0) { sec.hidden = true; return; }
+    scroller.innerHTML = unique.map(c => {
+      const count = state.walkCounts?.[c.id] || 1;
+      return `
+        <button class="rc-card" type="button" data-course-id="${escapeHtml(c.id)}">
+          <span class="rc-emoji">${c.themeIcon || c.areaIcon || '🌳'}</span>
+          <span class="rc-name">${escapeHtml(tField(c, 'name'))}</span>
+          <span class="rc-count">×${count}回</span>
+        </button>
+      `;
+    }).join('');
+    scroller.querySelectorAll('.rc-card').forEach(el => {
+      el.addEventListener('click', () => {
+        const cid = el.getAttribute('data-course-id');
+        const c = allCourses.find(x => x.id === cid);
+        if (c) showCourseDetail(c);
+      });
+    });
+    sec.hidden = false;
+  }
+
   // 🌐 コミュニティバナー（TikTok + 投稿誘導）
   function renderCommunityBanner() {
     const sec = document.getElementById('community-banner');
@@ -8134,6 +8167,7 @@ ${trkPts}
     try { renderLuckyCourse(); } catch {}
     try { renderHomeQuickActions(); } catch {}
     try { renderCommunityBanner(); } catch {}
+    try { renderRecentCompletions(); } catch {}
     try { renderStatusBar(); } catch {}
     // 📍 GPS取得後に近場コースを推薦（非同期、失敗しても無視）
     setTimeout(() => { renderNearbyBanner().catch(() => {}); }, 1500);
@@ -8229,6 +8263,7 @@ ${trkPts}
         try { renderTodaySummary(); } catch {}
         try { renderLuckyCourse(); } catch {}
         try { renderHomeQuickActions(); } catch {}
+        try { renderRecentCompletions(); } catch {}
         try { renderCommunityBanner(); } catch {}
         try { renderWelcomeCard(); } catch {}
         try { renderStreakBadge(); } catch {}
@@ -8328,6 +8363,12 @@ ${trkPts}
       $('#coin-history-modal').hidden = false;
     });
     $('#coin-history-close')?.addEventListener('click', () => { $('#coin-history-modal').hidden = true; });
+    // 📔 散歩日記モーダル
+    $('#ms-journal')?.addEventListener('click', () => {
+      renderJournalList();
+      $('#journal-modal').hidden = false;
+    });
+    $('#journal-close')?.addEventListener('click', () => { $('#journal-modal').hidden = true; });
     // 📍 オススメスポット投稿
     $('#ms-spot-submit')?.addEventListener('click', () => {
       $('#spot-submit-modal').hidden = false;
@@ -9862,6 +9903,10 @@ ${trkPts}
       const bar = document.getElementById('active-walk-bar');
       if (bar) bar.hidden = true;
     } catch {}
+    try {
+      const nsl = document.getElementById('next-stop-label');
+      if (nsl) nsl.hidden = true;
+    } catch {}
     if (state._headupEnabled) {
       state._headupEnabled = false;
       try { clearMapHeading(); } catch {}
@@ -9912,10 +9957,19 @@ ${trkPts}
       if (progressFill) progressFill.style.width = '100%';
       const etaEl = $('#walk-hud-eta');
       if (etaEl) etaEl.hidden = true;
+      const nsl = document.getElementById('next-stop-label');
+      if (nsl) nsl.hidden = true;
       return;
     }
     const next = state.selected[nextIdx];
     $('#walk-hud-name').textContent = (next.emoji || '📍') + ' ' + (next.name || '次のスポット');
+    // 🗺 マップ上の浮きラベルも同期
+    const nsl = document.getElementById('next-stop-label');
+    if (nsl) {
+      const nslName = document.getElementById('nsl-name');
+      if (nslName) nslName.textContent = `${next.emoji || '📍'} ${next.name}`;
+      nsl.hidden = false;
+    }
     $('#walk-hud-progress').textContent = `${visitedCount}/${totalStops}`;
     // 全体進捗バー
     const progressFill = $('#walk-hud-progress-fill');
@@ -9926,16 +9980,24 @@ ${trkPts}
     if (userLoc && next.lat != null && next.lng != null) {
       const dKm = haversineKm(userLoc, next);
       const dM = Math.round(dKm * 1000);
-      $('#walk-hud-dist').textContent = dM >= 1000 ? `${(dM/1000).toFixed(1)} km` : `${dM} m`;
+      const distLabel = dM >= 1000 ? `${(dM/1000).toFixed(1)} km` : `${dM} m`;
+      $('#walk-hud-dist').textContent = distLabel;
       // 矢印を北基準で次スポット方位へ回転
       const brg = bearing([userLoc.lat, userLoc.lng], [next.lat, next.lng]);
       $('#walk-hud-arrow').style.transform = `rotate(${brg}deg)`;
       $('#walk-hud-arrow').style.opacity = '1';
+      // 浮きラベルにも距離と方位
+      const nslDist = document.getElementById('nsl-dist');
+      const nslArrow = document.querySelector('#next-stop-label .nsl-arrow');
+      if (nslDist) nslDist.textContent = distLabel;
+      if (nslArrow) nslArrow.style.transform = `rotate(${brg}deg)`;
       // 音声ナビ：次スポットの index と方位を保持して案内
       maybeAnnounceDistance(userLoc, { ...next, _idx: nextIdx, _bearing: brg });
     } else {
       $('#walk-hud-dist').textContent = 'GPS取得中…';
       $('#walk-hud-arrow').style.opacity = '0.5';
+      const nslDist = document.getElementById('nsl-dist');
+      if (nslDist) nslDist.textContent = 'GPS待ち';
     }
 
     // 累積距離 + 経過時間を更新
@@ -10950,6 +11012,40 @@ ${route.themeIcon} ${route.themeName} ・ ${route.stops.length}スポット ・ 
   // 📔 散歩日記
   function getWalkJournals() {
     try { return JSON.parse(localStorage.getItem('yorimichi-walk-journals') || '[]'); } catch { return []; }
+  }
+  function renderJournalList() {
+    const listEl = document.getElementById('journal-list');
+    if (!listEl) return;
+    const journals = getWalkJournals().slice().reverse(); // 新しい順
+    if (journals.length === 0) {
+      listEl.innerHTML = `
+        <div class="journal-empty">
+          <div style="font-size:48px;opacity:0.4;margin-bottom:12px;">📔</div>
+          <div style="font-weight:700;color:var(--text);">まだ日記がありません</div>
+          <div style="font-size:12px;margin-top:6px;color:var(--text-muted);">コースを完走後に「日記を保存」で記録できます</div>
+        </div>
+      `;
+      return;
+    }
+    listEl.innerHTML = journals.map(j => {
+      const courses = (window.YORIMICHI_COURSES || []);
+      const c = courses.find(x => x.id === j.courseId);
+      const emoji = c?.themeIcon || c?.areaIcon || '📔';
+      const d = j.at ? new Date(j.at) : null;
+      const dateStr = d ? `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : (j.date || '');
+      return `
+        <div class="journal-entry">
+          <div class="je-header">
+            <span class="je-emoji">${escapeHtml(emoji)}</span>
+            <div class="je-meta">
+              <div class="je-course">${escapeHtml(j.courseName || '自由ルート')}</div>
+              <div class="je-date">${escapeHtml(dateStr)}</div>
+            </div>
+          </div>
+          <div class="je-text">${escapeHtml(j.text || '')}</div>
+        </div>
+      `;
+    }).join('');
   }
   function saveWalkJournal(courseId, courseName, date, text) {
     const list = getWalkJournals();

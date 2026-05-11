@@ -7036,6 +7036,151 @@ html.text-size-xlarge .modal-title { font-size: 22px; }
 }
 .wj-save:disabled { opacity: 0.7; cursor: default; }
 
+/* 🗺 Next-stop floating label on map during walk */
+.next-stop-label {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 20, 22, 0.92);
+  color: white;
+  padding: 8px 14px;
+  border-radius: 14px;
+  z-index: 7500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  max-width: calc(100% - 24px);
+  font-family: inherit;
+  animation: nsl-slide-down 0.3s ease-out;
+}
+.next-stop-label[hidden] { display: none; }
+@keyframes nsl-slide-down {
+  from { transform: translate(-50%, -30px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+.nsl-arrow {
+  font-size: 24px;
+  color: #ff7e3d;
+  font-weight: 800;
+  transition: transform 0.4s ease;
+}
+.nsl-body { display: flex; flex-direction: column; min-width: 0; }
+.nsl-label { font-size: 9px; font-weight: 800; opacity: 0.7; letter-spacing: 0.1em; text-transform: uppercase; }
+.nsl-name {
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+.nsl-dist { font-size: 12px; font-weight: 800; color: #ffd54f; flex-shrink: 0; }
+@supports (padding: env(safe-area-inset-top)) {
+  .next-stop-label { top: calc(12px + env(safe-area-inset-top, 0px)); }
+}
+@media (max-width: 768px) {
+  .nsl-name { max-width: 130px; font-size: 12px; }
+}
+
+/* 🏅 Recent completions horizontal scroller */
+.recent-completions {
+  margin: 8px 0 12px;
+}
+.rc-header {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+.rc-scroller {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.rc-scroller::-webkit-scrollbar { display: none; }
+.rc-card {
+  flex-shrink: 0;
+  width: 120px;
+  background: var(--surface-2);
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: transform 0.1s ease;
+}
+.rc-card:active { transform: scale(0.96); }
+.rc-emoji { font-size: 28px; }
+.rc-name {
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.rc-count {
+  font-size: 10px;
+  font-weight: 800;
+  color: #ff4081;
+  background: rgba(255, 64, 129, 0.1);
+  padding: 2px 6px;
+  border-radius: 100px;
+}
+
+/* 📔 Journal browser */
+.journal-modal { max-width: 480px; }
+.journal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 60vh;
+  overflow-y: auto;
+  margin-top: 12px;
+}
+.journal-empty { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+.journal-entry {
+  background: linear-gradient(135deg, #f5ecd9, #ede0c5);
+  border-radius: 12px;
+  padding: 12px;
+  border-left: 4px solid #8b6914;
+}
+[data-theme="dark"] .journal-entry {
+  background: linear-gradient(135deg, rgba(139, 105, 20, 0.15), rgba(139, 105, 20, 0.08));
+}
+.je-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.je-emoji { font-size: 22px; }
+.je-course { font-weight: 800; font-size: 13px; color: #5a3a00; }
+[data-theme="dark"] .je-course { color: #ffd589; }
+.je-date { font-size: 10px; color: #8a6a40; }
+[data-theme="dark"] .je-date { color: #ffe8b0; }
+.je-text {
+  font-family: "Hiragino Mincho ProN", serif;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
 /* 🌐 Community banner (TikTok + spot submission promo) */
 .community-banner {
   background: linear-gradient(135deg, #1f1f2c 0%, #2d1f4d 100%);
