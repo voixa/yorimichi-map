@@ -2543,6 +2543,7 @@
 
   let quickMode = 'all'; // 'all' | 'undiscovered' | 'rare-up'
   let gachaMood = ''; // '' | 'chill' | 'active' | 'food' | 'view' | 'night'
+  let gachaMaxMin = 0; // 0 = 指定なし, 30/60/120/240
 
   // 気分に応じてコースをフィルタリング
   function filterByMood(courses, mood) {
@@ -2602,6 +2603,11 @@
     if (gachaMood) {
       const moodPool = filterByMood(pool, gachaMood);
       if (moodPool.length >= 1) pool = moodPool;
+    }
+    // ⏱ 時間フィルタ
+    if (gachaMaxMin > 0) {
+      const timePool = pool.filter(c => (c.estimatedMin || 0) <= gachaMaxMin);
+      if (timePool.length >= 1) pool = timePool;
     }
     if (pool.length === 0) return null;
 
@@ -3934,6 +3940,49 @@ ${trkPts}
     const form = document.getElementById('spot-submit-form');
     if (!form || form.dataset.bound) return;
     form.dataset.bound = '1';
+    // 📸 写真選択ハンドリング
+    let _spotPhotoDataUrl = null;
+    const photoInput = document.getElementById('spot-photo-input');
+    const photoPreview = document.getElementById('spot-photo-preview');
+    const aiBtn = document.getElementById('spot-photo-ai');
+    if (photoInput) photoInput.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      try {
+        _spotPhotoDataUrl = await compressImageToDataUrl(file);
+        if (photoPreview) {
+          photoPreview.innerHTML = `<img src="${_spotPhotoDataUrl}" alt="プレビュー" />`;
+        }
+        if (aiBtn) aiBtn.hidden = false;
+      } catch (e) {
+        showToast('写真の処理に失敗しました', 'error', 2500);
+      }
+    });
+    if (aiBtn) aiBtn.addEventListener('click', async () => {
+      if (!_spotPhotoDataUrl) return;
+      const name = document.getElementById('spot-name-input')?.value.trim() || 'スポット';
+      const area = document.getElementById('spot-area-input')?.value.trim() || '';
+      aiBtn.disabled = true;
+      aiBtn.textContent = '⏳ 生成中…';
+      try {
+        const desc = await describePhotoWithAI(_spotPhotoDataUrl, name, area);
+        if (desc) {
+          const descEl = document.getElementById('spot-desc-input');
+          if (descEl) {
+            descEl.value = desc;
+            showToast('✨ AIキャプションを生成しました', 'success', 2500);
+          }
+        } else {
+          showToast('AI生成に失敗しました。手動で入力してください', 'error', 2500);
+        }
+      } catch {
+        showToast('AI生成に失敗しました', 'error', 2500);
+      } finally {
+        aiBtn.disabled = false;
+        aiBtn.textContent = '✨ AIで説明文生成';
+      }
+    });
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = document.getElementById('spot-name-input')?.value.trim();
@@ -3959,6 +4008,7 @@ ${trkPts}
       const payload = {
         name, cat, area, addr, desc, author, tags,
         coords,
+        photo: _spotPhotoDataUrl, // data:image/jpeg;base64,...
         client_at: new Date().toISOString(),
       };
       // localStorage に投稿履歴を残す
@@ -3977,6 +4027,9 @@ ${trkPts}
       } catch (e) { console.warn('submit-spot POST failed', e); }
       showToast('🙏 投稿ありがとうございます！承認後コースに登場するかも', 'success', 4500);
       form.reset();
+      _spotPhotoDataUrl = null;
+      if (photoPreview) photoPreview.textContent = '📷 写真を選択';
+      if (aiBtn) aiBtn.hidden = true;
       const modal = document.getElementById('spot-submit-modal');
       if (modal) modal.hidden = true;
     });
@@ -4386,6 +4439,144 @@ ${trkPts}
 
   // ===== Photo album =====
   let _albumStyle = (localStorage.getItem('yorimichi-album-style') || 'vintage');
+
+  // 🎨 アルバム → 1枚のコラージュ画像 (1080x1080) を生成して保存
+  async function downloadAlbumCollage() {
+    // 全写真を収集
+    const allCourses = window.YORIMICHI_COURSES || [];
+    const photos = [];
+    allCourses.forEach(course => {
+      const ps = getCoursePhotos(course.id);
+      Object.entries(ps).forEach(([idxStr, entry]) => {
+        const idx = parseInt(idxStr, 10);
+        const stop = course.stops[idx];
+        if (!stop) return;
+        const url = _photoUrlOf(entry);
+        if (!url) return;
+        photos.push({ url, stopName: stop.name, courseName: tField(course, 'name') });
+      });
+    });
+    if (photos.length === 0) {
+      showToast('写真がありません', 'info', 2500);
+      return;
+    }
+    showToast('🎨 コラージュ生成中...', 'info', 1500);
+    try {
+      const W = 1080, H = 1080;
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext('2d');
+
+      // 背景: 紙質
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, '#f5ecd9');
+      bg.addColorStop(1, '#ede0c5');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      // ヘッダー
+      ctx.fillStyle = '#5a3a00';
+      ctx.font = 'bold 56px "Hiragino Mincho ProN", serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('📷 街歩きの思い出', W / 2, 80);
+      const today = new Date();
+      ctx.font = '24px sans-serif';
+      ctx.fillStyle = '#8a6a40';
+      ctx.fillText(`${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')} ・ ${photos.length}枚`, W / 2, 120);
+
+      // 写真を読み込み (最大 12 枚に絞る)
+      const max = Math.min(photos.length, 12);
+      const cols = max <= 4 ? 2 : (max <= 9 ? 3 : 4);
+      const rows = Math.ceil(max / cols);
+      const padding = 32;
+      const gridTop = 160;
+      const gridH = H - gridTop - 80;
+      const cellW = (W - padding * (cols + 1)) / cols;
+      const cellH = Math.min(cellW, (gridH - padding * (rows + 1)) / rows);
+
+      const loaded = await Promise.all(photos.slice(0, max).map(p => loadImage(p.url).then(img => ({ img, ...p }))));
+
+      loaded.forEach((p, i) => {
+        if (!p.img) return;
+        const r = Math.floor(i / cols);
+        const c = i % cols;
+        const x = padding + c * (cellW + padding);
+        const y = gridTop + padding + r * (cellH + padding);
+        // 軽い回転
+        const rot = ((i * 17 + 3) % 7 - 3) * 0.04; // ラジアン
+        ctx.save();
+        ctx.translate(x + cellW / 2, y + cellH / 2);
+        ctx.rotate(rot);
+        // ポラロイド枠
+        const borderW = cellW + 16;
+        const borderH = cellH + 48;
+        ctx.fillStyle = 'white';
+        roundRect(ctx, -borderW / 2, -borderH / 2, borderW, borderH, 6);
+        ctx.fill();
+        ctx.shadowColor = 'rgba(0,0,0,0.2)';
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetY = 3;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+        // 画像（中央に正方形クロップ）
+        const img = p.img;
+        const ratio = Math.max(cellW / img.width, cellW / img.height);
+        const iw = img.width * ratio;
+        const ih = img.height * ratio;
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(-cellW / 2, -cellH / 2 + 8, cellW, cellH - 16);
+        ctx.clip();
+        ctx.drawImage(img, -iw / 2, -ih / 2, iw, ih);
+        ctx.restore();
+        // キャプション
+        ctx.fillStyle = '#2a2520';
+        ctx.font = '14px "Hiragino Mincho ProN", serif';
+        ctx.textAlign = 'center';
+        const cap = p.stopName.length > 14 ? p.stopName.slice(0, 13) + '…' : p.stopName;
+        ctx.fillText(cap, 0, cellH / 2 + 4);
+        ctx.restore();
+      });
+
+      // フッター
+      ctx.fillStyle = '#8a6a40';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('👣 街歩きガチャ ・ yorimichi.in-dx.jp', W / 2, H - 30);
+
+      // ダウンロード
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/png', 0.92));
+      const fileName = `machiaruki_collage_${today.toISOString().slice(0, 10)}.png`;
+      // Web Share
+      try {
+        if (navigator.canShare && navigator.share) {
+          const file = new File([blob], fileName, { type: 'image/png' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: '街歩きの思い出',
+              text: '街歩きガチャで歩いた思い出をコラージュにしました 👣',
+            });
+            showToast('📤 シェアしました', 'success', 2500);
+            return;
+          }
+        }
+      } catch (e) { if (e?.name === 'AbortError') return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      showToast('💾 コラージュ画像を保存しました', 'success', 3500);
+    } catch (e) {
+      console.error('collage failed', e);
+      showToast('コラージュ生成に失敗しました', 'error', 2500);
+    }
+  }
 
   function renderPhotoAlbum() {
     const grid = $('#album-content') || $('#album-grid');
@@ -10536,6 +10727,9 @@ ${hashtag}`;
     });
     const albumClose = $('#photo-album-close');
     if (albumClose) albumClose.addEventListener('click', () => { $('#photo-album-modal').hidden = true; });
+    // 🎨 コラージュPNG ダウンロード
+    const collageBtn = $('#album-collage-btn');
+    if (collageBtn) collageBtn.addEventListener('click', () => downloadAlbumCollage());
     // アルバムスタイル切替
     $$('.album-style-tab').forEach(tab => {
       // 起動時の active 反映
@@ -10671,6 +10865,16 @@ ${hashtag}`;
           'rare-up': '✨ レア確率UP！LR/SR が出やすくなります'
         };
         $('#capsule-hint').textContent = labels[quickMode];
+        renderPoolPreview();
+      });
+    });
+
+    // ⏱ 時間チップ
+    $$('.time-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        $$('.time-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        gachaMaxMin = parseInt(chip.dataset.time || '0', 10);
         renderPoolPreview();
       });
     });

@@ -6481,6 +6481,24 @@ body.map-fullscreen #map-container {
   color: var(--text);
 }
 
+/* 🎨 Album collage button */
+.album-collage-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #ff7e3d, #ff4081);
+  color: white;
+  border: 0;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 13px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 6px 16px rgba(255, 64, 129, 0.3);
+  transition: transform 0.1s ease;
+}
+.album-collage-btn:active { transform: scale(0.97); }
+
 /* 📷 Vintage photo album (デジカメ風) */
 .album-style-tabs {
   display: flex;
@@ -6648,6 +6666,81 @@ body.map-fullscreen #map-container {
   .polaroid-caption { font-size: 10px; }
   .album-page-photos { gap: 12px; }
 }
+
+/* ⏱ Gacha time selector (mood と同じ見た目) */
+.time-section { margin: 12px 0 6px; }
+.time-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  text-align: center;
+}
+.time-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+.time-chip {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1.5px solid transparent;
+  padding: 6px 10px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+.time-chip:hover { background: var(--brand-soft); }
+.time-chip.active {
+  background: linear-gradient(135deg, #06b6d4, #0ea5e9);
+  color: white;
+  border-color: white;
+  box-shadow: 0 3px 10px rgba(14, 165, 233, 0.3);
+}
+
+/* 📸 Spot photo upload row */
+.spot-photo-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.spot-photo-pick {
+  flex: 1;
+  background: var(--surface-2);
+  padding: 14px;
+  border-radius: 10px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  border: 1.5px dashed var(--border, #e5e7eb);
+  transition: background 0.15s ease;
+}
+.spot-photo-pick:hover { background: var(--brand-soft); }
+.spot-photo-pick img {
+  max-width: 100%;
+  max-height: 80px;
+  border-radius: 6px;
+  display: block;
+  margin: 0 auto;
+}
+.spot-photo-ai {
+  background: linear-gradient(135deg, #6c63ff, #ff4081);
+  color: white;
+  border: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.spot-photo-ai:disabled { opacity: 0.6; cursor: wait; }
 
 /* 🎰 Gacha mood selector */
 .mood-section {

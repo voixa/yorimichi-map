@@ -320,6 +320,16 @@
           <input type="text" id="spot-addr-input" maxlength="80" placeholder="例: ◯◯駅 徒歩5分" />
         </label>
         <label class="spot-form-row">
+          <span>写真（任意・1枚）</span>
+          <div class="spot-photo-row">
+            <label class="spot-photo-pick" for="spot-photo-input">
+              <span id="spot-photo-preview">📷 写真を選択</span>
+            </label>
+            <input type="file" id="spot-photo-input" accept="image/*" hidden />
+            <button type="button" class="spot-photo-ai" id="spot-photo-ai" hidden>✨ AIで説明文生成</button>
+          </div>
+        </label>
+        <label class="spot-form-row">
           <span>このスポットの魅力（120字まで） <span class="req">*</span></span>
           <textarea id="spot-desc-input" required maxlength="120" rows="3" placeholder="例: 古民家リノベのカフェ。ベイクドチーズケーキが絶品で、店主が地元の歴史にも詳しい。"></textarea>
         </label>
@@ -1019,6 +1029,18 @@
           <button class="quick-mode" data-quickmode="rare-up" type="button">✨ レアUP</button>
         </div>
 
+        <!-- 🆕 時間設定 -->
+        <div class="time-section">
+          <div class="time-label">使える時間（任意）</div>
+          <div class="time-chips">
+            <button class="time-chip active" data-time="0" type="button">指定なし</button>
+            <button class="time-chip" data-time="30" type="button">⏱ 30分以内</button>
+            <button class="time-chip" data-time="60" type="button">⏱ 1時間以内</button>
+            <button class="time-chip" data-time="120" type="button">⏱ 2時間以内</button>
+            <button class="time-chip" data-time="240" type="button">⏱ たっぷり</button>
+          </div>
+        </div>
+
         <!-- 🆕 気分セレクター（ガチャの傾向を変える） -->
         <div class="mood-section" id="mood-section">
           <div class="mood-label">今の気分は？（任意）</div>
@@ -1377,6 +1399,7 @@
         <button class="album-style-tab active" data-album-style="vintage" type="button">📷 アナログ風</button>
         <button class="album-style-tab" data-album-style="grid" type="button">▦ グリッド</button>
       </div>
+      <button class="album-collage-btn" id="album-collage-btn" type="button">🎨 1枚のコラージュ画像にして保存</button>
       <div class="album-content" id="album-content">
         <!-- populated by JS -->
       </div>
