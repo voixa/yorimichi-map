@@ -4205,11 +4205,83 @@ ${trkPts}
     }).join('');
   }
 
+  // 📍「今ここを投稿」 - ウォーク中ボタンから呼ばれる
+  async function openSpotSubmitHere() {
+    const modal = document.getElementById('spot-submit-modal');
+    if (!modal) return;
+    modal.hidden = false;
+    vib(15);
+    // モーダル上部に「現在地から投稿中」表示を追加（一度だけ）
+    if (!document.getElementById('spot-here-banner')) {
+      const banner = document.createElement('div');
+      banner.id = 'spot-here-banner';
+      banner.className = 'spot-here-banner';
+      banner.innerHTML = '📍 <strong>今いる場所</strong>を投稿モードです（位置情報が自動で添付されます）';
+      const form = document.getElementById('spot-submit-form');
+      if (form) form.parentNode.insertBefore(banner, form);
+    }
+    // GPSをあらかじめ取得しておく
+    try {
+      const pos = await new Promise((resolve, reject) => {
+        if (!navigator.geolocation) return reject(new Error('no gps'));
+        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 });
+      });
+      window._spotPrefillCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      // リバースジオコーディングで住所候補
+      try {
+        const url = new URL('https://nominatim.openstreetmap.org/reverse');
+        url.searchParams.set('lat', pos.coords.latitude);
+        url.searchParams.set('lon', pos.coords.longitude);
+        url.searchParams.set('format', 'json');
+        url.searchParams.set('accept-language', 'ja');
+        const res = await fetch(url.toString());
+        if (res.ok) {
+          const d = await res.json();
+          const a = d.address || {};
+          const areaHint = [a.city || a.town || a.village, a.suburb || a.neighbourhood].filter(Boolean).join(' ');
+          const addrInput = document.getElementById('spot-addr-input');
+          const areaInput = document.getElementById('spot-area-input');
+          if (areaInput && !areaInput.value && areaHint) areaInput.value = areaHint;
+          if (addrInput && !addrInput.value && d.display_name) addrInput.value = d.display_name.split(',').slice(0, 3).join(',').trim();
+        }
+      } catch {}
+    } catch (e) {
+      showToast('位置情報が取得できませんでした。手動で記入してください', 'info', 3000);
+    }
+    // スポット名にフォーカス
+    setTimeout(() => document.getElementById('spot-name-input')?.focus(), 200);
+  }
+
   // 📍 ユーザーのスポット投稿フォーム
   function setupSpotSubmitForm() {
     const form = document.getElementById('spot-submit-form');
     if (!form || form.dataset.bound) return;
     form.dataset.bound = '1';
+    // 投稿件数カウンタ
+    try {
+      const list = JSON.parse(localStorage.getItem('yorimichi-submitted-spots') || '[]');
+      const count = list.length;
+      if (count > 0) {
+        const stats = document.getElementById('spot-stats');
+        const statsCount = document.getElementById('spot-stats-count');
+        if (stats && statsCount) {
+          statsCount.textContent = String(count);
+          stats.hidden = false;
+        }
+      }
+    } catch {}
+    // 🎵 TikTok 推薦ボタン
+    const tiktokBtn = document.getElementById('spot-tiktok-btn');
+    if (tiktokBtn) tiktokBtn.addEventListener('click', () => {
+      // モバイルなら TikTok アプリを試す、無理ならブラウザ
+      const tiktokUrl = 'https://www.tiktok.com/tag/%E8%A1%97%E6%AD%A9%E3%81%8D%E3%82%AC%E3%83%81%E3%83%A3%E3%82%B9%E3%83%9D%E3%83%83%E3%83%88';
+      window.open(tiktokUrl, '_blank', 'noopener');
+      // クリップボードにハッシュタグもコピー
+      try {
+        navigator.clipboard?.writeText('#街歩きガチャスポット #街歩きガチャ');
+        showToast('📋 ハッシュタグをコピーしました', 'success', 2500);
+      } catch {}
+    });
     // 📸 写真選択ハンドリング
     let _spotPhotoDataUrl = null;
     const photoInput = document.getElementById('spot-photo-input');
@@ -4266,15 +4338,17 @@ ${trkPts}
         showToast('スポット名と魅力は必須です', 'error', 3000);
         return;
       }
-      // 位置情報を取得（できれば）
-      let coords = null;
-      try {
-        const pos = await new Promise((resolve, reject) => {
-          if (!navigator.geolocation) return reject(new Error('no gps'));
-          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 });
-        });
-        coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      } catch {}
+      // 位置情報を取得（プリフィル優先 → 取得 → なし）
+      let coords = window._spotPrefillCoords || null;
+      if (!coords) {
+        try {
+          const pos = await new Promise((resolve, reject) => {
+            if (!navigator.geolocation) return reject(new Error('no gps'));
+            navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 });
+          });
+          coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        } catch {}
+      }
       const payload = {
         name, cat, area, addr, desc, author, tags,
         coords,
@@ -4300,6 +4374,9 @@ ${trkPts}
       _spotPhotoDataUrl = null;
       if (photoPreview) photoPreview.textContent = '📷 写真を選択';
       if (aiBtn) aiBtn.hidden = true;
+      window._spotPrefillCoords = null;
+      const banner = document.getElementById('spot-here-banner');
+      if (banner) banner.remove();
       const modal = document.getElementById('spot-submit-modal');
       if (modal) modal.hidden = true;
     });
@@ -6332,9 +6409,31 @@ ${trkPts}
     if (g) g.onclick = () => { vib(10); showGachaModal(); };
     if (c) c.onclick = () => {
       vib(10);
-      // 全コース一覧モーダルを直接開く（既存ボタンのリスナー再利用）
       const showAllBtn = document.getElementById('show-all-courses');
       if (showAllBtn) showAllBtn.click();
+    };
+  }
+
+  // 🌐 コミュニティバナー（TikTok + 投稿誘導）
+  function renderCommunityBanner() {
+    const sec = document.getElementById('community-banner');
+    if (!sec) return;
+    // 完走0回ユーザーには見せない（welcomeカード優先）
+    if (state.completedCourses.size === 0) { sec.hidden = true; return; }
+    sec.hidden = false;
+    const tk = document.getElementById('cb-tiktok-btn');
+    const sb = document.getElementById('cb-submit-btn');
+    if (tk) tk.onclick = () => {
+      vib(10);
+      const tiktokUrl = 'https://www.tiktok.com/tag/%E8%A1%97%E6%AD%A9%E3%81%8D%E3%82%AC%E3%83%81%E3%83%A3%E3%82%B9%E3%83%9D%E3%83%83%E3%83%88';
+      window.open(tiktokUrl, '_blank', 'noopener');
+      try { navigator.clipboard?.writeText('#街歩きガチャスポット #街歩きガチャ'); } catch {}
+      showToast('📋 ハッシュタグもコピーしました', 'info', 2500);
+    };
+    if (sb) sb.onclick = () => {
+      vib(10);
+      const modal = document.getElementById('spot-submit-modal');
+      if (modal) modal.hidden = false;
     };
   }
 
@@ -7927,6 +8026,7 @@ ${trkPts}
     try { renderTodaySummary(); } catch {}
     try { renderLuckyCourse(); } catch {}
     try { renderHomeQuickActions(); } catch {}
+    try { renderCommunityBanner(); } catch {}
     try { renderStatusBar(); } catch {}
     // 📍 GPS取得後に近場コースを推薦（非同期、失敗しても無視）
     setTimeout(() => { renderNearbyBanner().catch(() => {}); }, 1500);
@@ -8022,6 +8122,7 @@ ${trkPts}
         try { renderTodaySummary(); } catch {}
         try { renderLuckyCourse(); } catch {}
         try { renderHomeQuickActions(); } catch {}
+        try { renderCommunityBanner(); } catch {}
         try { renderWelcomeCard(); } catch {}
         try { renderStreakBadge(); } catch {}
         try { renderFeaturedCard(); } catch {}
@@ -8124,7 +8225,12 @@ ${trkPts}
     $('#ms-spot-submit')?.addEventListener('click', () => {
       $('#spot-submit-modal').hidden = false;
     });
-    $('#spot-submit-close')?.addEventListener('click', () => { $('#spot-submit-modal').hidden = true; });
+    $('#spot-submit-close')?.addEventListener('click', () => {
+      $('#spot-submit-modal').hidden = true;
+      window._spotPrefillCoords = null;
+      const banner = document.getElementById('spot-here-banner');
+      if (banner) banner.remove();
+    });
     setupSpotSubmitForm();
     // 💑 カップル共有
     $('#ms-couple')?.addEventListener('click', () => {
@@ -11414,6 +11520,9 @@ ${hashtag}`;
       // Phase 2 で実装。今はファイル選択にフォールバック
       capturePhotoForCurrentStop();
     });
+    // 📍 ウォーク中「ここをスポット投稿」
+    const hudSpot = $('#walk-hud-spotsubmit');
+    if (hudSpot) hudSpot.addEventListener('click', () => openSpotSubmitHere());
 
     // Walk中シェアボタン
     const hudShare = $('#walk-hud-share');

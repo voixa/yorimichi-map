@@ -6866,6 +6866,105 @@ body.map-fullscreen #map-container {
 .coin-h-neg { color: #dc2626; }
 .coin-h-balance { color: var(--text-muted); font-size: 10px; text-align: right; }
 
+/* 🌐 Community banner (TikTok + spot submission promo) */
+.community-banner {
+  background: linear-gradient(135deg, #1f1f2c 0%, #2d1f4d 100%);
+  border-radius: 16px;
+  padding: 14px;
+  margin: 8px 0 12px;
+  color: white;
+}
+.cb-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+.cb-icon { font-size: 18px; }
+.cb-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.cb-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.1);
+  color: white;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.cb-action:hover { background: rgba(255,255,255,0.2); }
+.cb-action:active { transform: scale(0.97); }
+.cb-action-icon { font-size: 26px; }
+.cb-action-label { font-size: 12px; font-weight: 700; text-align: center; line-height: 1.3; }
+
+/* 📍 "今ここ" banner */
+.spot-here-banner {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: white;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  margin-bottom: 12px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* 🎵 TikTok promo in spot submit modal */
+.spot-tiktok-promo {
+  margin-top: 16px;
+  padding: 14px;
+  background: linear-gradient(135deg, rgba(254, 44, 85, 0.08), rgba(0, 242, 234, 0.06));
+  border: 1px solid rgba(254, 44, 85, 0.3);
+  border-radius: 12px;
+  text-align: center;
+}
+.spot-tiktok-title {
+  font-weight: 800;
+  font-size: 13px;
+  color: #fe2c55;
+  margin-bottom: 6px;
+}
+.spot-tiktok-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+.spot-tiktok-btn {
+  background: linear-gradient(135deg, #fe2c55, #00f2ea);
+  color: white;
+  border: 0;
+  padding: 10px 20px;
+  border-radius: 100px;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 4px 12px rgba(254, 44, 85, 0.3);
+}
+
+/* 🙏 Submitted spots stats */
+.spot-stats {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 12px;
+  color: #d4af37;
+  background: rgba(212, 175, 55, 0.1);
+  padding: 10px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
 /* 📍 Spot submit form */
 .spot-submit-form {
   display: flex;

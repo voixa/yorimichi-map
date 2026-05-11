@@ -364,6 +364,21 @@
           ※ 位置情報を含めて送信されます（より正確なルート生成のため）。
         </div>
         <button type="submit" class="btn-primary" style="width: 100%;">📨 投稿する</button>
+
+        <div class="spot-tiktok-promo">
+          <div class="spot-tiktok-title">📱 TikTokでも推薦募集中</div>
+          <p class="spot-tiktok-desc">
+            ハッシュタグ <strong>#街歩きガチャスポット</strong> を付けて TikTok に投稿すると、
+            人気のスポットは管理者がチェックして公式コースに採用検討します。
+          </p>
+          <button type="button" class="spot-tiktok-btn" id="spot-tiktok-btn">
+            🎵 TikTok を開く
+          </button>
+        </div>
+
+        <div class="spot-stats" id="spot-stats" hidden>
+          🙏 あなたの投稿: <strong id="spot-stats-count">0</strong>件 ありがとうございます！
+        </div>
       </form>
     </div>
   </div>
@@ -485,6 +500,24 @@
             <span class="ha-icon">📂</span>
             <span class="ha-label">全コース一覧<br><small>自分で選びたい</small></span>
           </button>
+        </section>
+
+        <!-- 🆕 コミュニティバナー（TikTok誘導 + スポット投稿） -->
+        <section class="community-banner" id="community-banner" hidden>
+          <div class="cb-header">
+            <span class="cb-icon">🌐</span>
+            <span class="cb-title">みんなで街歩きを盛り上げよう</span>
+          </div>
+          <div class="cb-actions">
+            <button class="cb-action" id="cb-tiktok-btn" type="button">
+              <span class="cb-action-icon">🎵</span>
+              <span class="cb-action-label">TikTok でスポット推薦</span>
+            </button>
+            <button class="cb-action" id="cb-submit-btn" type="button">
+              <span class="cb-action-icon">📍</span>
+              <span class="cb-action-label">あなたの推しを投稿</span>
+            </button>
+          </div>
         </section>
 
         <!-- 🔥 連続記録バッジ（ある時だけ目立つ） -->
@@ -1596,6 +1629,7 @@
     <div class="walk-hud-actions">
       <button class="walk-hud-btn" id="walk-hud-voice" type="button" aria-label="音声ナビ切替">🔊</button>
       <button class="walk-hud-btn" id="walk-hud-photo" type="button" aria-label="写真を撮る">📸</button>
+      <button class="walk-hud-btn" id="walk-hud-spotsubmit" type="button" aria-label="今ここをスポット投稿" title="今ここを投稿">📍</button>
       <button class="walk-hud-btn" id="walk-hud-share" type="button" aria-label="このコースをシェア">📤</button>
       <button class="walk-hud-btn" id="walk-hud-checkin" type="button" aria-label="手動チェックイン">✓</button>
       <button class="walk-hud-btn" id="walk-hud-skip" type="button" aria-label="このスポットをスキップ">⏭</button>
