@@ -432,6 +432,7 @@
           <div class="today-summary-grid" id="today-summary-grid">
             <!-- populated by JS -->
           </div>
+          <button class="today-summary-share" id="today-summary-share" type="button" hidden>📸 今日の振り返りカードを保存</button>
         </section>
 
         <!-- 🆕 初回ユーザー向けウェルカムカード（完走0回時のみ） -->
@@ -491,6 +492,20 @@
             <span class="status-text" id="status-live-text">—</span>
           </span>
           <button class="status-tip-btn" id="status-tip-btn" type="button" aria-label="今日のヒント">💡</button>
+        </section>
+
+        <!-- 🍀 今日のラッキーコース（日替わり） -->
+        <section class="lucky-course" id="lucky-course" hidden>
+          <div class="lucky-ribbon">🍀 今日のラッキーコース</div>
+          <button class="lucky-card-btn" id="lucky-card-btn" type="button">
+            <span class="lucky-emoji" id="lucky-emoji">🌳</span>
+            <div class="lucky-body">
+              <div class="lucky-title" id="lucky-title">—</div>
+              <div class="lucky-meta" id="lucky-meta">—</div>
+              <div class="lucky-tagline" id="lucky-tagline">—</div>
+            </div>
+            <span class="lucky-cta">詳細 →</span>
+          </button>
         </section>
 
         <!-- 📍 現在地に近いコース（GPS取得後に表示） -->

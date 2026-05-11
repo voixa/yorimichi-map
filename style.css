@@ -7152,6 +7152,113 @@ body.map-fullscreen #map-container {
   margin-top: 2px;
 }
 .today-summary-cell.highlight .today-summary-label-sm { color: rgba(255,255,255,0.9); }
+.today-summary-share {
+  width: 100%;
+  margin-top: 10px;
+  background: linear-gradient(135deg, #ff7e3d, #ff4081);
+  color: white;
+  border: 0;
+  padding: 12px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 6px 16px rgba(255, 64, 129, 0.3);
+}
+.today-summary-share:active { transform: scale(0.97); }
+
+/* 🍀 Daily lucky course */
+.lucky-course {
+  position: relative;
+  background: linear-gradient(135deg, #fff8e1 0%, #ffe082 100%);
+  border-radius: 18px;
+  padding: 0 16px 16px;
+  margin: 12px 0;
+  box-shadow: 0 8px 24px rgba(212, 175, 55, 0.25);
+  border: 1.5px solid rgba(212, 175, 55, 0.4);
+  overflow: hidden;
+}
+[data-theme="dark"] .lucky-course {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.06));
+}
+.lucky-ribbon {
+  background: linear-gradient(135deg, #d4af37, #ffb300);
+  color: white;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  padding: 6px 16px;
+  display: inline-block;
+  margin: 0 0 12px;
+  position: relative;
+  left: -16px;
+  border-radius: 0 12px 12px 0;
+  box-shadow: 0 3px 8px rgba(212, 175, 55, 0.4);
+}
+.lucky-card-btn {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: rgba(255,255,255,0.6);
+  border: 0;
+  border-radius: 14px;
+  padding: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  color: var(--text);
+  transition: background 0.15s, transform 0.1s;
+}
+.lucky-card-btn:hover { background: rgba(255,255,255,0.85); }
+.lucky-card-btn:active { transform: scale(0.99); }
+[data-theme="dark"] .lucky-card-btn { background: rgba(255,255,255,0.08); }
+[data-theme="dark"] .lucky-card-btn:hover { background: rgba(255,255,255,0.15); }
+.lucky-emoji {
+  font-size: 32px;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #ffd700, #ff9800);
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+}
+.lucky-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lucky-title {
+  font-weight: 800;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lucky-meta {
+  font-size: 11px;
+  color: #8a6a40;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-theme="dark"] .lucky-meta { color: #ffe8b0; }
+.lucky-tagline {
+  font-size: 11px;
+  font-weight: 700;
+  color: #d4af37;
+  margin-top: 2px;
+  font-family: "Hiragino Mincho ProN", serif;
+}
+.lucky-cta {
+  background: linear-gradient(135deg, #d4af37, #ffb300);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-weight: 800;
+  font-size: 12px;
+  flex-shrink: 0;
+}
 
 /* 📍 Nearby banner (GPS-based) */
 .nearby-banner {

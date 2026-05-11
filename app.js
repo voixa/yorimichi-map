@@ -6041,6 +6041,37 @@ ${trkPts}
     </svg>`;
   }
 
+  // 🍀 今日のラッキーコース（日付シードで決定的に1コース選択）
+  function getDailyLuckyCourse() {
+    const courses = (window.YORIMICHI_COURSES || []);
+    if (courses.length === 0) return null;
+    // 日付ベースのシード（毎日変わる）
+    const today = getResetDate();
+    let seed = 0;
+    for (let i = 0; i < today.length; i++) seed = (seed * 31 + today.charCodeAt(i)) >>> 0;
+    const idx = seed % courses.length;
+    return courses[idx];
+  }
+  function renderLuckyCourse() {
+    const sec = document.getElementById('lucky-course');
+    if (!sec) return;
+    const c = getDailyLuckyCourse();
+    if (!c) { sec.hidden = true; return; }
+    // 完走0回ユーザーには見せない（welcome-card 優先）
+    if (state.completedCourses.size === 0) { sec.hidden = true; return; }
+    document.getElementById('lucky-emoji').textContent = c.themeIcon || c.areaIcon || '🌳';
+    document.getElementById('lucky-title').textContent = tField(c, 'name');
+    const diff = (typeof computeCourseDifficulty === 'function') ? computeCourseDifficulty(c) : { icon: '🚶', label: '' };
+    document.getElementById('lucky-meta').textContent = `${c.areaIcon || ''} ${tField(c, 'areaName')} ・ 約${c.estimatedMin || '?'}分 ・ ${diff.icon} ${diff.label}`;
+    // 日替わり タグライン
+    const tags = ['今日の運命の一本', '🌟 引きの強い1日に', '🍀 偶然の出会いを', '✨ 直感を信じて', '🎯 今日はこれで決まり！'];
+    const day = (new Date(getResetDate() + 'T00:00:00')).getDay();
+    document.getElementById('lucky-tagline').textContent = tags[day % tags.length];
+    const btn = document.getElementById('lucky-card-btn');
+    if (btn) btn.onclick = () => showCourseDetail(c);
+    sec.hidden = false;
+  }
+
   // 📅 今日のサマリーカード（経験者ホーム上部）
   function renderTodaySummary() {
     const card = $('#today-summary');
@@ -6105,7 +6136,160 @@ ${trkPts}
         </div>
       `).join('');
     }
+    // 📸 振り返りカードボタンを表示（今日歩いた人のみ）
+    const shareBtn = $('#today-summary-share');
+    if (shareBtn) {
+      if (todayCompleted > 0 || todayWalks.length > 0) {
+        shareBtn.hidden = false;
+        shareBtn.onclick = () => downloadDailySummaryPng();
+      } else {
+        shareBtn.hidden = true;
+      }
+    }
     card.hidden = false;
+  }
+
+  // 📸 今日の振り返り PNG（1080x1080）
+  async function downloadDailySummaryPng() {
+    showToast('🎨 振り返りカード生成中...', 'info', 1500);
+    try {
+      const today = getResetDate();
+      const history = (state.walkHistory || []).filter(h => h.date === today);
+      const completed = history.filter(h => h.completed);
+      const courses = (window.YORIMICHI_COURSES || []);
+      const walkedCourses = history.map(h => courses.find(c => c.id === h.courseId)).filter(Boolean);
+      const totalStops = history.reduce((s, h) => s + (h.stops || 0), 0);
+
+      const W = 1080, H = 1080;
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext('2d');
+
+      // 背景: 時間帯に応じてグラデ
+      const hr = new Date().getHours();
+      const grads = (hr < 9) ? ['#fff8e1', '#ffd180'] : (hr < 17) ? ['#e0f7fa', '#80deea'] : (hr < 20) ? ['#ff7e3d', '#ff4081'] : ['#283593', '#5e35b1'];
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, grads[0]); bg.addColorStop(1, grads[1]);
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      // ヘッダー
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 48px "Hiragino Mincho ProN", serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('📔 今日の散歩記録', W / 2, 110);
+      const d = new Date();
+      const dateStr = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+      ctx.font = '28px sans-serif';
+      ctx.fillText(dateStr, W / 2, 160);
+
+      // 大カード（中央に統計）
+      const cardX = 80, cardY = 220, cardW = W - 160, cardH = 360;
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      roundRect(ctx, cardX, cardY, cardW, cardH, 28);
+      ctx.fill();
+
+      // 中央: 数字 3 列
+      const stats = [
+        { num: completed.length, label: '完走コース' },
+        { num: totalStops, label: 'スタンプ' },
+        { num: walkedCourses.length, label: '歩いた回数' },
+      ];
+      ctx.textAlign = 'center';
+      stats.forEach((s, i) => {
+        const x = cardX + (cardW / 3) * i + cardW / 6;
+        ctx.fillStyle = '#ff7e3d';
+        ctx.font = 'bold 90px sans-serif';
+        ctx.fillText(String(s.num), x, cardY + 160);
+        ctx.fillStyle = '#6b6b72';
+        ctx.font = '24px sans-serif';
+        ctx.fillText(s.label, x, cardY + 210);
+      });
+      // 歩いたコース名
+      ctx.fillStyle = '#1c1c1f';
+      ctx.font = '24px sans-serif';
+      ctx.textAlign = 'left';
+      const courseLabel = walkedCourses.length > 0
+        ? walkedCourses.map(c => `${c.themeIcon || c.areaIcon || ''} ${tField(c, 'name')}`).slice(0, 3).join('\n')
+        : '自由散歩';
+      wrapText(ctx, courseLabel, cardX + 30, cardY + 270, cardW - 60, 32);
+
+      // ストリーク
+      if (state.loginStreak >= 2) {
+        ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        roundRect(ctx, cardX, cardY + cardH + 16, cardW, 80, 16);
+        ctx.fill();
+        ctx.fillStyle = '#ff4081';
+        ctx.font = 'bold 30px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`🔥 ${state.loginStreak}日連続 散歩中！`, W / 2, cardY + cardH + 65);
+      }
+
+      // 写真コラージュ（最大 4 枚、今日のコースから）
+      let photos = [];
+      walkedCourses.forEach(c => {
+        const ps = getCoursePhotos(c.id);
+        Object.entries(ps).forEach(([idxStr, entry]) => {
+          const url = _photoUrlOf(entry);
+          if (url) photos.push(url);
+        });
+      });
+      photos = photos.slice(0, 4);
+      if (photos.length > 0) {
+        const photoY = 720;
+        const cellSize = (W - 160 - 16 * (photos.length - 1)) / photos.length;
+        const loaded = await Promise.all(photos.map(p => loadImage(p)));
+        loaded.forEach((img, i) => {
+          if (!img) return;
+          const x = 80 + i * (cellSize + 16);
+          ctx.save();
+          roundRect(ctx, x, photoY, cellSize, cellSize, 16);
+          ctx.clip();
+          const ratio = Math.max(cellSize / img.width, cellSize / img.height);
+          const iw = img.width * ratio;
+          const ih = img.height * ratio;
+          ctx.drawImage(img, x + (cellSize - iw) / 2, photoY + (cellSize - ih) / 2, iw, ih);
+          ctx.restore();
+          ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+          ctx.lineWidth = 4;
+          roundRect(ctx, x, photoY, cellSize, cellSize, 16);
+          ctx.stroke();
+        });
+      }
+
+      // フッター
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('👣 街歩きガチャ ・ #街歩きガチャ', W / 2, H - 50);
+
+      // 出力
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/png', 0.92));
+      const fileName = `machiaruki-${today}.png`;
+      try {
+        if (navigator.canShare && navigator.share) {
+          const file = new File([blob], fileName, { type: 'image/png' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: '今日の散歩記録',
+              text: `${dateStr}の街歩き記録 📔👣 #街歩きガチャ`,
+            });
+            showToast('📤 シェアしました', 'success', 2500);
+            return;
+          }
+        }
+      } catch (e) { if (e?.name === 'AbortError') return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = fileName;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      showToast('💾 振り返りカードを保存しました', 'success', 3500);
+    } catch (e) {
+      console.error('daily summary failed', e);
+      showToast('生成に失敗しました', 'error', 2500);
+    }
   }
 
   function renderFeaturedCard() {
@@ -7440,6 +7624,7 @@ ${trkPts}
     try { setupDailyTipButton(); } catch {}
     try { renderFeaturedCard(); } catch {}
     try { renderTodaySummary(); } catch {}
+    try { renderLuckyCourse(); } catch {}
     try { renderStatusBar(); } catch {}
     // 📍 GPS取得後に近場コースを推薦（非同期、失敗しても無視）
     setTimeout(() => { renderNearbyBanner().catch(() => {}); }, 1500);
@@ -7533,6 +7718,7 @@ ${trkPts}
       // タブ切替時に該当タブの内容を更新
       if (name === 'home') {
         try { renderTodaySummary(); } catch {}
+        try { renderLuckyCourse(); } catch {}
         try { renderWelcomeCard(); } catch {}
         try { renderStreakBadge(); } catch {}
         try { renderFeaturedCard(); } catch {}
@@ -7809,47 +7995,120 @@ ${trkPts}
     'yorimichi-streak', 'yorimichi-badges', 'yorimichi-onboarded',
     'yorimichi-gps-explained', 'yorimichi-mapstyle', 'yorimichi-theme',
     'yorimichi-voice', 'yorimichi-lang',
+    // 新しいキー（Iteration 36+ で追加）
+    'yorimichi-favorites', 'yorimichi-skipped-stops',
+    'yorimichi-walk-history', 'yorimichi-recent-pulls',
+    'yorimichi-coin-history', 'yorimichi-album-style',
+    'yorimichi-total-walk-min', 'yorimichi-main-tab',
+    'yorimichi-submitted-spots',
+    'yorimichi-whats-new-version', 'yorimichi-gear-reminder-day',
+    'yorimichi-rated-courses', 'yorimichi-rating-bonus-day',
+    'yorimichi-missions',
   ];
+  // 動的キー（コース毎のメモ・写真）も含める
+  function getDynamicDataKeys() {
+    const keys = [];
+    try {
+      for (const k of Object.keys(localStorage)) {
+        if (k.startsWith('yorimichi-photos-') || k.startsWith('yorimichi-stop-memos-')) {
+          keys.push(k);
+        }
+      }
+    } catch {}
+    return keys;
+  }
 
   async function exportData() {
     const dump = {};
-    DATA_KEYS.forEach(k => {
+    const allKeys = [...DATA_KEYS, ...getDynamicDataKeys()];
+    allKeys.forEach(k => {
       const v = localStorage.getItem(k);
       if (v !== null) dump[k] = v;
     });
     dump._exportedAt = new Date().toISOString();
-    dump._version = 1;
+    dump._version = 2;
+    dump._appBuild = 'machiaruki-gacha';
     const text = JSON.stringify(dump, null, 2);
+    // 1) ファイルダウンロードを優先（一番確実）
     try {
-      await navigator.clipboard.writeText(text);
-      showToast('📤 データをクリップボードにコピーしました', 'success', 3000);
-    } catch (e) {
-      // Fallback: open in new window
+      const today = new Date().toISOString().slice(0, 10);
       const blob = new Blob([text], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `yorimichi-data-${Date.now()}.json`;
+      a.download = `machiaruki-backup-${today}.json`;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
-      showToast('📤 ダウンロードしました', 'success', 3000);
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      showToast(`📤 バックアップを保存しました（${Object.keys(dump).length - 3}項目）`, 'success', 4000);
+    } catch (e) {
+      // 2) フォールバック: クリップボード
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast('📤 データをクリップボードにコピーしました', 'success', 3000);
+      } catch (e2) {
+        showToast('エクスポートに失敗しました', 'error', 3000);
+      }
     }
   }
 
   function importData() {
-    const json = prompt('インポートするJSONを貼り付けてください:');
-    if (!json) return;
+    // ファイル入力 or ペーストの2択
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json,.json';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+    input.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) {
+        input.remove();
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          doImport(String(reader.result || ''));
+        } finally {
+          input.remove();
+        }
+      };
+      reader.onerror = () => {
+        showToast('ファイル読込に失敗しました', 'error', 2500);
+        input.remove();
+      };
+      reader.readAsText(file);
+    });
+    // ファイル選択をキャンセル時のフォールバック: prompt で paste
+    input.addEventListener('cancel', () => {
+      input.remove();
+      const json = prompt('またはここに JSON を貼り付け:');
+      if (json) doImport(json);
+    });
+    input.click();
+  }
+  function doImport(jsonText) {
+    if (!jsonText) return;
     try {
-      const data = JSON.parse(json);
+      const data = JSON.parse(jsonText);
       if (!data._version) throw new Error('Invalid format');
+      if (!confirm(`バックアップ（${data._exportedAt || '日時不明'}）を復元します。\n現在のデータは上書きされます。よろしいですか？`)) return;
+      const allKeys = [...DATA_KEYS, ...getDynamicDataKeys()];
+      const allKeysSet = new Set(allKeys);
+      let restoredCount = 0;
       Object.entries(data).forEach(([k, v]) => {
         if (k.startsWith('_')) return;
-        if (DATA_KEYS.includes(k)) localStorage.setItem(k, v);
+        // 既知 or 動的（写真/メモ）キーのみ復元
+        if (allKeysSet.has(k) || k.startsWith('yorimichi-photos-') || k.startsWith('yorimichi-stop-memos-')) {
+          localStorage.setItem(k, v);
+          restoredCount++;
+        }
       });
-      showToast('📥 インポート完了。リロードします', 'success', 2000);
-      setTimeout(() => window.location.reload(), 2000);
+      showToast(`📥 ${restoredCount}項目復元しました。リロードします…`, 'success', 2500);
+      setTimeout(() => window.location.reload(), 2200);
     } catch (e) {
-      showToast('❌ JSONが不正です', 'error', 3000);
+      showToast('❌ JSONが不正です（バックアップファイルか確認してください）', 'error', 3500);
     }
   }
 
