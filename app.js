@@ -2303,6 +2303,19 @@
     try { if (typeof scheduleSync === 'function') scheduleSync('gacha'); } catch {}
   }
 
+  // 🪙 コイン履歴を記録（最新50件保持）
+  function logCoinChange(delta, reason) {
+    try {
+      const list = JSON.parse(localStorage.getItem('yorimichi-coin-history') || '[]');
+      list.push({ delta, reason, balance: gacha.coins, at: Date.now() });
+      const trimmed = list.slice(-50);
+      localStorage.setItem('yorimichi-coin-history', JSON.stringify(trimmed));
+    } catch {}
+  }
+  function getCoinHistory() {
+    try { return JSON.parse(localStorage.getItem('yorimichi-coin-history') || '[]'); } catch { return []; }
+  }
+
   function gachaUpdateUI() {
     const freeRemain = Math.max(0, 3 - gacha.freeUsedToday);
     $('#gacha-counter').textContent = `本日 ${gacha.freeUsedToday}/3 回`;
@@ -2749,6 +2762,7 @@
         return;
       }
       gacha.coins -= GACHA_COST;
+      logCoinChange(-GACHA_COST, 'ガチャを引く');
     }
     gachaSave();
     gachaUpdateUI();
@@ -3935,6 +3949,101 @@ ${trkPts}
     }
   }
 
+  // ✨ What's New ツアー（バージョン更新時に1度だけ表示）
+  const WHATS_NEW_VERSION = '2026-05-13-v5'; // 内容変更時にここを更新
+  const WHATS_NEW_ITEMS = [
+    { icon: '⏱', title: 'ガチャに時間チップ', desc: '「30分以内」「1時間以内」など使える時間に合わせて引ける' },
+    { icon: '😌', title: '気分セレクター', desc: 'まったり／アクティブ／グルメ／絶景／夜散歩' },
+    { icon: '📂', title: '全コース一覧', desc: 'ガチャに頼らず全21コースを一覧から選べる検索付き' },
+    { icon: '📷', title: 'アナログ風アルバム', desc: 'ポラロイド + スクラップブック風表示' },
+    { icon: '🎨', title: 'コラージュPNG生成', desc: '思い出を1枚にまとめてSNSへ' },
+    { icon: '📍', title: 'スポット投稿（写真+AI説明文）', desc: 'あなたのお気に入りを共有' },
+    { icon: '💑', title: 'カップル共有 (QR)', desc: 'パートナーと同じコースを2人で歩こう' },
+    { icon: '🪙', title: 'コイン履歴', desc: '何で増えた／減ったか丸わかり' },
+    { icon: '🎒', title: '出発前もちものチェック', desc: '天気と距離に合わせて' },
+  ];
+  function maybeShowWhatsNew() {
+    try {
+      const seen = localStorage.getItem('yorimichi-whats-new-version');
+      if (seen === WHATS_NEW_VERSION) return;
+      // 完走0回ユーザー（初心者）には見せない（オンボーディングとかぶる）
+      if (state.completedCourses.size === 0 && state.discoveredCourses.size === 0) {
+        localStorage.setItem('yorimichi-whats-new-version', WHATS_NEW_VERSION);
+        return;
+      }
+      setTimeout(() => showWhatsNewModal(), 1800);
+    } catch {}
+  }
+  function showWhatsNewModal() {
+    if (document.getElementById('whats-new-overlay')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'whats-new-overlay';
+    overlay.className = 'whats-new-overlay';
+    overlay.innerHTML = `
+      <div class="whats-new-card">
+        <div class="whats-new-header">
+          <div class="whats-new-icon">✨</div>
+          <h3 class="whats-new-title">新機能のお知らせ</h3>
+          <p class="whats-new-sub">前回から色々アップデートしました 👇</p>
+        </div>
+        <ul class="whats-new-list">
+          ${WHATS_NEW_ITEMS.map(it => `
+            <li class="whats-new-item">
+              <span class="wn-icon">${it.icon}</span>
+              <div class="wn-body">
+                <div class="wn-title">${escapeHtml(it.title)}</div>
+                <div class="wn-desc">${escapeHtml(it.desc)}</div>
+              </div>
+            </li>
+          `).join('')}
+        </ul>
+        <button class="btn-primary whats-new-go" type="button">わかった！使ってみる</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector('.whats-new-go').addEventListener('click', () => {
+      try { localStorage.setItem('yorimichi-whats-new-version', WHATS_NEW_VERSION); } catch {}
+      overlay.remove();
+    });
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        try { localStorage.setItem('yorimichi-whats-new-version', WHATS_NEW_VERSION); } catch {}
+        overlay.remove();
+      }
+    });
+  }
+
+  // 🪙 コイン履歴を描画
+  function renderCoinHistory() {
+    const list = document.getElementById('coin-history-list');
+    const balance = document.getElementById('coin-history-balance');
+    if (!list || !balance) return;
+    balance.textContent = `残高 🪙 ${gacha.coins}`;
+    const history = getCoinHistory().slice().reverse(); // 新しい順
+    if (history.length === 0) {
+      list.innerHTML = `<div class="coin-history-empty">
+        <div style="font-size:42px;opacity:0.4;margin-bottom:10px;">🪙</div>
+        <div style="font-weight:700;color:var(--text);">まだ履歴がありません</div>
+        <div style="font-size:12px;margin-top:6px;color:var(--text-muted);">ガチャを引いたり完走するとここに記録されます</div>
+      </div>`;
+      return;
+    }
+    list.innerHTML = history.map(h => {
+      const d = new Date(h.at);
+      const dateStr = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      const sign = h.delta >= 0 ? '+' : '';
+      const cls = h.delta >= 0 ? 'coin-h-pos' : 'coin-h-neg';
+      return `
+        <div class="coin-history-row">
+          <span class="coin-h-date">${escapeHtml(dateStr)}</span>
+          <span class="coin-h-reason">${escapeHtml(h.reason || '—')}</span>
+          <span class="coin-h-delta ${cls}">${sign}${h.delta}🪙</span>
+          <span class="coin-h-balance">残${h.balance}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
   // 📍 ユーザーのスポット投稿フォーム
   function setupSpotSubmitForm() {
     const form = document.getElementById('spot-submit-form');
@@ -5046,6 +5155,7 @@ ${trkPts}
       s.claimedBonus = true;
       saveMissionsState(s);
       gacha.coins += 5;
+      logCoinChange(+5, '今日のミッション全達成ボーナス');
       gachaSave();
       gachaUpdateUI();
       showToast('🎯 今日のミッション全達成！+5🪙ボーナス', 'success', 5000);
@@ -6448,6 +6558,7 @@ ${trkPts}
       let bonusKey = 'yorimichi-rating-bonus-day';
       if (localStorage.getItem(bonusKey) !== today) {
         gacha.coins += 1;
+        logCoinChange(+1, 'コース評価ボーナス');
         gachaSave();
         gachaUpdateUI();
         localStorage.setItem(bonusKey, today);
@@ -7341,6 +7452,8 @@ ${trkPts}
     const welcomeBtn = $('#welcome-cta');
     if (welcomeBtn) welcomeBtn.addEventListener('click', quickStart);
     try { renderWelcomeCard(); } catch {}
+    // ✨ 新機能ツアー（経験者向け・初回ユーザー以外）
+    try { maybeShowWhatsNew(); } catch {}
 
     // 🎓 Step 1: 初回ユーザーへの最初のコーチマーク
     setTimeout(() => {
@@ -7512,6 +7625,12 @@ ${trkPts}
     $('#ms-collection')?.addEventListener('click', () => showCollection());
     $('#ms-settings')?.addEventListener('click', () => openSettingsModal());
     $('#ms-help')?.addEventListener('click', () => { $('#help-modal').hidden = false; });
+    // 🪙 コイン履歴モーダル
+    $('#ms-coin-history')?.addEventListener('click', () => {
+      renderCoinHistory();
+      $('#coin-history-modal').hidden = false;
+    });
+    $('#coin-history-close')?.addEventListener('click', () => { $('#coin-history-modal').hidden = true; });
     // 📍 オススメスポット投稿
     $('#ms-spot-submit')?.addEventListener('click', () => {
       $('#spot-submit-modal').hidden = false;
@@ -8100,7 +8219,108 @@ ${trkPts}
       $('#gps-explain').hidden = false;
       return;
     }
-    beginWalk(true);
+    // 🎒 もちものリマインダー（天気・時間・距離に応じて）
+    showGearReminder(() => beginWalk(true));
+  }
+
+  // 🎒 散歩前の「もちもの」リマインダー
+  function showGearReminder(onContinue) {
+    // 今日すでに見せていたらスキップ
+    const today = (new Date()).toDateString();
+    try {
+      if (localStorage.getItem('yorimichi-gear-reminder-day') === today) {
+        return onContinue();
+      }
+    } catch {}
+
+    // 天気・気温・時間帯から持ち物候補を組み立て
+    let weatherCode = null, temp = null;
+    try {
+      const w = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY) || 'null');
+      if (w && Date.now() - w.fetchedAt < WEATHER_CACHE_TTL_MS) {
+        weatherCode = w.code;
+        temp = w.temp;
+      }
+    } catch {}
+    const hour = new Date().getHours();
+    const totalKm = state.selected.length >= 2
+      ? state.selected.reduce((s, st, i) => i === 0 ? 0 : s + haversineKm(state.selected[i - 1], st), 0)
+      : 0;
+
+    const items = [];
+    // 必須系
+    items.push({ icon: '📱', name: 'スマートフォン（充電50%以上）', priority: 'high' });
+    // 距離が長い
+    if (totalKm >= 3) items.push({ icon: '💧', name: '水分（500ml以上）', priority: 'high' });
+    // 暑い時期
+    if (typeof temp === 'number' && temp >= 25) {
+      items.push({ icon: '🧢', name: '帽子', priority: 'high' });
+      items.push({ icon: '🧴', name: '日焼け止め', priority: 'mid' });
+    }
+    // 寒い時期
+    if (typeof temp === 'number' && temp <= 12) {
+      items.push({ icon: '🧥', name: '上着・ジャケット', priority: 'high' });
+      items.push({ icon: '🧣', name: 'マフラー or 手袋', priority: 'mid' });
+    }
+    if (typeof temp === 'number' && temp >= 13 && temp <= 18) {
+      items.push({ icon: '🧥', name: '羽織もの（薄手）', priority: 'mid' });
+    }
+    // 雨
+    if (weatherCode != null && ((weatherCode >= 51 && weatherCode <= 67) || (weatherCode >= 80 && weatherCode <= 86))) {
+      items.push({ icon: '☔', name: '折りたたみ傘 or レインコート', priority: 'high' });
+      items.push({ icon: '🧦', name: '替えの靴下', priority: 'mid' });
+    }
+    // 暗い時間帯
+    if (hour >= 17 || hour < 6) {
+      items.push({ icon: '🔦', name: '明るい服装 or ライト', priority: 'mid' });
+    }
+    // 食べ歩き/グルメ系
+    items.push({ icon: '💴', name: '小銭・現金（店舗用）', priority: 'low' });
+    items.push({ icon: '👟', name: '歩きやすい靴', priority: 'low' });
+
+    // モーダル表示
+    let overlay = document.getElementById('gear-reminder-overlay');
+    if (overlay) overlay.remove();
+    overlay = document.createElement('div');
+    overlay.id = 'gear-reminder-overlay';
+    overlay.className = 'gear-reminder-overlay';
+    overlay.innerHTML = `
+      <div class="gear-reminder-card">
+        <div class="gear-reminder-icon">🎒</div>
+        <h3 class="gear-reminder-title">出発前チェック</h3>
+        <p class="gear-reminder-sub">今日の天気と距離に合わせて、持ち物を確認しよう</p>
+        <ul class="gear-reminder-list">
+          ${items.map(it => `
+            <li class="gear-item gear-${it.priority}">
+              <span class="gear-icon">${it.icon}</span>
+              <span class="gear-name">${escapeHtml(it.name)}</span>
+              ${it.priority === 'high' ? '<span class="gear-tag">必須</span>' : ''}
+            </li>
+          `).join('')}
+        </ul>
+        <div class="gear-reminder-actions">
+          <label class="gear-dont-show">
+            <input type="checkbox" id="gear-dont-show" /> 今日はもう表示しない
+          </label>
+          <button class="btn-primary gear-go-btn" type="button">準備OK、歩こう！</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector('.gear-go-btn').addEventListener('click', () => {
+      const dontShow = overlay.querySelector('#gear-dont-show')?.checked;
+      if (dontShow) {
+        try { localStorage.setItem('yorimichi-gear-reminder-day', today); } catch {}
+      }
+      overlay.remove();
+      onContinue();
+    });
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.remove();
+        onContinue();
+      }
+    });
   }
 
   function beginWalk(useGps) {
@@ -9215,6 +9435,7 @@ ${trkPts}
     speak('コース完走、おめでとうございます！');
     // Bonus coins for completion
     gacha.coins += COMPLETION_BONUS;
+    logCoinChange(+COMPLETION_BONUS, 'コース完走ボーナス');
     gachaSave();
     showToast(`🪙 完走ボーナス +${COMPLETION_BONUS}コイン！`, 'success', 4000);
     // ライブイベント
