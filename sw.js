@@ -4,7 +4,7 @@
  * - Network-first for navigation (HTML)
  * - Network-only for API/Nominatim/Overpass/OSRM (always fresh)
  */
-const CACHE = 'yorimichi-v86';
+const CACHE = 'yorimichi-v87';
 const TILE_CACHE = 'yorimichi-tiles-v44';
 const PHOTO_CACHE = 'yorimichi-photos-v44';
 const OFFLINE_URL = './offline.html';

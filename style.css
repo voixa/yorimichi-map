@@ -8386,12 +8386,10 @@ button, a, .main-tab, .tab, [role="button"], input[type="button"], input[type="s
   }
 }
 
-/* Active walk bar: keep above main-tabs sticky on mobile */
+/* Active walk bar: モバイル最適化 (main-tabs は body 直下に移動済み) */
 @media (max-width: 768px) {
   .active-walk-bar {
-    /* Inside .panel-inner that scrolls; main-tabs is sticky top:0,
-       so active-walk-bar should be sticky right below the tabs */
-    top: 52px;  /* main-tabs height ≈ 44px + small gap */
+    top: 0;
     padding: 8px 12px;
     margin: 6px 0 8px;
   }
@@ -8620,8 +8618,7 @@ button, a, .main-tab, .walk-hud-btn, .nearby-item, .featured-pick {
   .walk-cal-cell { width: 12px; height: 12px; }
 }
 
-/* Fix "active-walk-bar over main-tabs" stacking on mobile */
-.main-tabs { z-index: 50; }
+/* active-walk-bar の z-index のみ調整 (main-tabs の z-index は mobile/PC で個別設定) */
 .active-walk-bar { z-index: 49; }
 
 /* Map recenter button: 散歩中は画面右上へ移動（メインタブと被らないように） */
