@@ -3360,6 +3360,30 @@
       showToast(`✨ 「${route.title}」を${noun}に設定しました`, 'success', 3500);
     };
 
+    // ❤️ ガチャ結果から即お気に入り追加（curatedコースのみ）
+    const favBtn = $('#result-fav');
+    if (favBtn) {
+      if (route.isCurated && route.courseId) {
+        favBtn.style.display = '';
+        const updateIcon = () => {
+          const isFav = isFavorite(route.courseId);
+          const iconEl = document.getElementById('result-fav-icon');
+          if (iconEl) iconEl.textContent = isFav ? '❤️' : '🤍';
+          favBtn.classList.toggle('active', isFav);
+        };
+        updateIcon();
+        favBtn.onclick = (e) => {
+          e.stopPropagation();
+          const nowFav = toggleFavorite(route.courseId);
+          vib(15);
+          updateIcon();
+          showToast(nowFav ? '❤️ お気に入りに追加しました' : 'お気に入りから外しました', 'success', 2000);
+        };
+      } else {
+        favBtn.style.display = 'none';
+      }
+    }
+
     // Back to gachapon (turn again)
     const againBtn = $('#result-again');
     const sessionTotal = state.sessionPullCount || 0;
@@ -3920,6 +3944,32 @@ ${trkPts}
     } catch {
       showToast('シェア機能が使えません', 'error', 2200);
     }
+  }
+
+  // 🏆 全コース完走度
+  function renderCompletionProgress() {
+    const sec = document.getElementById('completion-progress');
+    if (!sec) return;
+    const totalCourses = (window.YORIMICHI_COURSES || []).length;
+    const completed = state.completedCourses.size;
+    if (totalCourses === 0) { sec.hidden = true; return; }
+    const pct = Math.round((completed / totalCourses) * 100);
+    const fracEl = document.getElementById('cp-fraction');
+    const pctEl = document.getElementById('cp-percent');
+    const fillEl = document.getElementById('cp-fill');
+    const statusEl = document.getElementById('cp-status');
+    if (fracEl) fracEl.textContent = `${completed} / ${totalCourses} コース`;
+    if (pctEl) pctEl.textContent = `${pct}%`;
+    if (fillEl) fillEl.style.width = `${pct}%`;
+    if (statusEl) {
+      if (pct === 100) statusEl.textContent = '🎉 全コース制覇おめでとう！';
+      else if (pct >= 75) statusEl.textContent = '✨ 街歩きマスターまであと少し';
+      else if (pct >= 50) statusEl.textContent = '🔥 折り返し地点突破！';
+      else if (pct >= 25) statusEl.textContent = '🚶 順調に進んでます';
+      else if (pct > 0) statusEl.textContent = '🌱 まずはここから';
+      else statusEl.textContent = '🥚 最初の一歩を踏み出そう';
+    }
+    sec.hidden = false;
   }
 
   // 🎯 月間散歩目標
@@ -4654,6 +4704,9 @@ ${trkPts}
       </div>
     `;
 
+    // 🏆 完走度
+    renderCompletionProgress();
+
     // 🎯 月間目標
     renderMonthlyGoal();
 
@@ -5340,12 +5393,11 @@ ${trkPts}
       return;
     }
 
-    list.innerHTML = history.map(h => {
+    list.innerHTML = history.map((h, i) => {
       const course = (window.YORIMICHI_COURSES || []).find(c => c.id === h.courseId);
       const name = course ? tField(course, 'name') : '自由ルート';
       const emoji = course?.themeIcon || course?.areaIcon || '🚶';
       const completed = h.completed ? '🏅 完走' : '途中';
-      // 該当コースのスポットメモを集めて表示
       let memosHtml = '';
       if (course) {
         const memos = getStopMemos(course.id);
@@ -5362,17 +5414,34 @@ ${trkPts}
         }
       }
       return `
-        <div class="walk-log-item">
+        <div class="walk-log-item" data-history-idx="${i}">
           <div class="wli-emoji">${emoji}</div>
           <div class="wli-body">
             <div class="wli-name">${escapeHtml(name)}</div>
             <div class="wli-meta">${completed} ・ ${h.stops || 0}スポット</div>
             ${memosHtml}
           </div>
-          <div class="wli-date">${escapeHtml(h.date || '')}</div>
+          <div class="wli-side">
+            <div class="wli-date">${escapeHtml(h.date || '')}</div>
+            ${course ? `<button class="wli-rewalk" data-course-id="${escapeHtml(course.id)}" type="button" aria-label="もう一度歩く">🔄 もう一度</button>` : ''}
+          </div>
         </div>
       `;
     }).join('');
+    // Re-walk ボタン
+    list.querySelectorAll('.wli-rewalk').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const cid = btn.getAttribute('data-course-id');
+        const c = (window.YORIMICHI_COURSES || []).find(x => x.id === cid);
+        if (!c) return;
+        vib(15);
+        // walk-log-modal を閉じて applyRoute
+        $('#walk-log-modal').hidden = true;
+        applyRoute(courseToRoute(c));
+        showToast(`🔄 「${tField(c, 'name')}」をもう一度歩きます`, 'success', 3000);
+      });
+    });
   }
 
   // ---------- Daily missions ----------

@@ -923,6 +923,20 @@
             <!-- populated by JS -->
           </div>
 
+          <!-- 🏆 全コース完走度 -->
+          <section class="completion-progress" id="completion-progress">
+            <div class="cp-header">
+              <span class="cp-icon">🏆</span>
+              <div class="cp-text">
+                <div class="cp-label">全コース完走度</div>
+                <div class="cp-fraction" id="cp-fraction">— / —</div>
+              </div>
+              <div class="cp-percent" id="cp-percent">0%</div>
+            </div>
+            <div class="cp-bar"><div class="cp-fill" id="cp-fill"></div></div>
+            <div class="cp-status" id="cp-status">—</div>
+          </section>
+
           <!-- 🎯 月間目標 -->
           <section class="monthly-goal" id="monthly-goal" hidden>
             <div class="mg-header">
@@ -1250,6 +1264,9 @@
             </button>
             <button class="btn-share" id="result-again" type="button">
               <span>もう一回</span>
+            </button>
+            <button class="btn-fav-quick" id="result-fav" type="button" aria-label="お気に入りに追加">
+              <span id="result-fav-icon">🤍</span>
             </button>
           </div>
           <div class="result-share-row">
