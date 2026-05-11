@@ -100,6 +100,42 @@ SUBSCRIPTION_TRIAL_DAYS = 7
 PRIMARY_ORIGIN = allowed_origins[0] if allowed_origins else "https://yorimichi.in-dx.jp"
 
 
+def _parse_gemini_json(text):
+    """Gemini レスポンスを安全にJSON parse。失敗時は None を返す。
+    - markdown コードフェンス (```json ... ```) を剥がす
+    - 末尾切断などのケースで部分修復を試みる
+    """
+    import re as _re_local
+    if not text:
+        return None
+    s = str(text).strip()
+    # コードフェンス除去
+    if s.startswith("```"):
+        m = _re_local.search(r'```(?:json)?\s*\n?(.*?)\n?```', s, _re_local.DOTALL)
+        if m:
+            s = m.group(1).strip()
+        else:
+            s = s.lstrip('`').strip()
+            if s.lower().startswith('json'):
+                s = s[4:].strip()
+    # 最初の { から最後の } までを抽出
+    first = s.find('{')
+    last = s.rfind('}')
+    if first >= 0 and last > first:
+        s = s[first:last + 1]
+    try:
+        return json.loads(s)
+    except json.JSONDecodeError:
+        # 末尾切断 → } を補完して再試行
+        try:
+            return json.loads(s + '"}')
+        except Exception:
+            try:
+                return json.loads(s + '}')
+            except Exception:
+                return None
+
+
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({
@@ -595,7 +631,7 @@ def walk_report():
     try:
         config_kwargs = dict(
             temperature=0.9,
-            max_output_tokens=2048,
+            max_output_tokens=4096,
             response_mime_type="application/json",
             response_schema=genai_types.Schema(
                 type=genai_types.Type.OBJECT,
@@ -619,7 +655,8 @@ def walk_report():
         text = (response.text or "").strip()
         if not text:
             return jsonify({"error": "empty"}), 502
-        result = json.loads(text)
+        result = _parse_gemini_json(text)
+        if not result: return jsonify({"error": "parse_failed"}), 502
         haiku = str(result.get("haiku", ""))[:80]
         essay = str(result.get("essay", ""))[:400]
         # 後方互換: report = haiku + essay の組み合わせ
@@ -692,7 +729,8 @@ def spot_guide():
         text = (response.text or "").strip()
         if not text:
             return jsonify({"error": "empty"}), 502
-        result = json.loads(text)
+        result = _parse_gemini_json(text)
+        if not result: return jsonify({"error": "parse_failed"}), 502
         return jsonify({
             "photo":  str(result.get("photo", ""))[:80],
             "trivia": str(result.get("trivia", ""))[:120],
@@ -766,7 +804,8 @@ def weekly_summary():
         text = (response.text or "").strip()
         if not text:
             return jsonify({"error": "empty"}), 502
-        result = json.loads(text)
+        result = _parse_gemini_json(text)
+        if not result: return jsonify({"error": "parse_failed"}), 502
         return jsonify({"summary": str(result.get("summary", ""))[:300]})
     except Exception as e:
         logger.exception("weekly_summary failed")
@@ -859,7 +898,8 @@ def course_suggest():
         text = (response.text or "").strip()
         if not text:
             return jsonify({"error": "empty"}), 502
-        result = json.loads(text)
+        result = _parse_gemini_json(text)
+        if not result: return jsonify({"error": "parse_failed"}), 502
         picks = result.get("picks") or []
         valid_ids = {r["id"] for r in rows}
         cleaned = []
@@ -1029,7 +1069,8 @@ def pre_walk_briefing():
         text = (response.text or "").strip()
         if not text:
             return jsonify({"error": "empty"}), 502
-        result = json.loads(text)
+        result = _parse_gemini_json(text)
+        if not result: return jsonify({"error": "parse_failed"}), 502
         return jsonify({"briefing": str(result.get("briefing", ""))[:200]})
     except Exception as e:
         logger.exception("pre_walk_briefing failed")
@@ -1097,7 +1138,8 @@ def describe_photo():
         text = (response.text or "").strip()
         if not text:
             return jsonify({"error": "empty_response"}), 502
-        result = json.loads(text)
+        result = _parse_gemini_json(text)
+        if not result: return jsonify({"error": "parse_failed"}), 502
         desc = str(result.get("description", ""))[:200]
         return jsonify({"description": desc})
     except Exception as e:
