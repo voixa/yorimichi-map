@@ -13018,6 +13018,42 @@ ${hashtag}`;
       });
     });
 
+    // 🌐 エリアチップ（YORIMICHI_AREAS から生成）
+    function renderGachaAreaChips() {
+      const wrap = document.getElementById('gacha-area-chips');
+      if (!wrap) return;
+      const areas = (window.YORIMICHI_AREAS || []).filter(a => a.enabled);
+      // 既存 (全エリア) ボタン残して追加
+      const existing = wrap.querySelector('button[data-area=""]');
+      wrap.innerHTML = '';
+      const allBtn = document.createElement('button');
+      allBtn.className = 'area-chip' + (state.activeArea ? '' : ' active');
+      allBtn.dataset.area = '';
+      allBtn.type = 'button';
+      allBtn.textContent = '🌐 全エリア';
+      wrap.appendChild(allBtn);
+      areas.forEach(area => {
+        const btn = document.createElement('button');
+        btn.className = 'area-chip' + (state.activeArea === area.id ? ' active' : '');
+        btn.dataset.area = area.id;
+        btn.type = 'button';
+        btn.textContent = `${area.icon || '📍'} ${tField(area, 'name')}`;
+        wrap.appendChild(btn);
+      });
+      wrap.querySelectorAll('.area-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          wrap.querySelectorAll('.area-chip').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          state.activeArea = chip.dataset.area || null;
+          // 既存 area-grid フィルタ (探すタブ) も同期
+          try { buildAreaFilter && buildAreaFilter(); } catch {}
+          // プール再描画
+          try { renderPoolPreview && renderPoolPreview(); } catch {}
+        });
+      });
+    }
+    renderGachaAreaChips();
+
     // ⏱ 時間チップ
     $$('.time-chip').forEach(chip => {
       chip.addEventListener('click', () => {

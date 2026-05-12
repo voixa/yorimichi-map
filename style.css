@@ -8209,6 +8209,41 @@ html.text-size-xlarge .modal-title { font-size: 22px; }
   .album-page-photos { gap: 12px; }
 }
 
+/* 🌐 Gacha area chips */
+.area-section { margin: 12px 0 6px; }
+.area-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  text-align: center;
+}
+.area-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+.area-chip {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1.5px solid transparent;
+  padding: 6px 10px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+.area-chip:hover { background: var(--brand-soft); }
+.area-chip.active {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: white;
+  border-color: white;
+  box-shadow: 0 3px 10px rgba(22, 163, 74, 0.3);
+}
+
 /* ⏱ Gacha time selector (mood と同じ見た目) */
 .time-section { margin: 12px 0 6px; }
 .time-label {
@@ -8321,22 +8356,34 @@ html.text-size-xlarge .modal-title { font-size: 22px; }
   box-shadow: 0 3px 10px rgba(255, 64, 129, 0.3);
 }
 
-/* 📂 All courses button */
+/* 📂 All courses button - 目立つアクセントカラー */
 .all-courses-btn {
   width: 100%;
-  background: var(--surface);
-  color: var(--text);
-  border: 1.5px solid var(--border, #e5e7eb);
-  padding: 12px;
-  border-radius: 12px;
+  background: linear-gradient(135deg, #1976d2, #00897b);
+  color: white;
+  border: 0;
+  padding: 14px;
+  border-radius: 14px;
   font-weight: 800;
-  font-size: 13px;
-  margin: 10px 0;
+  font-size: 14px;
+  margin: 12px 0 10px;
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.15s ease;
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
+  box-shadow: 0 6px 16px rgba(25, 118, 210, 0.3);
 }
-.all-courses-btn:hover { background: var(--brand-soft); }
+.all-courses-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(25, 118, 210, 0.4); }
+.all-courses-btn:active { transform: scale(0.98); }
+
+/* Toast: モーダル開いてる時は画面上端に */
+body.modal-open .toast {
+  top: 60px !important;
+  z-index: 9999 !important;
+}
+/* PWA install banner: モーダル開いてる時は隠す (ガチャモーダル等の下端に被るため) */
+body.modal-open .pwa-install-banner {
+  display: none !important;
+}
 
 /* 📂 All courses list */
 .all-courses-modal {
