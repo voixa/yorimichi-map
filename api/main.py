@@ -820,6 +820,20 @@ def course_suggest():
     data = request.get_json(silent=True) or {}
     user_request = (data.get("request") or "").strip()[:280]
     candidates = data.get("candidates") or []  # フロントから既存コース一覧を渡す
+    # 個人化コンテキスト（任意）
+    profile = data.get("profile") or {}
+    if not isinstance(profile, dict): profile = {}
+    completed_count = int(profile.get("completed_count") or 0)
+    favorite_names = profile.get("favorite_names") or []
+    if not isinstance(favorite_names, list): favorite_names = []
+    favorite_names = [str(s)[:60] for s in favorite_names][:5]
+    recent_memos = profile.get("recent_memos") or []
+    if not isinstance(recent_memos, list): recent_memos = []
+    recent_memos = [str(s)[:80] for s in recent_memos][:3]
+    preferred_areas = profile.get("preferred_areas") or []
+    if not isinstance(preferred_areas, list): preferred_areas = []
+    preferred_areas = [str(s)[:30] for s in preferred_areas][:3]
+    time_of_day = (profile.get("time_of_day") or "").strip()[:20]
     if not user_request:
         return jsonify({"error": "no_request"}), 400
     if not isinstance(candidates, list) or len(candidates) == 0:
@@ -847,22 +861,49 @@ def course_suggest():
         for r in rows
     ])
     valid_ids_str = ", ".join([f'"{r["id"]}"' for r in rows[:10]])
+
+    # 個人化コンテキスト構築
+    persona_section = ""
+    persona_lines = []
+    if completed_count > 0:
+        persona_lines.append(f"- 完走経験: {completed_count}コース")
+    if favorite_names:
+        persona_lines.append(f"- お気に入り: {' / '.join(favorite_names)}")
+    if preferred_areas:
+        persona_lines.append(f"- よく歩くエリア: {' / '.join(preferred_areas)}")
+    if recent_memos:
+        memo_list = " / ".join([f'「{m}」' for m in recent_memos])
+        persona_lines.append(f"- 最近の感想: {memo_list}")
+    if time_of_day:
+        persona_lines.append(f"- 現在時刻: {time_of_day}")
+    if persona_lines:
+        persona_section = "【ユーザーのプロフィール（参考）】\n" + "\n".join(persona_lines) + "\n\n"
+
+    # tips 用例
+    tips_example = '"tips": "夕方からスタートして〇〇で休憩、最後に△△で日暮れを"'
+
     prompt = (
-        "あなたは散歩コーディネーター。ユーザーのリクエストに合うコースを下記リストから最大3件選び、理由を添えて返してください。\n"
+        "あなたは散歩コーディネーター。ユーザーのリクエストに合うコースを下記リストから最大3件選び、理由とアレンジのヒントを添えて返してください。\n"
         "\n"
         f"【ユーザーのリクエスト】\n{user_request}\n"
         "\n"
+        f"{persona_section}"
         "【選択可能なコース】（[id] で囲まれたものがコースID）\n"
         f"{course_list}\n"
         "\n"
         "【ルール】\n"
         "- id は **必ず上記リストの [] 内の文字列をそのまま** 返す（例: " + valid_ids_str + " など）\n"
         "- IDの捏造・改変は絶対禁止。リストに無いIDを返してはいけない\n"
-        "- リクエストに最も合う 1〜3 件を厳選\n"
-        "- 各コースに「なぜおすすめか」を 50-80字で書く（ユーザーリクエストの要素に触れる）\n"
+        "- リクエストに最も合う 1〜3 件を厳選（プロフィールがあれば一部活用）\n"
+        "- 各コースに以下を必須で記載：\n"
+        "  * reason: 60-100字 で「なぜおすすめか」+ ユーザーリクエストの具体的な要素を必ず引用\n"
+        "    例: 「30分で雨」というリクエストなら → 「30分以内で完結 + 屋内多めなので雨でも安心」\n"
+        "  * tips: 40-70字 で今日の歩き方のヒント（時間帯/順番/持ち物）。例: " + tips_example + "\n"
+        "- 提案にはユーザーのお気に入り・最近のメモを反映してOK（押し付けがましくしない）\n"
         "- 該当が無ければ picks: []\n"
+        "- 商標・著名人・ジブリ・ポケモン等は使わない\n"
         "\n"
-        'JSON: {"picks": [{"id":"そのままの文字列","reason":"..."}]}'
+        'JSON: {"picks": [{"id":"そのままの文字列","reason":"...","tips":"..."}]}'
     )
     try:
         config_kwargs = dict(
@@ -881,6 +922,7 @@ def course_suggest():
                             properties={
                                 "id": genai_types.Schema(type=genai_types.Type.STRING),
                                 "reason": genai_types.Schema(type=genai_types.Type.STRING),
+                                "tips": genai_types.Schema(type=genai_types.Type.STRING),
                             },
                         ),
                     ),
@@ -911,10 +953,13 @@ def course_suggest():
         for p in picks[:3]:
             if not isinstance(p, dict): continue
             pid = str(p.get("id") or "").strip()
-            reason = str(p.get("reason", ""))[:200]
+            reason = str(p.get("reason", ""))[:240]
+            tips = str(p.get("tips", ""))[:160]
+            entry = {"reason": reason, "tips": tips}
             # 完全一致
             if pid in valid_ids:
-                cleaned.append({"id": pid, "reason": reason})
+                entry["id"] = pid
+                cleaned.append(entry)
                 continue
             # フォールバック1: 大小無視
             lower = pid.lower()
@@ -924,16 +969,19 @@ def course_suggest():
                     matched_id = vid
                     break
             if matched_id:
-                cleaned.append({"id": matched_id, "reason": reason})
+                entry["id"] = matched_id
+                cleaned.append(entry)
                 continue
             # フォールバック2: 名前一致 (Gemini が name を id として返してしまうケース)
             if lower in name_to_id:
-                cleaned.append({"id": name_to_id[lower], "reason": reason})
+                entry["id"] = name_to_id[lower]
+                cleaned.append(entry)
                 continue
             # フォールバック3: id を部分文字列として含む / id が pid に含まれる
             for vid in valid_ids:
                 if vid in pid or pid in vid:
-                    cleaned.append({"id": vid, "reason": reason})
+                    entry["id"] = vid
+                    cleaned.append(entry)
                     break
         # 空ならログを残しデバッグしやすく
         if not cleaned and picks:

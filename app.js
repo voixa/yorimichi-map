@@ -6442,13 +6442,49 @@ ${trkPts}
       tags: (c.tags || []).slice(0, 6),
       desc: (tField(c, 'description') || '').slice(0, 140),
     }));
+    // 👤 個人化コンテキスト
+    const favIds = [...(state.favoriteCourses || [])].slice(0, 5);
+    const favoriteNames = favIds.map(id => {
+      const c = allCourses.find(x => x.id === id);
+      return c ? tField(c, 'name') : null;
+    }).filter(Boolean);
+    // よく歩くエリア（completedCourses から集計）
+    const areaCount = {};
+    [...state.completedCourses].forEach(id => {
+      const c = allCourses.find(x => x.id === id);
+      if (c?.area) areaCount[c.area] = (areaCount[c.area] || 0) + 1;
+    });
+    const preferredAreas = Object.entries(areaCount).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([a]) => {
+      const ar = (window.YORIMICHI_AREAS || []).find(x => x.id === a);
+      return ar ? tField(ar, 'name') : a;
+    });
+    // 最近のメモ（最大3件）
+    const recentMemos = [];
+    try {
+      for (const cid of [...state.completedCourses].slice(-3)) {
+        const memos = getStopMemos(cid);
+        Object.values(memos).forEach(m => {
+          if (m?.memo) recentMemos.push(m.memo);
+        });
+      }
+    } catch {}
+    const hour = new Date().getHours();
+    const timeOfDay = hour < 6 ? '深夜' : hour < 9 ? '早朝' : hour < 12 ? '午前' : hour < 15 ? '昼下がり' : hour < 18 ? '夕方' : '夜';
+
+    const profile = {
+      completed_count: state.completedCourses.size,
+      favorite_names: favoriteNames,
+      preferred_areas: preferredAreas,
+      recent_memos: recentMemos.slice(0, 3),
+      time_of_day: timeOfDay,
+    };
     try {
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 12000);
+      const timer = setTimeout(() => ctrl.abort(), 15000);
       const res = await fetch(`${API_BASE}/api/course-suggest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ request: userText, candidates }),
+        body: JSON.stringify({ request: userText, candidates, profile }),
         signal: ctrl.signal,
       });
       clearTimeout(timer);
@@ -6476,6 +6512,7 @@ ${trkPts}
                 <span class="ai-result-cta">詳細 →</span>
               </button>
               <div class="ai-result-reason">💡 ${escapeHtml(p.reason || '')}</div>
+              ${p.tips ? `<div class="ai-result-tips">🎯 <strong>今日のおすすめ歩き方</strong>: ${escapeHtml(p.tips)}</div>` : ''}
             </div>
           `;
         }).join('')}
