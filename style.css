@@ -5891,7 +5891,7 @@ body.map-fullscreen #map-container {
 [data-theme="dark"] .ai-tts-btn { background: rgba(108, 99, 255, 0.15); }
 
 /* Broaden button */
-.ai-broaden-btn {
+.ai-broaden-btn, .ai-retry-btn {
   background: linear-gradient(135deg, #6c63ff, #ff4081);
   color: white;
   border: 0;
@@ -5901,6 +5901,7 @@ body.map-fullscreen #map-container {
   font-size: 12px;
   cursor: pointer;
   font-family: inherit;
+  margin-top: 10px;
 }
 
 /* AI suggest options */

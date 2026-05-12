@@ -6713,10 +6713,13 @@ ${trkPts}
     } catch (e) {
       console.warn('AI custom course failed', e);
       const isQuota = e?.isQuota || e?.message?.includes('429');
-      const msg = isQuota
+      const is503 = e?.status === 503 || e?.message?.includes('503');
+      const msg = (isQuota || is503)
         ? '🚦 AIサービスが今混雑しています。<br>1分後にもう一度お試しください'
         : '⚠️ オリジナルコースの生成に失敗しました';
-      resultsEl.innerHTML = `<div class="ai-no-result">${msg}</div>`;
+      resultsEl.innerHTML = `<div class="ai-no-result">${msg}<br><button class="ai-retry-btn" type="button">↻ 再試行</button></div>`;
+      const retryBtn = resultsEl.querySelector('.ai-retry-btn');
+      if (retryBtn) retryBtn.addEventListener('click', () => requestAiCustomCourse(userText));
     }
   }
 
@@ -6964,12 +6967,16 @@ ${trkPts}
       if (refreshBtn) refreshBtn.hidden = false;
     } catch (e) {
       console.warn('AI suggest failed', e);
-      // 429 quota エラーは別メッセージ
       const isQuota = e?.isQuota || e?.message?.includes('429');
-      const msg = isQuota
-        ? '🚦 AIサービスが今混雑しています。<br>少し待ってもう一度お試しください'
+      const is503 = e?.status === 503 || e?.message?.includes('503');
+      const msg = (isQuota || is503)
+        ? '🚦 AIサービスが今混雑しています。<br>1分後にもう一度お試しください'
         : '⚠️ 通信に失敗しました。時間をおいて再度試してください';
-      resultsEl.innerHTML = `<div class="ai-no-result">${msg}</div>`;
+      resultsEl.innerHTML = `<div class="ai-no-result">${msg}<br><button class="ai-retry-btn" type="button">↻ 再試行</button></div>`;
+      const retryBtn = resultsEl.querySelector('.ai-retry-btn');
+      if (retryBtn) retryBtn.addEventListener('click', () => {
+        requestAiCourseSuggestion(_lastAiSuggestQuery);
+      });
     }
   }
 

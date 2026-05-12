@@ -106,6 +106,31 @@ def _is_quota_error(exc):
     return ("429" in msg) or ("RESOURCE_EXHAUSTED" in msg) or ("quota" in msg.lower())
 
 
+def _is_transient_error(exc):
+    """Gemini APIの一時的なエラー(503/UNAVAILABLE)を判定 - リトライ可能"""
+    msg = str(exc) if exc else ""
+    return ("503" in msg) or ("UNAVAILABLE" in msg) or ("high demand" in msg.lower()) or ("temporary" in msg.lower())
+
+
+def _gemini_call_with_retry(call_fn, max_retries=2):
+    """Gemini API呼び出しを 503/transient エラー時に自動リトライ"""
+    import time as _time_retry
+    last_exc = None
+    for attempt in range(max_retries + 1):
+        try:
+            return call_fn()
+        except Exception as e:
+            last_exc = e
+            if _is_transient_error(e) and attempt < max_retries:
+                wait = 0.8 * (2 ** attempt)
+                logger.info(f"gemini 503: retry {attempt + 1}/{max_retries} after {wait}s")
+                _time_retry.sleep(wait)
+                continue
+            raise
+    if last_exc:
+        raise last_exc
+
+
 def _handle_gemini_exception(exc, endpoint_name):
     """Gemini APIエラーを適切なHTTPレスポンスに変換"""
     if _is_quota_error(exc):
@@ -114,6 +139,12 @@ def _handle_gemini_exception(exc, endpoint_name):
             "error": "quota_exceeded",
             "message": "AIサービスが混雑しています。少し待ってからもう一度お試しください。",
         }), 429
+    if _is_transient_error(exc):
+        logger.warning(f"{endpoint_name}: gemini transient (503)")
+        return jsonify({
+            "error": "service_unavailable",
+            "message": "AIモデルが今混雑しています。少しお待ちください。",
+        }), 503
     logger.exception(f"{endpoint_name} failed")
     return jsonify({"error": "server_error"}), 502
 
@@ -502,11 +533,11 @@ def _generate_narrative_with_ai(theme: str, area: str, stop_names: list, rarity:
         response = None
         for attempt in range(3):
             try:
-                response = gemini_client.models.generate_content(
-                    model=GEMINI_MODEL,
-                    contents=user_prompt,
-                    config=config,
-                )
+                response = _gemini_call_with_retry(lambda: gemini_client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=user_prompt,
+            config=config,
+        ))
                 break
             except Exception as e:
                 last_err = e
@@ -665,11 +696,11 @@ def walk_report():
         except Exception:
             pass
         config = genai_types.GenerateContentConfig(**config_kwargs)
-        response = gemini_client.models.generate_content(
+        response = _gemini_call_with_retry(lambda: gemini_client.models.generate_content(
             model=GEMINI_MODEL,
             contents=prompt,
             config=config,
-        )
+        ))
         text = (response.text or "").strip()
         if not text:
             return jsonify({"error": "empty"}), 502
@@ -738,11 +769,11 @@ def spot_guide():
         except Exception:
             pass
         config = genai_types.GenerateContentConfig(**config_kwargs)
-        response = gemini_client.models.generate_content(
+        response = _gemini_call_with_retry(lambda: gemini_client.models.generate_content(
             model=GEMINI_MODEL,
             contents=prompt,
             config=config,
-        )
+        ))
         text = (response.text or "").strip()
         if not text:
             return jsonify({"error": "empty"}), 502
@@ -838,11 +869,11 @@ def custom_course():
         except Exception:
             pass
         config = genai_types.GenerateContentConfig(**config_kwargs)
-        response = gemini_client.models.generate_content(
+        response = _gemini_call_with_retry(lambda: gemini_client.models.generate_content(
             model=GEMINI_MODEL,
             contents=prompt,
             config=config,
-        )
+        ))
         text = (response.text or "").strip()
         if not text:
             return jsonify({"error": "empty"}), 502
@@ -924,11 +955,11 @@ def weekly_summary():
         except Exception:
             pass
         config = genai_types.GenerateContentConfig(**config_kwargs)
-        response = gemini_client.models.generate_content(
+        response = _gemini_call_with_retry(lambda: gemini_client.models.generate_content(
             model=GEMINI_MODEL,
             contents=prompt,
             config=config,
-        )
+        ))
         text = (response.text or "").strip()
         if not text:
             return jsonify({"error": "empty"}), 502
@@ -1067,11 +1098,11 @@ def course_suggest():
         except Exception:
             pass
         config = genai_types.GenerateContentConfig(**config_kwargs)
-        response = gemini_client.models.generate_content(
+        response = _gemini_call_with_retry(lambda: gemini_client.models.generate_content(
             model=GEMINI_MODEL,
             contents=prompt,
             config=config,
-        )
+        ))
         text = (response.text or "").strip()
         if not text:
             return jsonify({"error": "empty"}), 502
@@ -1273,11 +1304,11 @@ def pre_walk_briefing():
         except Exception:
             pass
         config = genai_types.GenerateContentConfig(**config_kwargs)
-        response = gemini_client.models.generate_content(
+        response = _gemini_call_with_retry(lambda: gemini_client.models.generate_content(
             model=GEMINI_MODEL,
             contents=prompt,
             config=config,
-        )
+        ))
         text = (response.text or "").strip()
         if not text:
             return jsonify({"error": "empty"}), 502
@@ -1338,14 +1369,14 @@ def describe_photo():
         except Exception:
             pass
 
-        response = gemini_client.models.generate_content(
+        response = _gemini_call_with_retry(lambda: gemini_client.models.generate_content(
             model=GEMINI_MODEL,
             contents=[
                 genai_types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
                 user_prompt,
             ],
             config=config,
-        )
+        ))
         text = (response.text or "").strip()
         if not text:
             return jsonify({"error": "empty_response"}), 502
