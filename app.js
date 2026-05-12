@@ -6556,18 +6556,60 @@ ${trkPts}
       `;
       resultsEl.querySelector('.aic-apply').addEventListener('click', () => {
         vib(15);
-        const route = {
-          stops: stopsForCourse,
-          title: fakeCourse.name,
-          isCurated: false,
-          isCustom: true,
-          themeIcon: '🎨',
-          isGenerated: true,
-        };
-        state.origin = { lat: stopsForCourse[0].lat, lng: stopsForCourse[0].lng, label: stopsForCourse[0].name, shortLabel: stopsForCourse[0].name };
-        state.dest = { lat: stopsForCourse[stopsForCourse.length - 1].lat, lng: stopsForCourse[stopsForCourse.length - 1].lng, label: stopsForCourse[stopsForCourse.length - 1].name, shortLabel: stopsForCourse[stopsForCourse.length - 1].name };
-        applyRoute(route);
-        forceShowWalkStartButton(`✨ AIオリジナル「${fakeCourse.name}」を設定！下の「🚶歩き始める」をタップ`);
+        try {
+          // route 形式に正しく変換（detourMin/id/areaName 等を補完）
+          const route = {
+            id: fakeCourse.id,
+            title: fakeCourse.name,
+            stops: stopsForCourse.map(s => ({
+              id: s.id || (fakeCourse.id + '_' + (s.name || 'stop')),
+              name: s.name,
+              lat: s.lat,
+              lng: s.lng,
+              cat: s.cat || 'other',
+              emoji: s.emoji,
+              desc: s.desc || '',
+              tags: s.tags || [],
+              bestTime: s.bestTime,
+              budget: s.budget,
+              stayMin: s.stayMin,
+            })),
+            detourMin: targetMin || 60,
+            isCurated: false,
+            isCustom: true,
+            themeIcon: '🎨',
+            isGenerated: true,
+          };
+          state.origin = {
+            lat: stopsForCourse[0].lat,
+            lng: stopsForCourse[0].lng,
+            label: stopsForCourse[0].name,
+            shortLabel: stopsForCourse[0].name,
+          };
+          state.dest = {
+            lat: stopsForCourse[stopsForCourse.length - 1].lat,
+            lng: stopsForCourse[stopsForCourse.length - 1].lng,
+            label: stopsForCourse[stopsForCourse.length - 1].name,
+            shortLabel: stopsForCourse[stopsForCourse.length - 1].name,
+          };
+          // 出発地・目的地の入力欄にも反映
+          const oi = document.getElementById('origin-input');
+          if (oi) oi.value = state.origin.shortLabel;
+          const di = document.getElementById('dest-input');
+          if (di) di.value = state.dest.shortLabel;
+          // マップマーカー
+          try {
+            if (typeof setEndpointMarker === 'function') {
+              setEndpointMarker('origin', state.origin);
+              setEndpointMarker('dest', state.dest);
+            }
+          } catch {}
+          applyRoute(route);
+          forceShowWalkStartButton(`✨ AIオリジナル「${fakeCourse.name}」を設定！下の「🚶歩き始める」をタップ`);
+        } catch (err) {
+          console.error('aic-apply failed', err);
+          showToast('適用に失敗しました: ' + (err?.message || ''), 'error', 4000);
+        }
       });
       resultsEl.querySelector('.aic-regen').addEventListener('click', () => {
         vib(10);
