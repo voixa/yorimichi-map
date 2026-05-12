@@ -6427,6 +6427,41 @@ ${trkPts}
   // 🤖 AI コース提案
   let _lastAiSuggestQuery = '';
   let _lastAiSuggestExcludeIds = [];
+
+  // 履歴: 過去のリクエスト最大5件
+  function getAiRequestHistory() {
+    try { return JSON.parse(localStorage.getItem('yorimichi-ai-request-history') || '[]'); } catch { return []; }
+  }
+  function saveAiRequest(text) {
+    if (!text || !text.trim()) return;
+    let h = getAiRequestHistory();
+    // 重複削除
+    h = h.filter(x => x !== text);
+    h.unshift(text);
+    h = h.slice(0, 5);
+    try { localStorage.setItem('yorimichi-ai-request-history', JSON.stringify(h)); } catch {}
+    renderAiHistoryChips();
+  }
+  function renderAiHistoryChips() {
+    const row = document.getElementById('ai-history-row');
+    const chips = document.getElementById('ai-history-chips');
+    if (!row || !chips) return;
+    const h = getAiRequestHistory();
+    if (h.length === 0) { row.hidden = true; return; }
+    row.hidden = false;
+    chips.innerHTML = h.map(t => `<button type="button" class="ai-hist-chip" data-q="${escapeHtml(t)}">${escapeHtml(t.length > 20 ? t.slice(0, 20) + '…' : t)}</button>`).join('');
+    chips.querySelectorAll('.ai-hist-chip').forEach(el => {
+      el.addEventListener('click', () => {
+        const q = el.getAttribute('data-q') || '';
+        const input = document.getElementById('ai-suggest-input');
+        if (input) {
+          input.value = q;
+          _lastAiSuggestExcludeIds = [];
+          requestAiCourseSuggestion(q);
+        }
+      });
+    });
+  }
   async function requestAiCourseSuggestion(userText, opts) {
     opts = opts || {};
     const resultsEl = document.getElementById('ai-suggest-results');
@@ -6434,6 +6469,8 @@ ${trkPts}
     if (!resultsEl) return;
     if (!userText || !userText.trim()) return;
     _lastAiSuggestQuery = userText;
+    // 履歴保存（リフレッシュ時は除外）
+    if (!opts.refresh) saveAiRequest(userText);
     resultsEl.hidden = false;
     resultsEl.innerHTML = `<div class="ai-loading"><span class="loader-spinner-small"></span> AIが考え中...</div>`;
     // 候補（モバイルでもサイズを抑える）
@@ -6509,7 +6546,23 @@ ${trkPts}
       const data = await res.json();
       const picks = data.picks || [];
       if (picks.length === 0) {
-        resultsEl.innerHTML = `<div class="ai-no-result">該当するコースがありませんでした。<br>条件を変えてもう一度試してみてください。</div>`;
+        // フォールバック: 「条件を広げて再提案」ボタン付き
+        resultsEl.innerHTML = `
+          <div class="ai-no-result">
+            <div style="font-size:32px;opacity:0.6;margin-bottom:6px;">🤔</div>
+            <div style="font-weight:800;margin-bottom:4px;">ぴったりのコースが見つかりませんでした</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">条件を広げて再提案するか、リクエストを変えてみてください</div>
+            <button class="ai-broaden-btn" type="button">🔍 条件を広げて再提案</button>
+          </div>
+        `;
+        const broadenBtn = resultsEl.querySelector('.ai-broaden-btn');
+        if (broadenBtn) broadenBtn.addEventListener('click', () => {
+          // 未完走トグルを外して再検索
+          const excl = document.getElementById('ai-exclude-completed');
+          if (excl?.checked) excl.checked = false;
+          _lastAiSuggestExcludeIds = [];
+          requestAiCourseSuggestion(_lastAiSuggestQuery + 'もしくは似た雰囲気で');
+        });
         return;
       }
       resultsEl.innerHTML = `
@@ -6528,7 +6581,10 @@ ${trkPts}
                 </span>
                 <span class="ai-result-cta">詳細 →</span>
               </button>
-              <div class="ai-result-reason">💡 ${escapeHtml(p.reason || '')}</div>
+              <div class="ai-result-reason">
+                <span>💡 ${escapeHtml(p.reason || '')}</span>
+                <button class="ai-tts-btn" type="button" data-text="${escapeHtml((p.reason || '') + (p.tips ? '。' + p.tips : ''))}" aria-label="読み上げ">🔊</button>
+              </div>
               ${p.tips ? `<div class="ai-result-tips">🎯 <strong>今日のおすすめ歩き方</strong>: ${escapeHtml(p.tips)}</div>` : ''}
             </div>
           `;
@@ -6539,6 +6595,26 @@ ${trkPts}
           const cid = el.getAttribute('data-course-id');
           const c = allCourses.find(x => x.id === cid);
           if (c) showCourseDetail(c);
+        });
+      });
+      // 🔊 TTS ボタン
+      resultsEl.querySelectorAll('.ai-tts-btn').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const text = el.getAttribute('data-text') || '';
+          if (!text || !('speechSynthesis' in window)) {
+            showToast('音声読み上げに対応していません', 'info', 2000);
+            return;
+          }
+          try {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'ja-JP';
+            u.rate = 1.05;
+            window.speechSynthesis.speak(u);
+            el.textContent = '🔇';
+            u.onend = () => { el.textContent = '🔊'; };
+          } catch {}
         });
       });
       // 次回リフレッシュ時に除外する ID をストック
@@ -8993,6 +9069,7 @@ ${trkPts}
     'yorimichi-missions',
     'yorimichi-monthly-goal', 'yorimichi-walk-journals',
     'yorimichi-textsize',
+    'yorimichi-ai-request-history', 'yorimichi-weekly-summary-cache',
   ];
   // 動的キー（コース毎のメモ・写真）も含める
   function getDynamicDataKeys() {
@@ -12556,6 +12633,8 @@ ${hashtag}`;
       vib(10);
       requestAiCourseSuggestion(_lastAiSuggestQuery, { refresh: true });
     });
+    // 履歴チップを初期表示
+    try { renderAiHistoryChips(); } catch {}
     // 未完走トグル：チェック変更時に再検索
     const aiExcl = $('#ai-exclude-completed');
     if (aiExcl) aiExcl.addEventListener('change', () => {
