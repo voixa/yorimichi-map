@@ -881,6 +881,7 @@ def course_suggest():
 
     # tips 用例
     tips_example = '"tips": "夕方からスタートして〇〇で休憩、最後に△△で日暮れを"'
+    matched_example = '"matched": ["30分以内", "屋内多め", "雨でもOK"]'
 
     prompt = (
         "あなたは散歩コーディネーター。ユーザーのリクエストに合うコースを下記リストから最大3件選び、理由とアレンジのヒントを添えて返してください。\n"
@@ -899,11 +900,12 @@ def course_suggest():
         "  * reason: 60-100字 で「なぜおすすめか」+ ユーザーリクエストの具体的な要素を必ず引用\n"
         "    例: 「30分で雨」というリクエストなら → 「30分以内で完結 + 屋内多めなので雨でも安心」\n"
         "  * tips: 40-70字 で今日の歩き方のヒント（時間帯/順番/持ち物）。例: " + tips_example + "\n"
+        "  * matched: ユーザーリクエストのどの要素にマッチするかを 2-4個 の短い日本語キーワード配列で返す。例: " + matched_example + "\n"
         "- 提案にはユーザーのお気に入り・最近のメモを反映してOK（押し付けがましくしない）\n"
         "- 該当が無ければ picks: []\n"
         "- 商標・著名人・ジブリ・ポケモン等は使わない\n"
         "\n"
-        'JSON: {"picks": [{"id":"そのままの文字列","reason":"...","tips":"..."}]}'
+        'JSON: {"picks": [{"id":"そのままの文字列","reason":"...","tips":"...","matched":["...","..."]}]}'
     )
     try:
         config_kwargs = dict(
@@ -923,6 +925,10 @@ def course_suggest():
                                 "id": genai_types.Schema(type=genai_types.Type.STRING),
                                 "reason": genai_types.Schema(type=genai_types.Type.STRING),
                                 "tips": genai_types.Schema(type=genai_types.Type.STRING),
+                                "matched": genai_types.Schema(
+                                    type=genai_types.Type.ARRAY,
+                                    items=genai_types.Schema(type=genai_types.Type.STRING),
+                                ),
                             },
                         ),
                     ),
@@ -955,7 +961,9 @@ def course_suggest():
             pid = str(p.get("id") or "").strip()
             reason = str(p.get("reason", ""))[:240]
             tips = str(p.get("tips", ""))[:160]
-            entry = {"reason": reason, "tips": tips}
+            matched_raw = p.get("matched") or []
+            matched = [str(m)[:30] for m in matched_raw if isinstance(m, str)][:4] if isinstance(matched_raw, list) else []
+            entry = {"reason": reason, "tips": tips, "matched": matched}
             # 完全一致
             if pid in valid_ids:
                 entry["id"] = pid

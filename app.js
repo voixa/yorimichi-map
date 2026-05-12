@@ -6571,6 +6571,9 @@ ${trkPts}
           const c = allCourses.find(x => x.id === p.id);
           if (!c) return '';
           const done = state.completedCourses.has(c.id);
+          const fav = isFavorite(c.id);
+          const thumb = buildCourseThumbSvg(c, { w: 64, h: 42 });
+          const matchedChips = (p.matched || []).map(m => `<span class="ai-matched-chip">✓ ${escapeHtml(m)}</span>`).join('');
           return `
             <div class="ai-result-card">
               <button class="ai-result-btn" type="button" data-course-id="${escapeHtml(c.id)}">
@@ -6579,13 +6582,19 @@ ${trkPts}
                   <span class="ai-result-name">${escapeHtml(tField(c, 'name'))}${done ? ' <span class="ai-result-done">完走</span>' : ''}</span>
                   <span class="ai-result-meta">${c.areaIcon || ''} ${escapeHtml(tField(c, 'areaName'))} ・ 約${c.estimatedMin}分</span>
                 </span>
-                <span class="ai-result-cta">詳細 →</span>
+                <span class="ai-result-thumb">${thumb}</span>
               </button>
+              ${matchedChips ? `<div class="ai-matched-row">${matchedChips}</div>` : ''}
               <div class="ai-result-reason">
                 <span>💡 ${escapeHtml(p.reason || '')}</span>
                 <button class="ai-tts-btn" type="button" data-text="${escapeHtml((p.reason || '') + (p.tips ? '。' + p.tips : ''))}" aria-label="読み上げ">🔊</button>
               </div>
               ${p.tips ? `<div class="ai-result-tips">🎯 <strong>今日のおすすめ歩き方</strong>: ${escapeHtml(p.tips)}</div>` : ''}
+              <div class="ai-result-actions">
+                <button class="ai-quick-fav" type="button" data-course-id="${escapeHtml(c.id)}" aria-label="お気に入り">${fav ? '❤️' : '🤍'}</button>
+                <button class="ai-quick-share" type="button" data-course-id="${escapeHtml(c.id)}" aria-label="シェア">📤</button>
+                <button class="ai-quick-apply" type="button" data-course-id="${escapeHtml(c.id)}">🚶 このコースで行く →</button>
+              </div>
             </div>
           `;
         }).join('')}
@@ -6595,6 +6604,38 @@ ${trkPts}
           const cid = el.getAttribute('data-course-id');
           const c = allCourses.find(x => x.id === cid);
           if (c) showCourseDetail(c);
+        });
+      });
+      // ❤️ クイックお気に入り
+      resultsEl.querySelectorAll('.ai-quick-fav').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const cid = el.getAttribute('data-course-id');
+          const nowFav = toggleFavorite(cid);
+          el.textContent = nowFav ? '❤️' : '🤍';
+          vib(10);
+          showToast(nowFav ? '❤️ お気に入りに追加' : 'お気に入りから外しました', 'success', 1800);
+        });
+      });
+      // 📤 クイックシェア
+      resultsEl.querySelectorAll('.ai-quick-share').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const cid = el.getAttribute('data-course-id');
+          const c = allCourses.find(x => x.id === cid);
+          if (c) quickShareCourse(c, e);
+        });
+      });
+      // 🚶 クイック適用
+      resultsEl.querySelectorAll('.ai-quick-apply').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const cid = el.getAttribute('data-course-id');
+          const c = allCourses.find(x => x.id === cid);
+          if (!c) return;
+          vib(15);
+          applyRoute(courseToRoute(c));
+          showToast(`✨ 「${tField(c, 'name')}」を地図に設定`, 'success', 3000);
         });
       });
       // 🔊 TTS ボタン

@@ -5570,6 +5570,55 @@ body.map-fullscreen #map-container {
   border-radius: 12px;
   padding: 10px;
 }
+.ai-result-thumb {
+  background: var(--surface-2);
+  border-radius: 6px;
+  padding: 3px;
+  display: grid;
+  place-items: center;
+}
+.ai-matched-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.ai-matched-chip {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+.ai-result-actions {
+  display: grid;
+  grid-template-columns: 40px 40px 1fr;
+  gap: 6px;
+  margin-top: 8px;
+}
+.ai-quick-fav,
+.ai-quick-share {
+  background: var(--surface-2);
+  border: 0;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.ai-quick-fav:hover, .ai-quick-share:hover { background: rgba(108, 99, 255, 0.1); }
+.ai-quick-apply {
+  background: linear-gradient(135deg, #ff7e3d, #ff4081);
+  color: white;
+  border: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
 [data-theme="dark"] .ai-result-card { background: rgba(255,255,255,0.05); }
 .ai-result-btn {
   display: grid;
