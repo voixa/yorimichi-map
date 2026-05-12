@@ -100,6 +100,24 @@ SUBSCRIPTION_TRIAL_DAYS = 7
 PRIMARY_ORIGIN = allowed_origins[0] if allowed_origins else "https://yorimichi.in-dx.jp"
 
 
+def _is_quota_error(exc):
+    """Gemini APIのクォータエラー(429)を判定"""
+    msg = str(exc) if exc else ""
+    return ("429" in msg) or ("RESOURCE_EXHAUSTED" in msg) or ("quota" in msg.lower())
+
+
+def _handle_gemini_exception(exc, endpoint_name):
+    """Gemini APIエラーを適切なHTTPレスポンスに変換"""
+    if _is_quota_error(exc):
+        logger.warning(f"{endpoint_name}: gemini quota exceeded")
+        return jsonify({
+            "error": "quota_exceeded",
+            "message": "AIサービスが混雑しています。少し待ってからもう一度お試しください。",
+        }), 429
+    logger.exception(f"{endpoint_name} failed")
+    return jsonify({"error": "server_error"}), 502
+
+
 def _parse_gemini_json(text):
     """Gemini レスポンスを安全にJSON parse。失敗時は None を返す。
     - markdown コードフェンス (```json ... ```) を剥がす
@@ -663,8 +681,7 @@ def walk_report():
         report = (f"《{haiku}》\n\n{essay}" if haiku and essay else (haiku or essay))
         return jsonify({"report": report, "haiku": haiku, "essay": essay})
     except Exception as e:
-        logger.exception("walk_report failed")
-        return jsonify({"error": "server_error"}), 502
+        return _handle_gemini_exception(e, "walk_report")
 
 
 @app.route("/api/spot-guide", methods=["POST"])
@@ -737,8 +754,7 @@ def spot_guide():
             "enjoy":  str(result.get("enjoy", ""))[:80],
         })
     except Exception as e:
-        logger.exception("spot_guide failed")
-        return jsonify({"error": "server_error"}), 502
+        return _handle_gemini_exception(e, "spot_guide")
 
 
 @app.route("/api/custom-course", methods=["POST"])
@@ -850,8 +866,7 @@ def custom_course():
             "stop_ids": valid_chosen[:8],
         })
     except Exception as e:
-        logger.exception("custom_course failed")
-        return jsonify({"error": "server_error"}), 502
+        return _handle_gemini_exception(e, "custom_course")
 
 
 @app.route("/api/weekly-summary", methods=["POST"])
@@ -921,8 +936,7 @@ def weekly_summary():
         if not result: return jsonify({"error": "parse_failed"}), 502
         return jsonify({"summary": str(result.get("summary", ""))[:300]})
     except Exception as e:
-        logger.exception("weekly_summary failed")
-        return jsonify({"error": "server_error"}), 502
+        return _handle_gemini_exception(e, "weekly_summary")
 
 
 @app.route("/api/course-suggest", methods=["POST"])
@@ -1109,8 +1123,7 @@ def course_suggest():
             logger.warning(f"course_suggest: Gemini returned invalid IDs: {[p.get('id') for p in picks if isinstance(p, dict)]} (valid: {list(valid_ids)[:5]})")
         return jsonify({"picks": cleaned})
     except Exception as e:
-        logger.exception("course_suggest failed")
-        return jsonify({"error": "server_error"}), 502
+        return _handle_gemini_exception(e, "course_suggest")
 
 
 @app.route("/api/report-spot", methods=["POST"])
@@ -1272,8 +1285,7 @@ def pre_walk_briefing():
         if not result: return jsonify({"error": "parse_failed"}), 502
         return jsonify({"briefing": str(result.get("briefing", ""))[:200]})
     except Exception as e:
-        logger.exception("pre_walk_briefing failed")
-        return jsonify({"error": "server_error"}), 502
+        return _handle_gemini_exception(e, "pre_walk_briefing")
 
 
 @app.route("/api/describe-photo", methods=["POST"])
@@ -1342,6 +1354,9 @@ def describe_photo():
         desc = str(result.get("description", ""))[:200]
         return jsonify({"description": desc})
     except Exception as e:
+        if _is_quota_error(e):
+            logger.warning("describe_photo: quota exceeded")
+            return jsonify({"error": "quota_exceeded", "message": "AIサービスが混雑しています"}), 429
         logger.exception("describe_photo failed")
         return jsonify({"error": "server_error", "message": str(e)[:200]}), 502
 

@@ -6470,7 +6470,11 @@ ${trkPts}
         signal: ctrl.signal,
       });
       clearTimeout(timer);
-      if (!res.ok) throw new Error('failed');
+      if (!res.ok) {
+        const err = new Error('failed: ' + res.status);
+        if (res.status === 429) err.isQuota = true;
+        throw err;
+      }
       const data = await res.json();
       const chosenIds = data.stop_ids || [];
       const chosenSpots = chosenIds.map(id => spots.find(s => s.id === id)).filter(Boolean);
@@ -6536,7 +6540,11 @@ ${trkPts}
       });
     } catch (e) {
       console.warn('AI custom course failed', e);
-      resultsEl.innerHTML = `<div class="ai-no-result">⚠️ オリジナルコースの生成に失敗しました</div>`;
+      const isQuota = e?.isQuota || e?.message?.includes('429');
+      const msg = isQuota
+        ? '🚦 AIサービスが今混雑しています。<br>1分後にもう一度お試しください'
+        : '⚠️ オリジナルコースの生成に失敗しました';
+      resultsEl.innerHTML = `<div class="ai-no-result">${msg}</div>`;
     }
   }
 
@@ -6658,7 +6666,11 @@ ${trkPts}
         signal: ctrl.signal,
       });
       clearTimeout(timer);
-      if (!res.ok) throw new Error('AI request failed');
+      if (!res.ok) {
+        const err = new Error('AI request failed: ' + res.status);
+        if (res.status === 429) err.isQuota = true;
+        throw err;
+      }
       const data = await res.json();
       const picks = data.picks || [];
       if (picks.length === 0) {
@@ -6783,7 +6795,12 @@ ${trkPts}
       if (refreshBtn) refreshBtn.hidden = false;
     } catch (e) {
       console.warn('AI suggest failed', e);
-      resultsEl.innerHTML = `<div class="ai-no-result">⚠️ 通信に失敗しました。時間をおいて再度試してください。</div>`;
+      // 429 quota エラーは別メッセージ
+      const isQuota = e?.isQuota || e?.message?.includes('429');
+      const msg = isQuota
+        ? '🚦 AIサービスが今混雑しています。<br>少し待ってもう一度お試しください'
+        : '⚠️ 通信に失敗しました。時間をおいて再度試してください';
+      resultsEl.innerHTML = `<div class="ai-no-result">${msg}</div>`;
     }
   }
 
