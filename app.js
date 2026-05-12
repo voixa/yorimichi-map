@@ -6425,15 +6425,32 @@ ${trkPts}
 
   // 統合おすすめカード（reco-banner + today-pick の代替）
   // 🤖 AI コース提案
-  async function requestAiCourseSuggestion(userText) {
+  let _lastAiSuggestQuery = '';
+  let _lastAiSuggestExcludeIds = [];
+  async function requestAiCourseSuggestion(userText, opts) {
+    opts = opts || {};
     const resultsEl = document.getElementById('ai-suggest-results');
+    const refreshBtn = document.getElementById('ai-refresh-btn');
     if (!resultsEl) return;
     if (!userText || !userText.trim()) return;
+    _lastAiSuggestQuery = userText;
     resultsEl.hidden = false;
     resultsEl.innerHTML = `<div class="ai-loading"><span class="loader-spinner-small"></span> AIが考え中...</div>`;
     // 候補（モバイルでもサイズを抑える）
     const allCourses = (window.YORIMICHI_COURSES || []);
-    const candidates = allCourses.slice(0, 30).map(c => ({
+    let candidatePool = allCourses;
+    // 未完走のみフィルタ
+    const excludeCompleted = document.getElementById('ai-exclude-completed')?.checked;
+    if (excludeCompleted) {
+      const unwalked = candidatePool.filter(c => !state.completedCourses.has(c.id));
+      if (unwalked.length >= 3) candidatePool = unwalked;
+    }
+    // リフレッシュ時は直前に提案されたコースを除外
+    if (opts.refresh && _lastAiSuggestExcludeIds.length > 0) {
+      const filtered = candidatePool.filter(c => !_lastAiSuggestExcludeIds.includes(c.id));
+      if (filtered.length >= 3) candidatePool = filtered;
+    }
+    const candidates = candidatePool.slice(0, 30).map(c => ({
       id: c.id,
       name: tField(c, 'name'),
       area: tField(c, 'areaName'),
@@ -6524,6 +6541,13 @@ ${trkPts}
           if (c) showCourseDetail(c);
         });
       });
+      // 次回リフレッシュ時に除外する ID をストック
+      _lastAiSuggestExcludeIds = [
+        ...(_lastAiSuggestExcludeIds || []),
+        ...picks.map(p => p.id),
+      ].slice(-9); // 直近9件まで除外候補
+      // リフレッシュボタン表示
+      if (refreshBtn) refreshBtn.hidden = false;
     } catch (e) {
       console.warn('AI suggest failed', e);
       resultsEl.innerHTML = `<div class="ai-no-result">⚠️ 通信に失敗しました。時間をおいて再度試してください。</div>`;
@@ -8325,7 +8349,11 @@ ${trkPts}
           <span class="fav-icon">${isFavorite(course.id) ? '❤️' : '🤍'}</span>
           <span>${isFavorite(course.id) ? 'お気に入り済' : 'お気に入りに保存'}</span>
         </button>
+        <button class="btn-ai-tips" id="cd-ai-tips" type="button">
+          <span>✨</span><span>今日歩くコツをAIに聞く</span>
+        </button>
       </div>
+      <div class="cd-ai-tips-result" id="cd-ai-tips-result" hidden></div>
       ${walkCount > 0 ? `<div class="cd-walk-count">${courseLv ? `${courseLv.emoji} ${courseLv.lv} ・ ` : ''}🏅 完走 ${walkCount} 回</div>` : ''}
     `;
 
@@ -8365,6 +8393,33 @@ ${trkPts}
       peekBtn.onclick = () => {
         $('#course-detail-modal').hidden = true;
         showCoursePeek(course);
+      };
+    }
+    // ✨ AI ヒントボタン
+    const aiTipsBtn = $('#cd-ai-tips');
+    const aiTipsResult = $('#cd-ai-tips-result');
+    if (aiTipsBtn) {
+      aiTipsBtn.onclick = async () => {
+        aiTipsBtn.disabled = true;
+        const prevText = aiTipsBtn.innerHTML;
+        aiTipsBtn.innerHTML = '<span>⏳</span><span>生成中...</span>';
+        if (aiTipsResult) {
+          aiTipsResult.hidden = false;
+          aiTipsResult.innerHTML = '<div class="ai-tips-loading"><span class="loader-spinner-small"></span> 今日の天気・時刻を考えて...</div>';
+        }
+        try {
+          const briefing = await fetchPreWalkBriefing(course);
+          if (briefing && aiTipsResult) {
+            aiTipsResult.innerHTML = `<div class="ai-tips-card"><span class="ai-tips-icon">✨</span><div class="ai-tips-body"><div class="ai-tips-label">AIヒント（今の天気・時刻ベース）</div><div class="ai-tips-text">${escapeHtml(briefing)}</div></div></div>`;
+          } else if (aiTipsResult) {
+            aiTipsResult.innerHTML = '<div class="ai-no-result">⚠️ AIからの応答がありませんでした</div>';
+          }
+        } catch (e) {
+          if (aiTipsResult) aiTipsResult.innerHTML = '<div class="ai-no-result">⚠️ 通信に失敗しました</div>';
+        } finally {
+          aiTipsBtn.disabled = false;
+          aiTipsBtn.innerHTML = prevText.replace('生成中...', 'もう一度ヒントを聞く');
+        }
       };
     }
   }
@@ -12479,6 +12534,8 @@ ${hashtag}`;
           aiInput.focus();
           return;
         }
+        // 新規クエリ：除外リストをリセット
+        _lastAiSuggestExcludeIds = [];
         requestAiCourseSuggestion(v);
       };
       aiBtn.addEventListener('click', submit);
@@ -12492,6 +12549,21 @@ ${hashtag}`;
         });
       });
     }
+    // ↻ リフレッシュ：直前と異なる案
+    const aiRefresh = $('#ai-refresh-btn');
+    if (aiRefresh) aiRefresh.addEventListener('click', () => {
+      if (!_lastAiSuggestQuery) return;
+      vib(10);
+      requestAiCourseSuggestion(_lastAiSuggestQuery, { refresh: true });
+    });
+    // 未完走トグル：チェック変更時に再検索
+    const aiExcl = $('#ai-exclude-completed');
+    if (aiExcl) aiExcl.addEventListener('change', () => {
+      if (_lastAiSuggestQuery) {
+        _lastAiSuggestExcludeIds = [];
+        requestAiCourseSuggestion(_lastAiSuggestQuery);
+      }
+    });
 
     // 🔎 コース検索
     const searchInput = $('#course-search-input');

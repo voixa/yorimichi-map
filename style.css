@@ -5638,6 +5638,107 @@ body.map-fullscreen #map-container {
   border-radius: 6px;
   line-height: 1.5;
 }
+
+/* AI suggest options */
+.ai-suggest-options {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.ai-opt-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  background: var(--surface-2);
+  padding: 5px 10px;
+  border-radius: 100px;
+}
+.ai-opt-toggle input { margin: 0; }
+.ai-refresh-btn {
+  background: linear-gradient(135deg, #6c63ff, #ff4081);
+  color: white;
+  border: 0;
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  margin-left: auto;
+}
+
+/* AI tips on course detail */
+.btn-ai-tips {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, #6c63ff, #a855f7);
+  color: white;
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+  box-shadow: 0 6px 16px rgba(108, 99, 255, 0.3);
+}
+.btn-ai-tips:disabled { opacity: 0.7; cursor: wait; }
+.cd-ai-tips-result {
+  margin-top: 12px;
+}
+.ai-tips-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  color: #6c63ff;
+  font-weight: 700;
+  font-size: 12px;
+}
+.ai-tips-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(108, 99, 255, 0.1), rgba(168, 85, 247, 0.06));
+  border: 1px solid rgba(108, 99, 255, 0.25);
+  border-radius: 12px;
+  padding: 12px;
+}
+.ai-tips-icon {
+  font-size: 24px;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #6c63ff, #a855f7);
+  color: white;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.ai-tips-body { flex: 1; min-width: 0; }
+.ai-tips-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: #6c63ff;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+[data-theme="dark"] .ai-tips-label { color: #a5b4fc; }
+.ai-tips-text {
+  font-family: "Hiragino Mincho ProN", serif;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+}
 .ai-result-tips strong { color: #16a34a; font-weight: 800; font-style: normal; }
 [data-theme="dark"] .ai-result-tips strong { color: #4ade80; }
 
