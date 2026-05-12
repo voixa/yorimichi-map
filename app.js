@@ -2080,6 +2080,104 @@
   // ===== Coin Economy =====
   // 1ガチャのコスト（コイン）
   const GACHA_COST = 3;
+
+  // 🔁 AI API 自動リトライ（429/5xx は2回まで指数バックオフ）
+  async function fetchAiWithRetry(url, options, maxRetries = 2) {
+    let lastErr = null;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const res = await fetch(url, options);
+        if (res.ok) return res;
+        // 4xx以外（または 429）はリトライ
+        if (res.status === 429 || res.status >= 500) {
+          if (attempt < maxRetries) {
+            const waitMs = 800 * Math.pow(2, attempt); // 800ms, 1600ms
+            await new Promise(r => setTimeout(r, waitMs));
+            continue;
+          }
+          const err = new Error('AI request failed: ' + res.status);
+          err.isQuota = (res.status === 429);
+          err.status = res.status;
+          throw err;
+        }
+        // 4xx (non-429): リトライ無意味
+        const err = new Error('AI request failed: ' + res.status);
+        err.status = res.status;
+        throw err;
+      } catch (e) {
+        lastErr = e;
+        // ネットワーク系も1度はリトライ
+        if (attempt < maxRetries && !e.status) {
+          await new Promise(r => setTimeout(r, 600));
+          continue;
+        }
+        throw e;
+      }
+    }
+    throw lastErr || new Error('AI request failed');
+  }
+
+  // 🪙 AI機能のコイン消費（無料利用回数も併用）
+  const AI_COSTS = {
+    'course-suggest': 1,
+    'custom-course': 3,
+    'walk-report': 0,     // 完走ボーナスのご褒美なので無料
+    'pre-walk-briefing': 0,  // applyRouteで自動 → 無料
+    'weekly-summary': 0,  // 週1なので無料
+    'spot-guide': 0,      // スポット詳細展開時に自動 → 無料
+    'describe-photo': 1,
+  };
+  const AI_FREE_DAILY = {
+    'course-suggest': 5,
+    'custom-course': 2,
+    'describe-photo': 5,
+  };
+
+  function getAiUsageToday(key) {
+    const today = getResetDate();
+    try {
+      const raw = JSON.parse(localStorage.getItem('yorimichi-ai-usage') || '{}');
+      if (raw.date !== today) return 0;
+      return raw[key] || 0;
+    } catch { return 0; }
+  }
+  function incAiUsage(key) {
+    const today = getResetDate();
+    try {
+      let raw = JSON.parse(localStorage.getItem('yorimichi-ai-usage') || '{}');
+      if (raw.date !== today) raw = { date: today };
+      raw[key] = (raw[key] || 0) + 1;
+      localStorage.setItem('yorimichi-ai-usage', JSON.stringify(raw));
+    } catch {}
+  }
+  // 無料枠 or コイン消費を試みる。成功なら true、不足なら false でトースト表示
+  function tryConsumeAiCost(key) {
+    const free = AI_FREE_DAILY[key] || 0;
+    const used = getAiUsageToday(key);
+    const cost = AI_COSTS[key] || 0;
+    // プレミアムなら無制限・無料
+    try { if (isPremiumSync && isPremiumSync()) { incAiUsage(key); return true; } } catch {}
+    // 無料枠
+    if (used < free) {
+      incAiUsage(key);
+      return true;
+    }
+    // 無料枠超 → コイン消費
+    if (cost === 0) {
+      incAiUsage(key);
+      return true;
+    }
+    if (gacha.coins >= cost) {
+      gacha.coins -= cost;
+      logCoinChange(-cost, `AI機能: ${key}`);
+      gachaSave();
+      gachaUpdateUI();
+      incAiUsage(key);
+      return true;
+    }
+    showToast(`🪙 コイン不足です（必要: ${cost}枚 / 今日の無料: ${free}/${free}使用済）`, 'error', 4500);
+    return false;
+  }
   // コース完走ボーナス
   const COMPLETION_BONUS = 3;
 
@@ -6465,6 +6563,8 @@ ${trkPts}
   async function requestAiCustomCourse(userText) {
     const resultsEl = document.getElementById('ai-suggest-results');
     if (!resultsEl || !userText.trim()) return;
+    // 🪙 コイン消費 (3コイン、無料2回/日)
+    if (!tryConsumeAiCost('custom-course')) return;
     resultsEl.hidden = false;
     resultsEl.innerHTML = `<div class="ai-loading"><span class="loader-spinner-small"></span> AIがあなただけのコースを設計中...</div>`;
     // 全スポットを集める（id を course_id::idx 形式で一意化）
@@ -6496,7 +6596,7 @@ ${trkPts}
     try {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 20000);
-      const res = await fetch(`${API_BASE}/api/custom-course`, {
+      const res = await fetchAiWithRetry(`${API_BASE}/api/custom-course`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -6507,11 +6607,6 @@ ${trkPts}
         signal: ctrl.signal,
       });
       clearTimeout(timer);
-      if (!res.ok) {
-        const err = new Error('failed: ' + res.status);
-        if (res.status === 429) err.isQuota = true;
-        throw err;
-      }
       const data = await res.json();
       const chosenIds = data.stop_ids || [];
       const chosenSpots = chosenIds.map(id => spots.find(s => s.id === id)).filter(Boolean);
@@ -6669,6 +6764,8 @@ ${trkPts}
     const refreshBtn = document.getElementById('ai-refresh-btn');
     if (!resultsEl) return;
     if (!userText || !userText.trim()) return;
+    // 🪙 コイン消費 (1回1コイン、無料5回/日)
+    if (!tryConsumeAiCost('course-suggest')) return;
     _lastAiSuggestQuery = userText;
     // 履歴保存（リフレッシュ時は除外）
     if (!opts.refresh) saveAiRequest(userText);
@@ -6736,18 +6833,13 @@ ${trkPts}
     try {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 15000);
-      const res = await fetch(`${API_BASE}/api/course-suggest`, {
+      const res = await fetchAiWithRetry(`${API_BASE}/api/course-suggest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ request: userText, candidates, profile }),
         signal: ctrl.signal,
       });
       clearTimeout(timer);
-      if (!res.ok) {
-        const err = new Error('AI request failed: ' + res.status);
-        if (res.status === 429) err.isQuota = true;
-        throw err;
-      }
       const data = await res.json();
       const picks = data.picks || [];
       if (picks.length === 0) {
@@ -9324,6 +9416,7 @@ ${trkPts}
     'yorimichi-monthly-goal', 'yorimichi-walk-journals',
     'yorimichi-textsize',
     'yorimichi-ai-request-history', 'yorimichi-weekly-summary-cache',
+    'yorimichi-ai-usage',
   ];
   // 動的キー（コース毎のメモ・写真）も含める
   function getDynamicDataKeys() {

@@ -1696,7 +1696,7 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
   gap: 12px;
   font-size: 13px;
   box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4);
-  z-index: 7500;
+  z-index: 4000; /* モーダル(5000)より低くして被らないように */
   animation: slide-up 0.3s ease;
 }
 .pwa-banner-icon {
@@ -5705,11 +5705,20 @@ body.map-fullscreen #map-container {
   position: relative;
   overflow: hidden;
 }
+.ai-custom-btn { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; }
 .ai-custom-btn::after {
   content: '✨';
   position: absolute;
   right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
   animation: aic-sparkle 2s ease-in-out infinite;
+}
+.ai-cost-hint {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.85;
 }
 @keyframes aic-sparkle {
   0%, 100% { opacity: 0.4; transform: rotate(0deg); }
@@ -8437,6 +8446,13 @@ body.modal-open .toast {
 }
 /* PWA install banner: モーダル開いてる時は隠す (ガチャモーダル等の下端に被るため) */
 body.modal-open .pwa-install-banner {
+  display: none !important;
+}
+/* :has() 対応ブラウザでは直接モーダル可視性で判定 */
+body:has(.modal-backdrop:not([hidden])) .pwa-install-banner,
+body:has(.modal-backdrop:not([hidden])) .main-tabs,
+body:has(.photo-viewer) .pwa-install-banner,
+body:has(.photo-viewer) .main-tabs {
   display: none !important;
 }
 /* ===== 🎨 統一されたスケルトン読込中表示 ===== */
