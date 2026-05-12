@@ -13018,6 +13018,23 @@ ${hashtag}`;
       });
     });
 
+    // 🎯 設定の active 数 badge を更新
+    function updateGachaSettingsBadges() {
+      const el = document.getElementById('gacha-settings-badges');
+      if (!el) return;
+      const parts = [];
+      if (state.activeArea) {
+        const a = (window.YORIMICHI_AREAS || []).find(x => x.id === state.activeArea);
+        if (a) parts.push(`${a.icon || '📍'}`);
+      }
+      if (gachaMaxMin > 0) parts.push(`⏱${gachaMaxMin}分`);
+      if (gachaMood) {
+        const moodIcons = { chill: '😌', active: '🏃', food: '🍜', view: '📸', night: '🌃', date: '💑', solo: '🧘', family: '👨‍👩‍👧' };
+        parts.push(moodIcons[gachaMood] || '🎲');
+      }
+      el.innerHTML = parts.length ? parts.map(p => `<span class="gss-bg">${p}</span>`).join('') : '';
+    }
+
     // 🌐 エリアチップ（YORIMICHI_AREAS から生成）
     function renderGachaAreaChips() {
       const wrap = document.getElementById('gacha-area-chips');
@@ -13045,14 +13062,14 @@ ${hashtag}`;
           wrap.querySelectorAll('.area-chip').forEach(c => c.classList.remove('active'));
           chip.classList.add('active');
           state.activeArea = chip.dataset.area || null;
-          // 既存 area-grid フィルタ (探すタブ) も同期
           try { buildAreaFilter && buildAreaFilter(); } catch {}
-          // プール再描画
           try { renderPoolPreview && renderPoolPreview(); } catch {}
+          updateGachaSettingsBadges();
         });
       });
     }
     renderGachaAreaChips();
+    updateGachaSettingsBadges();
 
     // ⏱ 時間チップ
     $$('.time-chip').forEach(chip => {
@@ -13061,6 +13078,7 @@ ${hashtag}`;
         chip.classList.add('active');
         gachaMaxMin = parseInt(chip.dataset.time || '0', 10);
         renderPoolPreview();
+        updateGachaSettingsBadges();
       });
     });
 
@@ -13071,6 +13089,7 @@ ${hashtag}`;
         chip.classList.add('active');
         gachaMood = chip.dataset.mood || '';
         renderPoolPreview();
+        updateGachaSettingsBadges();
       });
     });
 

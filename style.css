@@ -8209,6 +8209,50 @@ html.text-size-xlarge .modal-title { font-size: 22px; }
   .album-page-photos { gap: 12px; }
 }
 
+/* 🎯 Gacha settings collapsible */
+.gacha-settings {
+  background: var(--surface-2);
+  border-radius: 14px;
+  margin: 10px 0;
+  overflow: hidden;
+}
+.gacha-settings-summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--text);
+  user-select: none;
+}
+.gacha-settings-summary::-webkit-details-marker { display: none; }
+.gacha-settings-badges {
+  flex: 1;
+  display: flex;
+  gap: 4px;
+}
+.gss-bg {
+  font-size: 14px;
+  background: rgba(255, 126, 61, 0.15);
+  padding: 2px 6px;
+  border-radius: 100px;
+}
+.gacha-settings-arrow {
+  font-size: 16px;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+.gacha-settings[open] .gacha-settings-arrow { transform: rotate(180deg); }
+.gacha-settings-body {
+  padding: 4px 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 /* 🌐 Gacha area chips */
 .area-section { margin: 12px 0 6px; }
 .area-label {
