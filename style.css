@@ -8439,6 +8439,31 @@ body.modal-open .toast {
 body.modal-open .pwa-install-banner {
   display: none !important;
 }
+/* 📱 重要バグ修正: モバイルでモーダル開いてる時、main-tabs(z:8500)がモーダル(z:5000)に被る */
+@media (max-width: 768px) {
+  body.modal-open .main-tabs {
+    display: none !important;
+  }
+  body.modal-open .map-fullscreen-btn,
+  body.modal-open .map-history-btn,
+  body.modal-open .map-submissions-btn,
+  body.modal-open .map-recenter-btn {
+    display: none !important;
+  }
+  body.modal-open .next-stop-label,
+  body.modal-open .active-walk-bar {
+    display: none !important;
+  }
+  /* モーダルの最大高さも余裕持って */
+  body.modal-open .modal-backdrop > .modal {
+    max-height: 96dvh;
+  }
+  /* 散歩中HUDもモーダル開いてる時は薄く（タップ可能だが目立たない） */
+  body.modal-open .walk-hud {
+    opacity: 0.15;
+    pointer-events: none;
+  }
+}
 
 /* 📂 All courses list */
 .all-courses-modal {
