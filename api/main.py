@@ -843,24 +843,26 @@ def course_suggest():
         return jsonify({"error": "no_valid_candidates"}), 400
 
     course_list = "\n".join([
-        f"- id={r['id']} | {r['name']} ({r['area']}) | 約{r['min']}分・{r['stops']}スポット | tags=[{','.join(r['tags'])}] | {r['desc']}"
+        f"[{r['id']}] {r['name']} ({r['area']}) | 約{r['min']}分・{r['stops']}スポット | tags=[{','.join(r['tags'])}] | {r['desc']}"
         for r in rows
     ])
+    valid_ids_str = ", ".join([f'"{r["id"]}"' for r in rows[:10]])
     prompt = (
         "あなたは散歩コーディネーター。ユーザーのリクエストに合うコースを下記リストから最大3件選び、理由を添えて返してください。\n"
         "\n"
         f"【ユーザーのリクエスト】\n{user_request}\n"
         "\n"
-        "【選択可能なコース】\n"
+        "【選択可能なコース】（[id] で囲まれたものがコースID）\n"
         f"{course_list}\n"
         "\n"
         "【ルール】\n"
-        "- id は提示されたものを必ずそのまま返す（IDの捏造禁止）\n"
+        "- id は **必ず上記リストの [] 内の文字列をそのまま** 返す（例: " + valid_ids_str + " など）\n"
+        "- IDの捏造・改変は絶対禁止。リストに無いIDを返してはいけない\n"
         "- リクエストに最も合う 1〜3 件を厳選\n"
         "- 各コースに「なぜおすすめか」を 50-80字で書く（ユーザーリクエストの要素に触れる）\n"
-        "- 該当が無ければ空配列\n"
+        "- 該当が無ければ picks: []\n"
         "\n"
-        'JSON: {"picks": [{"id":"...","reason":"..."}]}'
+        'JSON: {"picks": [{"id":"そのままの文字列","reason":"..."}]}'
     )
     try:
         config_kwargs = dict(
@@ -902,12 +904,40 @@ def course_suggest():
         if not result: return jsonify({"error": "parse_failed"}), 502
         picks = result.get("picks") or []
         valid_ids = {r["id"] for r in rows}
+        # ID → row のマップ
+        id_to_row = {r["id"]: r for r in rows}
+        name_to_id = {r["name"].lower(): r["id"] for r in rows}
         cleaned = []
         for p in picks[:3]:
             if not isinstance(p, dict): continue
-            pid = str(p.get("id") or "")
+            pid = str(p.get("id") or "").strip()
+            reason = str(p.get("reason", ""))[:200]
+            # 完全一致
             if pid in valid_ids:
-                cleaned.append({"id": pid, "reason": str(p.get("reason", ""))[:200]})
+                cleaned.append({"id": pid, "reason": reason})
+                continue
+            # フォールバック1: 大小無視
+            lower = pid.lower()
+            matched_id = None
+            for vid in valid_ids:
+                if vid.lower() == lower:
+                    matched_id = vid
+                    break
+            if matched_id:
+                cleaned.append({"id": matched_id, "reason": reason})
+                continue
+            # フォールバック2: 名前一致 (Gemini が name を id として返してしまうケース)
+            if lower in name_to_id:
+                cleaned.append({"id": name_to_id[lower], "reason": reason})
+                continue
+            # フォールバック3: id を部分文字列として含む / id が pid に含まれる
+            for vid in valid_ids:
+                if vid in pid or pid in vid:
+                    cleaned.append({"id": vid, "reason": reason})
+                    break
+        # 空ならログを残しデバッグしやすく
+        if not cleaned and picks:
+            logger.warning(f"course_suggest: Gemini returned invalid IDs: {[p.get('id') for p in picks if isinstance(p, dict)]} (valid: {list(valid_ids)[:5]})")
         return jsonify({"picks": cleaned})
     except Exception as e:
         logger.exception("course_suggest failed")
