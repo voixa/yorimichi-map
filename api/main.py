@@ -741,6 +741,119 @@ def spot_guide():
         return jsonify({"error": "server_error"}), 502
 
 
+@app.route("/api/custom-course", methods=["POST"])
+def custom_course():
+    """ユーザーリクエスト + 既存スポットDBから AI で完全カスタムコースを生成"""
+    if not gemini_client:
+        return jsonify({"error": "ai_disabled"}), 503
+    data = request.get_json(silent=True) or {}
+    user_request = (data.get("request") or "").strip()[:280]
+    spots_pool = data.get("spots") or []  # フロントから全スポットリストを渡す
+    target_min = int(data.get("target_min") or 60)
+    target_min = max(20, min(180, target_min))
+    if not user_request:
+        return jsonify({"error": "no_request"}), 400
+    if not isinstance(spots_pool, list) or len(spots_pool) < 5:
+        return jsonify({"error": "no_spots"}), 400
+
+    # スポット情報を整形（IDをそのまま使えるよう）
+    rows = []
+    for s in spots_pool[:80]:  # サイズ抑制
+        if not isinstance(s, dict): continue
+        sid = str(s.get("id") or "")[:100]
+        name = str(s.get("name") or "")[:60]
+        area = str(s.get("area") or "")[:30]
+        cat = str(s.get("cat") or "other")[:20]
+        if sid and name:
+            rows.append({
+                "id": sid, "name": name, "area": area, "cat": cat,
+                "tags": [str(t)[:20] for t in (s.get("tags") or [])][:5],
+            })
+    if len(rows) < 5:
+        return jsonify({"error": "not_enough_spots"}), 400
+    valid_ids = {r["id"] for r in rows}
+
+    # 候補リスト（コンパクト）
+    spot_list = "\n".join([
+        f"[{r['id']}] {r['name']} ({r['area']} | {r['cat']})" + (f" [{','.join(r['tags'])}]" if r['tags'] else "")
+        for r in rows
+    ])
+
+    target_stops = 4 if target_min < 45 else 5 if target_min < 75 else 6 if target_min < 120 else 7
+    prompt = (
+        "あなたは散歩コーディネーター。下記のスポットDB から、ユーザーのリクエストに合うオリジナルの散歩コースを作ってください。\n"
+        "\n"
+        f"【ユーザーのリクエスト】\n{user_request}\n"
+        f"\n【希望時間】約{target_min}分\n"
+        f"\n【選択可能なスポット】（[id] が必ず使う識別子）\n{spot_list}\n"
+        "\n【ルール】\n"
+        f"- ちょうど {target_stops} 個のスポットを選んで、歩く順番で並べる\n"
+        "- id は **必ず上記リストの [] 内の文字列をそのまま** 使う（捏造禁止）\n"
+        "- 同じエリア中心で選ぶ（移動距離を抑える）\n"
+        "- リクエストに合った雰囲気のスポットを優先\n"
+        "- コースの **タイトル**（20字以内）と **物語**（80-120字）も生成\n"
+        "- なぜこの組み合わせかの **理由** 60-100字\n"
+        "- 商標・著名人・ジブリ・ポケモン等は使わない\n"
+        "\n"
+        'JSON: {"title":"...","story":"...","reason":"...","stop_ids":["id1","id2",...]}'
+    )
+
+    try:
+        config_kwargs = dict(
+            temperature=0.85,
+            max_output_tokens=3072,
+            response_mime_type="application/json",
+            response_schema=genai_types.Schema(
+                type=genai_types.Type.OBJECT,
+                required=["title", "stop_ids"],
+                properties={
+                    "title": genai_types.Schema(type=genai_types.Type.STRING),
+                    "story": genai_types.Schema(type=genai_types.Type.STRING),
+                    "reason": genai_types.Schema(type=genai_types.Type.STRING),
+                    "stop_ids": genai_types.Schema(
+                        type=genai_types.Type.ARRAY,
+                        items=genai_types.Schema(type=genai_types.Type.STRING),
+                    ),
+                },
+            ),
+        )
+        try:
+            config_kwargs["thinking_config"] = genai_types.ThinkingConfig(thinking_budget=0)
+        except Exception:
+            pass
+        config = genai_types.GenerateContentConfig(**config_kwargs)
+        response = gemini_client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=config,
+        )
+        text = (response.text or "").strip()
+        if not text:
+            return jsonify({"error": "empty"}), 502
+        result = _parse_gemini_json(text)
+        if not result:
+            return jsonify({"error": "parse_failed"}), 502
+        # ID バリデーション
+        raw_ids = result.get("stop_ids") or []
+        valid_chosen = []
+        for sid in raw_ids:
+            if not isinstance(sid, str): continue
+            sid = sid.strip()
+            if sid in valid_ids and sid not in valid_chosen:
+                valid_chosen.append(sid)
+        if len(valid_chosen) < 3:
+            return jsonify({"error": "not_enough_valid_ids"}), 502
+        return jsonify({
+            "title": str(result.get("title", ""))[:30],
+            "story": str(result.get("story", ""))[:200],
+            "reason": str(result.get("reason", ""))[:200],
+            "stop_ids": valid_chosen[:8],
+        })
+    except Exception as e:
+        logger.exception("custom_course failed")
+        return jsonify({"error": "server_error"}), 502
+
+
 @app.route("/api/weekly-summary", methods=["POST"])
 def weekly_summary():
     """直近7日の散歩実績から AIで週次サマリーを生成"""

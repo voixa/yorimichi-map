@@ -6424,6 +6424,122 @@ ${trkPts}
   }
 
   // 統合おすすめカード（reco-banner + today-pick の代替）
+  // 🎨 AIにオリジナルコースを作ってもらう
+  async function requestAiCustomCourse(userText) {
+    const resultsEl = document.getElementById('ai-suggest-results');
+    if (!resultsEl || !userText.trim()) return;
+    resultsEl.hidden = false;
+    resultsEl.innerHTML = `<div class="ai-loading"><span class="loader-spinner-small"></span> AIがあなただけのコースを設計中...</div>`;
+    // 全スポットを集める（id を course_id::idx 形式で一意化）
+    const allCourses = (window.YORIMICHI_COURSES || []);
+    const spots = [];
+    allCourses.forEach(c => {
+      (c.stops || []).forEach((s, idx) => {
+        if (s.lat == null || s.lng == null) return;
+        spots.push({
+          id: `${c.id}::${idx}`,
+          name: tField(s, 'name'),
+          area: tField(c, 'areaName'),
+          cat: s.cat || 'other',
+          tags: s.tags || [],
+          _ref: { courseId: c.id, stopIdx: idx, stop: s, course: c },
+        });
+      });
+    });
+    if (spots.length < 5) {
+      resultsEl.innerHTML = `<div class="ai-no-result">スポットが足りません</div>`;
+      return;
+    }
+    // 推定時間を質問から推測
+    let targetMin = 60;
+    const minMatch = userText.match(/(\d+)\s*分/);
+    if (minMatch) targetMin = parseInt(minMatch[1], 10);
+    else if (/短/i.test(userText) || /30/i.test(userText)) targetMin = 30;
+    else if (/長|たっぷり|じっくり/i.test(userText)) targetMin = 120;
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 20000);
+      const res = await fetch(`${API_BASE}/api/custom-course`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          request: userText,
+          spots: spots.map(s => ({ id: s.id, name: s.name, area: s.area, cat: s.cat, tags: s.tags })),
+          target_min: targetMin,
+        }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      if (!res.ok) throw new Error('failed');
+      const data = await res.json();
+      const chosenIds = data.stop_ids || [];
+      const chosenSpots = chosenIds.map(id => spots.find(s => s.id === id)).filter(Boolean);
+      if (chosenSpots.length < 3) {
+        resultsEl.innerHTML = `<div class="ai-no-result">十分なスポットが選ばれませんでした</div>`;
+        return;
+      }
+      // SVG ミニマップ用にスポット配列を組み立て
+      const stopsForCourse = chosenSpots.map(s => ({
+        ...s._ref.stop,
+        emoji: s._ref.stop.emoji || (categoryById(s._ref.stop.cat) || {}).emoji || '📍',
+      }));
+      // 仮想コースオブジェクトを作って既存 thumb / display を再利用
+      const fakeCourse = {
+        id: '__ai_custom_' + Date.now(),
+        name: data.title || 'AIオリジナルコース',
+        description: data.story || '',
+        areaName: stopsForCourse[0] ? (chosenSpots[0]._ref.course.areaName || '') : '',
+        areaIcon: chosenSpots[0]._ref.course.areaIcon || '🎨',
+        themeIcon: '🎨',
+        stops: stopsForCourse,
+        estimatedMin: targetMin,
+        isCustom: true,
+      };
+      const thumb = buildCourseThumbSvg(fakeCourse, { w: 100, h: 60 });
+      resultsEl.innerHTML = `
+        <div class="ai-custom-result">
+          <div class="aic-badge">🎨 AIオリジナルコース</div>
+          <div class="aic-title">${escapeHtml(data.title || 'オリジナルコース')}</div>
+          <div class="aic-meta">📍 ${chosenSpots.length}スポット ・ 約${targetMin}分</div>
+          <div class="aic-thumb-wrap">${thumb}</div>
+          ${data.reason ? `<div class="aic-reason">💡 ${escapeHtml(data.reason)}</div>` : ''}
+          ${data.story ? `<div class="aic-story">${escapeHtml(data.story)}</div>` : ''}
+          <div class="aic-stops">${chosenSpots.map((s, i) => `
+            <div class="aic-stop"><span class="aic-stop-num">${i + 1}</span><span class="aic-stop-emoji">${s._ref.stop.emoji || '📍'}</span><span class="aic-stop-name">${escapeHtml(s.name)}</span><span class="aic-stop-area">${escapeHtml(s.area || '')}</span></div>
+          `).join('')}</div>
+          <div class="aic-actions">
+            <button class="aic-apply" type="button">🚶 このコースで歩く</button>
+            <button class="aic-regen" type="button">↻ 別の組み合わせ</button>
+          </div>
+        </div>
+      `;
+      resultsEl.querySelector('.aic-apply').addEventListener('click', () => {
+        vib(15);
+        // route 形式に変換して applyRoute
+        const route = {
+          stops: stopsForCourse,
+          title: fakeCourse.name,
+          isCurated: false,
+          isCustom: true,
+          themeIcon: '🎨',
+          isGenerated: true,
+        };
+        // 始点・終点を最初・最後のスポットに
+        state.origin = { lat: stopsForCourse[0].lat, lng: stopsForCourse[0].lng, label: stopsForCourse[0].name, shortLabel: stopsForCourse[0].name };
+        state.dest = { lat: stopsForCourse[stopsForCourse.length - 1].lat, lng: stopsForCourse[stopsForCourse.length - 1].lng, label: stopsForCourse[stopsForCourse.length - 1].name, shortLabel: stopsForCourse[stopsForCourse.length - 1].name };
+        applyRoute(route);
+        showToast(`✨ AIオリジナルコース「${fakeCourse.name}」を地図に設定`, 'success', 3500);
+      });
+      resultsEl.querySelector('.aic-regen').addEventListener('click', () => {
+        vib(10);
+        requestAiCustomCourse(userText);
+      });
+    } catch (e) {
+      console.warn('AI custom course failed', e);
+      resultsEl.innerHTML = `<div class="ai-no-result">⚠️ オリジナルコースの生成に失敗しました</div>`;
+    }
+  }
+
   // 🤖 AI コース提案
   let _lastAiSuggestQuery = '';
   let _lastAiSuggestExcludeIds = [];
@@ -12673,6 +12789,18 @@ ${hashtag}`;
       if (!_lastAiSuggestQuery) return;
       vib(10);
       requestAiCourseSuggestion(_lastAiSuggestQuery, { refresh: true });
+    });
+    // 🎨 オリジナルコース生成
+    const aiCustom = $('#ai-custom-btn');
+    if (aiCustom) aiCustom.addEventListener('click', () => {
+      const q = aiInput?.value?.trim() || '';
+      if (!q) {
+        showToast('リクエストを入力してください（例: 30分でカフェ巡り）', 'info', 2500);
+        aiInput?.focus();
+        return;
+      }
+      vib(15);
+      requestAiCustomCourse(q);
     });
     // 履歴チップを初期表示
     try { renderAiHistoryChips(); } catch {}
