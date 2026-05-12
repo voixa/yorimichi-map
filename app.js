@@ -3477,6 +3477,43 @@
   }
 
   // Replace current selection with a route's stops
+  // 🚶 確実にユーザーに「歩き始める」ボタンを見せる
+  function forceShowWalkStartButton(toastMessage) {
+    setTimeout(() => {
+      // 1. 探すタブに切替
+      const discoverTab = document.querySelector('.main-tab[data-main-tab="discover"]');
+      if (discoverTab && !discoverTab.classList.contains('active')) {
+        discoverTab.click();
+      }
+      // 2. パネルを必ず開く
+      const panel = document.getElementById('panel');
+      if (panel && panel.classList.contains('collapsed')) {
+        panel.classList.remove('collapsed');
+        const handle = document.getElementById('panel-handle');
+        if (handle) handle.setAttribute('aria-expanded', 'true');
+        if (state.map) setTimeout(() => state.map.invalidateSize(), 250);
+      }
+      // 3. map-fullscreen 解除
+      if (document.body.classList.contains('map-fullscreen')) {
+        document.body.classList.remove('map-fullscreen');
+        const fsBtn = document.getElementById('map-fullscreen-btn');
+        if (fsBtn) fsBtn.textContent = '⛶';
+      }
+      // 4. summary-section にスクロール
+      setTimeout(() => {
+        const ss = document.getElementById('summary-section');
+        if (ss && !ss.hidden) ss.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const startBtn = document.getElementById('walk-start');
+        if (startBtn && !startBtn.hidden) {
+          startBtn.classList.add('walk-start-attract');
+          setTimeout(() => startBtn.classList.remove('walk-start-attract'), 8000);
+        }
+      }, 250);
+      // 5. 目立つトースト
+      if (toastMessage) showToast(toastMessage, 'success', 4500);
+    }, 100);
+  }
+
   function applyRoute(route) {
     // Curated course: also set origin / dest / travel mode
     if (route.isCurated) {
@@ -6519,7 +6556,6 @@ ${trkPts}
       `;
       resultsEl.querySelector('.aic-apply').addEventListener('click', () => {
         vib(15);
-        // route 形式に変換して applyRoute
         const route = {
           stops: stopsForCourse,
           title: fakeCourse.name,
@@ -6528,11 +6564,10 @@ ${trkPts}
           themeIcon: '🎨',
           isGenerated: true,
         };
-        // 始点・終点を最初・最後のスポットに
         state.origin = { lat: stopsForCourse[0].lat, lng: stopsForCourse[0].lng, label: stopsForCourse[0].name, shortLabel: stopsForCourse[0].name };
         state.dest = { lat: stopsForCourse[stopsForCourse.length - 1].lat, lng: stopsForCourse[stopsForCourse.length - 1].lng, label: stopsForCourse[stopsForCourse.length - 1].name, shortLabel: stopsForCourse[stopsForCourse.length - 1].name };
         applyRoute(route);
-        showToast(`✨ AIオリジナルコース「${fakeCourse.name}」を地図に設定`, 'success', 3500);
+        forceShowWalkStartButton(`✨ AIオリジナル「${fakeCourse.name}」を設定！下の「🚶歩き始める」をタップ`);
       });
       resultsEl.querySelector('.aic-regen').addEventListener('click', () => {
         vib(10);
@@ -6763,7 +6798,7 @@ ${trkPts}
           if (!c) return;
           vib(15);
           applyRoute(courseToRoute(c));
-          showToast(`✨ 「${tField(c, 'name')}」を地図に設定`, 'success', 3000);
+          forceShowWalkStartButton(`✨ 「${tField(c, 'name')}」を地図に設定！下の「🚶歩き始める」をタップ`);
         });
       });
       // 🔊 TTS ボタン
@@ -8609,11 +8644,14 @@ ${trkPts}
 
     $('#course-detail-modal').hidden = false;
     $('#cd-apply').onclick = () => {
+      vib(20);
       $('#course-detail-modal').hidden = true;
       applyRoute(courseToRoute(course));
-      showToast(`✨ 「${tField(course, 'name')}」を地図に設定しました`, 'success', 3000);
+      // 確実に「探す」タブへ + パネルを開く + 「歩き始める」へスクロール
+      forceShowWalkStartButton(`✨ 「${tField(course, 'name')}」を地図に設定！下の「🚶歩き始める」をタップ`);
     };
     $('#cd-walk-now').onclick = () => {
+      vib(30);
       $('#course-detail-modal').hidden = true;
       applyRoute(courseToRoute(course));
       setTimeout(() => startWalk(), 500);
