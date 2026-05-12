@@ -8209,6 +8209,17 @@ html.text-size-xlarge .modal-title { font-size: 22px; }
   .album-page-photos { gap: 12px; }
 }
 
+/* 🎰 ガチャ「回す」ボタンをモーダル下部に sticky (モバイル) */
+@media (max-width: 768px) {
+  .btn-turn {
+    position: sticky;
+    bottom: 8px;
+    z-index: 10;
+    box-shadow: 0 -2px 20px rgba(0,0,0,0.2), 0 8px 20px rgba(255, 126, 61, 0.4);
+    margin: 12px 0 8px;
+  }
+}
+
 /* 🎯 Gacha settings collapsible */
 .gacha-settings {
   background: var(--surface-2);
@@ -10692,6 +10703,10 @@ body:has(.walk-hud:not([hidden])) .leaflet-bottom.leaflet-right {
   .opt-name { font-size: 11px; }
   .capsule-machine { width: 160px; height: 240px; }
   .machine-globe { width: 150px; height: 150px; }
+  /* 📱 ガチャマシン縮小 (モバイル) */
+  .gachapon { width: 180px; }
+  .gp-globe { width: 180px; height: 180px; }
+  .gp-body { transform: scale(0.85); transform-origin: top center; margin-top: -8px; }
 }
 
 /* ============================================================
