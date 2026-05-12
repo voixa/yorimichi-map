@@ -8567,10 +8567,13 @@ small { font-size: 0.85em; }
   body.modal-open .modal-backdrop > .modal {
     max-height: 96dvh;
   }
-  /* 散歩中HUDもモーダル開いてる時は薄く（タップ可能だが目立たない） */
+  /* 散歩中HUD：モーダル開いてる時は薄め＋下にずらす（情報は見える、邪魔にならない） */
   body.modal-open .walk-hud {
-    opacity: 0.15;
+    opacity: 0.35;
     pointer-events: none;
+    filter: blur(2px);
+    transform: scale(0.92);
+    transform-origin: bottom center;
   }
 }
 
@@ -11270,3 +11273,123 @@ button, a, .main-tab, .walk-hud-btn, .nearby-item, .featured-pick {
     scroll-padding-top: 56px;
   }
 }
+
+/* ============================================================
+   ✨ Iteration 85: 最終ポリッシュ層
+   ============================================================ */
+
+/* 🎨 統一されたトランジション速度（カオス防止） */
+:root {
+  --t-fast: 120ms cubic-bezier(0.2, 0, 0, 1);
+  --t-base: 200ms cubic-bezier(0.2, 0, 0, 1);
+  --t-slow: 320ms cubic-bezier(0.2, 0, 0, 1);
+  --t-bounce: 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 🖱 スクロールバー（PC）を細くシンプルに */
+@media (min-width: 769px) {
+  *::-webkit-scrollbar { width: 8px; height: 8px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb {
+    background: var(--border, #e5e7eb);
+    border-radius: 4px;
+  }
+  *::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+  * { scrollbar-width: thin; scrollbar-color: var(--border, #e5e7eb) transparent; }
+}
+
+/* 📐 タップ可能要素の min-width 確保 */
+.btn-primary, .btn-secondary, .btn-share, .btn-share-x, .btn-share-line,
+.btn-share-copy, .btn-cert-download, .add-btn {
+  min-height: 44px;
+}
+
+/* 🔠 selected text のハイライト色をブランドに */
+::selection { background: rgba(255, 126, 61, 0.3); color: var(--text); }
+
+/* 📵 タブナビゲーション中のテキスト改行抑制 */
+.main-tab {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 🎯 すべての button が text-align center 確保 */
+button { text-align: center; }
+button.text-left, .btn-fav, .nearby-item, .me-fav-item, .me-shortcut, .search-result-item, .all-courses-item, .aci-stop, .me-feed-item, .ai-result-btn, .lucky-card-btn, .featured-pick, .quickstart-btn, .home-action {
+  text-align: left;
+}
+
+/* 📦 全モーダルの内部スクロール強化 (iOS) */
+.modal-backdrop > .modal {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* 🎨 入力フィールドの一貫したスタイル */
+input[type="text"], input[type="search"], input[type="url"], input[type="email"],
+input[type="tel"], input[type="number"], textarea, select {
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--surface-1, white);
+  color: var(--text);
+}
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="search"],
+[data-theme="dark"] input[type="url"],
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background: rgba(255,255,255,0.05);
+  color: var(--text);
+}
+
+/* 🛟 hidden / aria-hidden 統一 */
+[hidden], [aria-hidden="true"] { display: none !important; }
+.sr-only {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0);
+  white-space: nowrap; border: 0;
+}
+
+/* 🎯 dark mode で薄すぎる border を補強 */
+[data-theme="dark"] {
+  --border: #404049;
+}
+
+/* 📏 一貫した radius スケール */
+.btn-primary, .btn-secondary, .btn-share, .modal, .card, .featured-card,
+.lucky-course, .today-summary, .home-action, .nearby-banner {
+  /* これらは既存だが、設定値を一貫させる: 12px(small) / 14px(default) / 18px(large) */
+}
+
+/* 🎈 全体的なフォントレンダリング改善 */
+body, .modal, .panel {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* 🚨 危険な操作ボタンの統一 */
+.btn-danger, button.danger, .btn-secondary.danger {
+  background: #dc2626 !important;
+  color: white !important;
+}
+.btn-danger:hover, button.danger:hover { background: #b91c1c !important; }
+
+/* 🎨 グラスモーフィズム効果の互換性 */
+@supports not (backdrop-filter: blur(8px)) {
+  .main-tabs, .undo-toast, .next-stop-label, .pwa-install-banner {
+    background: var(--surface, white) !important;
+  }
+  [data-theme="dark"] .main-tabs,
+  [data-theme="dark"] .undo-toast,
+  [data-theme="dark"] .next-stop-label,
+  [data-theme="dark"] .pwa-install-banner {
+    background: rgba(31, 31, 39, 0.98) !important;
+  }
+}
+
+/* 🔄 active-walk-bar のアニメは少しスムーズに */
+.active-walk-bar { animation-duration: 3s; }
