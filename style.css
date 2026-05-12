@@ -8439,6 +8439,115 @@ body.modal-open .toast {
 body.modal-open .pwa-install-banner {
   display: none !important;
 }
+/* ===== 🎨 統一されたスケルトン読込中表示 ===== */
+.skel-shimmer {
+  background: linear-gradient(90deg, var(--surface-2) 0%, rgba(255,255,255,0.15) 50%, var(--surface-2) 100%);
+  background-size: 200% 100%;
+  animation: skel-shimmer-anim 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+@keyframes skel-shimmer-anim {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ===== 🖱 PC でホバー効果改善 ===== */
+@media (hover: hover) and (pointer: fine) {
+  button:not(:disabled), .home-action, .nearby-item, .me-fav-item, .ai-result-card, .all-courses-item, .rc-card, .me-shortcut {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  button:not(:disabled):hover {
+    transform: translateY(-1px);
+  }
+  .nearby-item:hover, .me-fav-item:hover, .ai-result-card:hover, .all-courses-item:hover, .rc-card:hover, .me-shortcut:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+}
+
+/* ===== 🎯 ボタン disabled 状態を見やすく ===== */
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+}
+
+/* ===== 📷 画像 placeholder ===== */
+img {
+  background-color: var(--surface-2);
+}
+img[loading="lazy"] {
+  transition: opacity 0.3s ease;
+}
+
+/* ===== ♿ Reduce motion 対応 (アニメ酔いするユーザー向け) ===== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* 重要な振動だけ残す */
+  .wpo-pulse, .pulse-current-marker { animation: none !important; }
+}
+
+/* ===== ♿ より良い focus ring (キーボード操作) ===== */
+:focus-visible {
+  outline: 3px solid #6c63ff;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button:focus-visible, a:focus-visible {
+  outline: 3px solid #ff7e3d;
+  outline-offset: 2px;
+}
+
+/* ===== 🌗 横画面 (landscape) 対応 ===== */
+@media (max-height: 480px) and (orientation: landscape) {
+  /* HUD コンパクト化 */
+  .walk-hud {
+    grid-template-columns: 36px 1fr;
+    padding: 8px 12px;
+  }
+  .walk-hud-arrow { width: 32px; height: 32px; font-size: 22px; }
+  .walk-hud-name { font-size: 13px; }
+  .walk-hud-actions { gap: 4px; padding-top: 6px; }
+  .walk-hud-btn { width: 36px; height: 36px; font-size: 16px; }
+  /* モーダルも縦圧縮 */
+  .modal {
+    max-height: 90dvh;
+    padding: 16px 14px;
+  }
+  /* ガチャマシンさらに小さく */
+  .gachapon { width: 140px; }
+  .gp-globe { width: 140px; height: 140px; }
+  /* メインタブも小さく */
+  .main-tab { min-height: 38px; padding: 4px; font-size: 10px; }
+}
+
+/* ===== 🎯 タップターゲット最終強化 ===== */
+button, [role="button"], a.add-btn, label.vf-chip, label.spot-tag-chip {
+  min-height: 36px;
+}
+@media (max-width: 768px) {
+  /* 全ての操作要素を 44px 以上に */
+  button, [role="button"], a.add-btn, .nearby-item, .me-fav-item, .ai-result-btn, .all-courses-item, .rc-card {
+    min-height: 44px;
+  }
+}
+
+/* ===== 📐 一貫した行間とフォントサイズ ===== */
+body, .modal, .panel { line-height: 1.5; }
+small { font-size: 0.85em; }
+
+/* ===== 💧 オーバーフロー安全策 ===== */
+.modal, .panel, .modal-backdrop {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 /* 📱 重要バグ修正: モバイルでモーダル開いてる時、main-tabs(z:8500)がモーダル(z:5000)に被る */
 @media (max-width: 768px) {
   body.modal-open .main-tabs {

@@ -12224,6 +12224,21 @@ ${hashtag}`;
 
   // ---------- Init ----------
 
+  // 📱 グローバル: モーダル背景タップで閉じる（全モーダル対応）
+  function setupGlobalBackdropClose() {
+    document.addEventListener('click', (e) => {
+      const t = e.target;
+      // .modal-backdrop 直接タップ（中の .modal はタップしない）の場合のみ閉じる
+      if (t && t.classList && t.classList.contains('modal-backdrop') && !t.hidden) {
+        // photo-album などスクロール可能なモーダルは閉じない
+        const closeBtn = t.querySelector('.modal-close');
+        if (closeBtn) {
+          t.hidden = true;
+        }
+      }
+    });
+  }
+
   // 📱 モーダル開閉時に body のスクロールを止める（iOS背景スクロール対策）
   function setupModalScrollLock() {
     const updateBodyLock = () => {
@@ -12249,6 +12264,7 @@ ${hashtag}`;
 
   async function init() {
     setupModalScrollLock();
+    setupGlobalBackdropClose();
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('./sw.js').then(reg => {
         // Detect updates
