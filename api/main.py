@@ -84,10 +84,11 @@ if _firestore_available:
 # 単一の Source of Truth
 # 1ガチャ = 3コイン
 PACKS = {
-    "pack_starter": {"coins": 15,  "bonus": 0,   "price": 120,  "name": "お試し5連パック (15コイン)"},
-    "pack_25":      {"coins": 75,  "bonus": 0,   "price": 500,  "name": "25連パック (75コイン)"},
-    "pack_60":      {"coins": 150, "bonus": 30,  "price": 1000, "name": "⭐おすすめ60連パック (150+30ボーナス)"},
-    "pack_big":     {"coins": 500, "bonus": 100, "price": 3000, "name": "大盤振る舞い200連パック (500+100ボーナス)"},
+    # 1ガチャ = 2コイン / 初回3回無料
+    "pack_starter": {"coins": 15,  "bonus": 0,   "price": 120,  "name": "お試し7連パック (15コイン)"},
+    "pack_25":      {"coins": 90,  "bonus": 0,   "price": 500,  "name": "45連パック (90コイン)"},
+    "pack_60":      {"coins": 168, "bonus": 42,  "price": 1000, "name": "⭐おすすめ105連パック (168+42ボーナス)"},
+    "pack_big":     {"coins": 540, "bonus": 160, "price": 3000, "name": "大盤振る舞い350連パック (540+160ボーナス)"},
 }
 
 # サブスクリプションプラン

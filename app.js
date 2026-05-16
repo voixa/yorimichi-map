@@ -2077,7 +2077,7 @@
 
   // ===== Coin Economy =====
   // 1ガチャのコスト（コイン）
-  const GACHA_COST = 3;
+  const GACHA_COST = 2;  // 1ガチャ = 2コイン (旧3コインから引き下げ)
 
   // 🔁 AI API 自動リトライ（429/5xx は2回まで指数バックオフ）
   async function fetchAiWithRetry(url, options, maxRetries = 2) {
@@ -2252,10 +2252,11 @@
       const s = JSON.parse(localStorage.getItem('yorimichi-gacha') || '{}');
       Object.assign(gacha, s);
     } catch (e) {}
-    const today = getResetDate();
-    if (gacha.lastFreeDate !== today) {
-      gacha.freeUsedToday = 0;
-      gacha.lastFreeDate = today;
+    // 旧仕様: 毎日3回無料 → 新仕様: 初回3回だけ無料 (lifetime)
+    // freeUsedTotal を使い、リセットしない
+    if (typeof gacha.freeUsedTotal !== 'number') {
+      // 旧データから移行 (lastFreeDate と freeUsedToday は廃止)
+      gacha.freeUsedTotal = gacha.freeUsedToday || 0;
       gachaSave();
     }
   }
@@ -2418,10 +2419,14 @@
   }
 
   function gachaUpdateUI() {
-    const freeRemain = Math.max(0, 3 - gacha.freeUsedToday);
-    $('#gacha-counter').textContent = `本日 ${gacha.freeUsedToday}/3 回`;
+    const INITIAL_FREE = 3;
+    const usedTotal = gacha.freeUsedTotal || 0;
+    const freeRemain = Math.max(0, INITIAL_FREE - usedTotal);
+    $('#gacha-counter').textContent = freeRemain > 0
+      ? `無料お試し残${freeRemain}回`
+      : `🪙 ${gacha.coins}コイン`;
     $('#gacha-coins').textContent = `🪙 ${gacha.coins}`;
-    if ($('#modal-free-counter')) $('#modal-free-counter').textContent = `${gacha.freeUsedToday}/3`;
+    if ($('#modal-free-counter')) $('#modal-free-counter').textContent = freeRemain > 0 ? `${usedTotal}/${INITIAL_FREE}` : '使用済';
     if ($('#modal-coins')) $('#modal-coins').textContent = String(gacha.coins);
     if ($('#free-remaining')) $('#free-remaining').textContent = String(freeRemain);
 
@@ -2429,7 +2434,6 @@
     const turnBtn = $('#btn-turn');
     const turnCost = $('#turn-cost');
     if (turnBtn && turnCost) {
-      // Show pity hint if close
       let pityHint = '';
       if (gacha.pullsSinceLR >= 15) pityHint = ` ✨LRまで${20 - gacha.pullsSinceLR}`;
       else if (gacha.pullsSinceSR >= 7) pityHint = ` 🌟SR以上まで${10 - gacha.pullsSinceSR}`;
@@ -2438,14 +2442,14 @@
         turnCost.textContent = `★ プレミアム（使い放題）${pityHint}`;
         turnBtn.disabled = false;
       } else if (freeRemain > 0) {
-        turnCost.innerHTML = `残り <span id="free-remaining">${freeRemain}</span>回（無料）${pityHint}`;
+        turnCost.innerHTML = `お試し残 <span id="free-remaining">${freeRemain}</span>回（無料）${pityHint}`;
         turnBtn.disabled = false;
       } else if (gacha.coins >= GACHA_COST) {
         turnCost.textContent = `🪙 ${GACHA_COST}コイン${pityHint}`;
         turnBtn.disabled = false;
       } else {
-        turnCost.textContent = `コイン不足`;
-        turnBtn.disabled = true;
+        turnCost.textContent = `コイン不足 → ショップへ`;
+        turnBtn.disabled = false;  // Allow tap to redirect to shop
       }
     }
   }
@@ -2872,12 +2876,17 @@
     if (turnBtn.disabled) return;
 
     // Cost check / deduct
+    const INITIAL_FREE = 3;
     const isPremium = isPremiumSync();
-    const freeRemain = Math.max(0, 3 - gacha.freeUsedToday);
+    const usedTotal = gacha.freeUsedTotal || 0;
+    const freeRemain = Math.max(0, INITIAL_FREE - usedTotal);
     if (isPremium) {
       // プレミアム: 無制限・コスト無し
     } else if (freeRemain > 0) {
-      gacha.freeUsedToday += 1;
+      gacha.freeUsedTotal = usedTotal + 1;
+      if (gacha.freeUsedTotal === INITIAL_FREE) {
+        setTimeout(() => showToast('🪙 無料お試しは終了しました。続きはコイン or プレミアムで！', 'info', 5000), 1200);
+      }
     } else {
       if (gacha.coins < GACHA_COST) {
         showStage('empty');
@@ -2924,7 +2933,7 @@
     if (!route) {
       showToast('該当するコースがありません。出発地を変えるか候補を再取得してください', 'error', 4000);
       // Refund the cost since we couldn't deliver
-      if (freeRemain > 0) gacha.freeUsedToday = Math.max(0, gacha.freeUsedToday - 1);
+      if (freeRemain > 0) gacha.freeUsedTotal = Math.max(0, (gacha.freeUsedTotal || 0) - 1);
       else gacha.coins += GACHA_COST;
       gachaSave();
       gachaUpdateUI();
@@ -9272,12 +9281,13 @@ ${trkPts}
 
   function rerollPlans(type) {
     if (type === 'free') {
-      if (gacha.freeUsedToday >= 3) {
-        showToast('本日の無料引き直しは終了しました', 'info');
+      const usedTotal = gacha.freeUsedTotal || 0;
+      if (usedTotal >= 3) {
+        showToast('無料お試しは終了しました。コインを購入するかプレミアム加入を', 'info');
         showStage('empty');
         return;
       }
-      gacha.freeUsedToday += 1;
+      gacha.freeUsedTotal = usedTotal + 1;
     } else {
       if (gacha.coins < GACHA_COST) {
         showStage('empty');
