@@ -94,9 +94,9 @@
       filterTags: '気分タグ',
       gachaTitleCourse: 'コースガチャを回す',
       gachaTitleFree: '寄り道ガチャを回す',
-      colCourse: 'コース図鑑',
+      colCourse: '全コース一覧',
       colCollection: 'コレクション',
-      share: '共有',
+      share: 'アプリを紹介',
       walkStartCourse: 'このコースを歩き始める',
       walkStartFree: 'このルートを歩き始める',
     },
@@ -9636,14 +9636,25 @@ ${trkPts}
       if (!label || !sub) return;
       // CTAラベルは常に「ガチャを引く」で統一、modeによって sub だけ変える
       label.textContent = '🎰 ガチャを引く';
+      // 🆕 R6#1: ガチャ料金/無料残回数を sub に明示
+      const gacha = state.gacha || {};
+      const usedTotal = gacha.freeUsedTotal || 0;
+      const freeRemain = Math.max(0, 3 - usedTotal); // INITIAL_FREE = 3
+      const coins = state.coins || 0;
+      let costText = '';
+      if (freeRemain > 0) {
+        costText = `✨ 無料お試し残${freeRemain}回（その後 🪙2枚 / 回）`;
+      } else {
+        costText = `🪙 コイン2枚で1回 ・ 残高 ${coins}枚`;
+      }
       if (state.mode === 'course') {
-        sub.textContent = 'キュレーション済み21本から1本';
+        sub.textContent = costText;
         if (desc) desc.textContent = '📖 キュレーション済みコース21本から運命の一本を引く';
       } else if (state.mode === 'route') {
-        sub.textContent = '出発地→目的地から AI が動的生成';
+        sub.textContent = costText;
         if (desc) desc.textContent = '🎯 出発地と目的地を入れると AI が街歩きコースを動的生成';
       } else if (state.mode === 'stroll') {
-        sub.textContent = '出発地から AI が散歩コース生成';
+        sub.textContent = costText;
         if (desc) desc.textContent = '🌿 出発地のみ入れて、AIが周辺の散歩コースを生成';
       }
     }

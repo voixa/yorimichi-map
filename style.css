@@ -4985,19 +4985,26 @@ button:focus-visible,
   position: fixed;
   top: 70px;
   right: 16px;
-  width: 40px; height: 40px;
+  min-width: 40px;
+  height: 40px;
   border-radius: 8px;
   border: 0;
   background: white;
   color: #1c1c1f;
-  font-size: 18px;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   z-index: 6000;
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
   transition: transform 0.15s, box-shadow 0.15s;
+  font-family: inherit;
 }
+.mfb-icon { font-size: 16px; }
+.mfb-label { font-size: 12px; font-weight: 700; }
 .map-fullscreen-btn:hover {
   transform: scale(1.05);
   box-shadow: 0 6px 16px rgba(0,0,0,0.2);
