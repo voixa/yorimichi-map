@@ -9626,6 +9626,23 @@ small { font-size: 0.85em; }
 .discover-cta {
   margin: 8px 0 12px;
 }
+/* 🆕 R1#2: モバイルで「ガチャを引く」をパネル最上部 sticky → 常に見える */
+@media (max-width: 768px) {
+  .discover-cta {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    margin: 0 0 12px;
+    padding: 6px 0 4px;
+    background: linear-gradient(180deg, var(--surface) 70%, rgba(0,0,0,0));
+  }
+  .discover-cta-btn {
+    padding: 16px !important;
+    box-shadow: 0 6px 24px rgba(255, 64, 129, 0.35) !important;
+  }
+  .dcta-icon { font-size: 36px !important; }
+  .dcta-label { font-size: 17px !important; }
+}
 .discover-cta-btn {
   width: 100%;
   display: flex;
@@ -11334,6 +11351,33 @@ button, a, .main-tab, .tab, [role="button"], input[type="button"], input[type="s
     top: 0 !important;
   }
 
+  /* 🆕 R1#1: ホーム/マイタブでは地図を非表示にしてパネルを全画面化 */
+  body[data-active-tab="home"] .map-wrap,
+  body[data-active-tab="me"] .map-wrap {
+    display: none !important;
+  }
+  body[data-active-tab="home"] .panel,
+  body[data-active-tab="me"] .panel {
+    height: 100% !important;
+    max-height: 100% !important;
+    border-radius: 0 !important;
+    border-top: 0 !important;
+  }
+  body[data-active-tab="home"] .panel-handle,
+  body[data-active-tab="me"] .panel-handle {
+    display: none !important;
+  }
+  /* ホーム/マイタブ時はパネル下部余白をタブバー分だけに */
+  body[data-active-tab="home"] .panel-inner,
+  body[data-active-tab="me"] .panel-inner {
+    padding: 14px 16px 80px !important;
+  }
+  /* 🚫 ホーム/マイタブでは map-fullscreen-btn も不要 */
+  body[data-active-tab="home"] .map-fullscreen-btn,
+  body[data-active-tab="me"] .map-fullscreen-btn {
+    display: none !important;
+  }
+
   .main-tab {
     min-height: 44px;
     padding: 4px 6px;
@@ -11392,6 +11436,41 @@ button, a, .main-tab, .tab, [role="button"], input[type="button"], input[type="s
   /* map-fullscreen-btn は右上に */
   .map-fullscreen-btn {
     top: calc(8px + env(safe-area-inset-top, 0px)) !important;
+  }
+  /* 🆕 R1#3: 不要な「？」ヘルプボタン非表示 (モバイル) */
+  .mode-help-btn {
+    display: none !important;
+  }
+  .quick-help-btn,
+  #onboarding-help-btn {
+    display: none !important;
+  }
+  /* 🆕 R1#3: panel-handle をもっと分かりやすく */
+  .panel-handle {
+    background: linear-gradient(180deg, var(--surface) 50%, var(--surface-2)) !important;
+  }
+  .handle-bar {
+    width: 80px !important;
+    height: 5px !important;
+    opacity: 0.6 !important;
+    background: var(--brand) !important;
+    border-radius: 3px !important;
+  }
+  /* スワイプヒント文字 */
+  .panel-handle::after {
+    content: '⌃ スワイプで展開';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    color: var(--text-muted);
+    pointer-events: none;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .panel.collapsed .panel-handle::after {
+    content: '⌃ タップで開く';
   }
 }
 

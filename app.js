@@ -9670,7 +9670,15 @@ ${trkPts}
       $$('.tab-panel').forEach(p => {
         p.hidden = (p.dataset.tabPanel !== name);
       });
+      // 🆕 R1#1: body[data-active-tab] でモバイルCSSが地図/パネル切替を行う
+      document.body.dataset.activeTab = name;
       try { localStorage.setItem(MAIN_TAB_KEY, name); } catch {}
+      // 🆕 マップサイズ再計算（タブ切替で地図のスペース変わるため）
+      try {
+        if (state.map && name === 'discover') {
+          setTimeout(() => state.map.invalidateSize(), 100);
+        }
+      } catch {}
       // タブ切替時に該当タブの内容を更新
       if (name === 'home') {
         try { renderWeatherWarning(); } catch {}
