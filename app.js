@@ -9521,6 +9521,16 @@ ${trkPts}
     $('#gp-handle').addEventListener('click', turnGachapon);
     $('#shop-btn').addEventListener('click', showShop);
     $('#shop-btn-2').addEventListener('click', showShop);
+    // 🆕 R12#1: コイン残高バッジクリックでショップを開く
+    const cbBadge = $('#dcta-coin-badge');
+    if (cbBadge) {
+      cbBadge.style.cursor = 'pointer';
+      cbBadge.title = 'タップでコインショップを開く';
+      cbBadge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        try { showShop(); } catch {}
+      });
+    }
     $('#back-to-select').addEventListener('click', () => showStage('select'));
     $('#shop-close').addEventListener('click', hideShop);
     $$('.shop-item').forEach(item => {
