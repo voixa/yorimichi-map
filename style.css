@@ -11473,42 +11473,43 @@ button, a, .main-tab, .tab, [role="button"], input[type="button"], input[type="s
     content: '⌃ タップで開く';
   }
 
-  /* 🆕 R2#1: ホームタブの主要2カードを横並び（2カラム） */
-  /* quickstart-hero と create-course-btn を flex で並べる - ラッパで囲う方法は HTML 改修不要、各セクションを内部 inline-grid に */
-  .quickstart-hero {
-    display: inline-block;
-    width: calc(50% - 4px);
-    margin-right: 4px;
-    vertical-align: top;
+  /* 🆕 R2#1: ホームタブ主要2カード（おまかせ + 自分で作る）を2カラム化 */
+  .home-primary-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 0;
   }
-  .create-course-btn {
-    display: inline-flex !important;
-    width: calc(50% - 4px) !important;
-    margin-left: 4px !important;
-    vertical-align: top;
-    padding: 14px 10px !important;
+  .home-primary-row .quickstart-hero,
+  .home-primary-row .create-course-btn {
+    margin: 0 !important;
+    width: 100% !important;
   }
-  .quickstart-btn {
+  .home-primary-row .quickstart-btn {
     flex-direction: column !important;
     align-items: flex-start !important;
     padding: 14px 12px !important;
     gap: 8px !important;
     min-height: 110px;
+    text-align: left;
   }
-  .qs-icon { font-size: 28px !important; }
-  .qs-label { font-size: 14px !important; line-height: 1.3; }
-  .qs-sub { display: none !important; }
-  .qs-arrow { display: none !important; }
-  .cc-icon { font-size: 26px !important; }
-  .cc-title { font-size: 14px !important; line-height: 1.3; }
-  .cc-sub { display: none !important; }
-  .cc-arrow { display: none !important; }
-  .create-course-btn {
+  .home-primary-row .create-course-btn {
     flex-direction: column !important;
     align-items: flex-start !important;
     gap: 8px !important;
     min-height: 110px;
+    padding: 14px 12px !important;
   }
+  .home-primary-row .qs-icon,
+  .home-primary-row .cc-icon { font-size: 28px !important; }
+  .home-primary-row .qs-label,
+  .home-primary-row .cc-title { font-size: 14px !important; line-height: 1.3; font-weight: 800; }
+  .home-primary-row .qs-sub,
+  .home-primary-row .cc-sub { display: none !important; }
+  .home-primary-row .qs-arrow,
+  .home-primary-row .cc-arrow { display: none !important; }
+  .home-primary-row .qs-body { display: block !important; }
+  .home-primary-row .cc-body { display: block !important; min-width: 0; }
 
   /* 🆕 R2#2: featured-card のサムネ非表示でタイトル領域確保 */
   .featured-thumb {

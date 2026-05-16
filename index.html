@@ -558,17 +558,30 @@
           <button class="resume-dismiss" id="resume-dismiss" type="button" aria-label="閉じる">✕</button>
         </section>
 
-        <!-- 🥇 優先度2: クイックスタート（おまかせ・1タップ） -->
-        <section class="quickstart-hero" id="quickstart-hero">
-          <button class="quickstart-btn" id="quickstart-btn" type="button">
-            <span class="qs-icon">⚡</span>
-            <div class="qs-body">
-              <div class="qs-label">完全おまかせで始める</div>
-              <div class="qs-sub">エリア・モード自動 → ガチャ → 地図セットまで一気に</div>
-            </div>
-            <span class="qs-arrow">→</span>
+        <!-- 🆕 R2#1: 主要2カードを2カラム grid でまとめる -->
+        <div class="home-primary-row">
+          <!-- 🥇 優先度2: クイックスタート（おまかせ・1タップ） -->
+          <section class="quickstart-hero" id="quickstart-hero">
+            <button class="quickstart-btn" id="quickstart-btn" type="button">
+              <span class="qs-icon">⚡</span>
+              <div class="qs-body">
+                <div class="qs-label">完全おまかせで始める</div>
+                <div class="qs-sub">エリア・モード自動 → ガチャ → 地図セットまで一気に</div>
+              </div>
+              <span class="qs-arrow">→</span>
+            </button>
+          </section>
+
+          <!-- 🆕 自分でコース作成 -->
+          <button class="create-course-btn" id="create-course-btn" type="button">
+            <span class="cc-icon">✏️</span>
+            <span class="cc-body">
+              <span class="cc-title">自分でコースを作る</span>
+              <span class="cc-sub">既存スポットから組み合わせて、Xでシェア</span>
+            </span>
+            <span class="cc-arrow">→</span>
           </button>
-        </section>
+        </div>
 
         <!-- 🆕 ガチャ直接アクセス（経験者向け2列ボタン） -->
         <section class="home-quick-actions" id="home-quick-actions" hidden>
@@ -581,16 +594,6 @@
             <span class="ha-label">全コース一覧<br><small>自分で選びたい</small></span>
           </button>
         </section>
-
-        <!-- 🆕 自分でコース作成 -->
-        <button class="create-course-btn" id="create-course-btn" type="button">
-          <span class="cc-icon">✏️</span>
-          <span class="cc-body">
-            <span class="cc-title">自分でコースを作る</span>
-            <span class="cc-sub">既存スポットから組み合わせて、Xでシェア</span>
-          </span>
-          <span class="cc-arrow">→</span>
-        </button>
 
         <!-- ❤️ お気に入りリマインダー（未完走のものがあれば） -->
         <section class="fav-reminder" id="fav-reminder" hidden>
