@@ -11570,6 +11570,23 @@ button, a, .main-tab, .tab, [role="button"], input[type="button"], input[type="s
     text-decoration: none !important;
   }
 
+  /* 🆕 R5#1: 探すタブ下部の重複 gacha-banner をモバイルで非表示
+     （パネル最上部に sticky の discover-cta が既にあるため） */
+  .gacha-banner {
+    display: none !important;
+  }
+
+  /* 🆕 R5#3: アクティブな mode-tab にオレンジ下線とボーダーで明示 */
+  .mode-tab.active {
+    background: rgba(255, 64, 129, 0.10) !important;
+    border: 2px solid #ff4081 !important;
+    color: #ff4081 !important;
+    font-weight: 800 !important;
+  }
+  .mode-tab:not(.active) {
+    border: 2px solid transparent !important;
+  }
+
   /* 🆕 R2#3: mode-tab ラベルが長くなったのでサイズ調整 */
   .mode-tab-label {
     font-size: 11px !important;
