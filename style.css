@@ -5374,7 +5374,7 @@ body.map-fullscreen #map-container {
   50% { box-shadow: 0 8px 28px rgba(22, 163, 74, 0.6); }
 }
 
-/* main-tabs: PC では panel 上部に配置、モバイルでは画面下に fixed */
+/* main-tabs: PC では panel 上部に配置、モバイルでは画面上部に fixed */
 .main-tabs {
   display: flex;
   gap: 4px;
@@ -7769,6 +7769,49 @@ html.text-size-xlarge .modal-title { font-size: 22px; }
 [data-theme="dark"] .cc-field input, [data-theme="dark"] .cc-field textarea { background: rgba(255,255,255,0.05); }
 .cc-field input:focus, .cc-field textarea:focus { outline: none; border-color: #16a34a; }
 .cc-stop-count { float: right; font-weight: 700; color: #16a34a; font-size: 11px; }
+/* 🆕 検索 + 追加ボタン横並び行 */
+.cc-search-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  margin-top: 6px;
+}
+.cc-search-row input[type="search"] {
+  margin: 0 !important;
+}
+.cc-add-custom-btn {
+  background: linear-gradient(135deg, #06b6d4, #0ea5e9);
+  color: white;
+  border: 0;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.cc-add-custom-btn:hover { box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4); }
+.cc-add-custom-btn:active { transform: scale(0.97); }
+.cc-search-hint {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  margin: 4px 2px 6px;
+  line-height: 1.4;
+}
+/* 🆕 「自由入力で追加する」カード（検索結果先頭に出る） */
+.cc-spot-card.cc-custom-add {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(14, 165, 233, 0.12));
+  border-color: #0ea5e9 !important;
+  border-style: dashed !important;
+}
+.cc-spot-card.cc-custom-add .cc-spot-name { color: #0ea5e9; font-weight: 800; }
+[data-theme="dark"] .cc-spot-card.cc-custom-add { background: linear-gradient(135deg, rgba(6, 182, 212, 0.18), rgba(14, 165, 233, 0.18)); }
+/* カスタムスポット印 */
+.cc-spot-card.cc-spot-custom {
+  border-left: 3px solid #0ea5e9;
+}
 .cc-spot-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -11280,28 +11323,29 @@ button, a, .main-tab, .tab, [role="button"], input[type="button"], input[type="s
   .awb-cta { padding: 4px 8px; font-size: 10px; }
 }
 
-/* Main tabs: floating bottom bar on mobile (常に見える) */
+/* Main tabs: floating TOP bar on mobile (常に見える、画面上部に固定) */
 @media (max-width: 768px) {
   .main-tab {
-    min-height: 44px;
-    padding: 8px 4px;
+    min-height: 40px;
+    padding: 6px 4px;
     font-size: 11px;
-    flex-direction: column;
+    flex-direction: row;
     line-height: 1.2;
-    gap: 2px;
+    gap: 4px;
+    justify-content: center;
   }
-  /* main-tabs を画面下に常駐させる（panel が畳まれても見える） */
+  /* main-tabs を画面上部に常駐させる（ホーム/探す/マイ のいずれでも常に見える） */
   .main-tabs {
     position: fixed !important;
     left: 8px;
     right: 8px;
-    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-    top: auto !important;
+    top: calc(6px + env(safe-area-inset-top, 0px));
+    bottom: auto !important;
     margin: 0 !important;
-    padding: 4px;
+    padding: 3px;
     z-index: 8500; /* walk-hud(8000) より上 */
     background: var(--surface);
-    box-shadow: 0 -4px 16px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08);
     border-radius: 16px;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
@@ -11309,29 +11353,28 @@ button, a, .main-tab, .tab, [role="button"], input[type="button"], input[type="s
   [data-theme="dark"] .main-tabs {
     background: rgba(31, 31, 39, 0.95);
   }
-  /* 散歩中は walk-hud が下にあるので main-tabs を更に上にずらす（HUD 高 ≈ 200px + 余裕） */
-  body.walking .main-tabs {
-    bottom: calc(228px + env(safe-area-inset-bottom, 0px));
-  }
-  /* fullscreen 時は底に */
+  /* fullscreen 時もトップに（変更なし） */
   body.map-fullscreen .main-tabs {
-    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-  }
-  /* 散歩 + fullscreen の組合せ */
-  body.walking.map-fullscreen .main-tabs {
-    bottom: calc(228px + env(safe-area-inset-bottom, 0px));
+    top: calc(6px + env(safe-area-inset-top, 0px));
   }
   /* active-walk-bar は panel-inner の中で sticky のまま */
   .active-walk-bar {
     top: 0;
     margin-top: 4px;
   }
-  /* panel-inner には main-tabs が固定化したので余白を追加（コンテンツが tabs に隠れないよう） */
+  /* panel-inner には main-tabs(top) 分の上余白を確保（コンテンツが tabs に隠れないよう） */
   .panel-inner {
-    padding-bottom: 80px !important;
+    padding-top: 56px !important;
+    padding-bottom: 16px !important;
   }
   body.walking .panel-inner {
-    padding-bottom: 290px !important;
+    padding-bottom: 220px !important;
+  }
+  /* 🚫 邪魔だった3つの浮きボタンを非表示（モバイル） */
+  .map-history-btn,
+  .map-submissions-btn,
+  .map-recenter-btn {
+    display: none !important;
   }
 }
 

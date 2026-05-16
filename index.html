@@ -272,7 +272,11 @@
 
         <div class="cc-field">
           <span>スポット選択（3〜8個）<em>*</em> <span class="cc-stop-count">選択中: <span id="cc-stop-count">0</span>個</span></span>
-          <input type="search" id="cc-spot-search" placeholder="🔎 スポット名・エリア名で検索…" />
+          <div class="cc-search-row">
+            <input type="search" id="cc-spot-search" placeholder="🔎 スポット名・住所…（自由入力OK）" />
+            <button type="button" class="cc-add-custom-btn" id="cc-add-custom-btn" aria-label="入力したスポット名で追加">➕ 追加</button>
+          </div>
+          <div class="cc-search-hint">💡 候補に無い場所も「追加」ボタンで自由に登録できます（例: 阿佐ヶ谷駅、新宿駅 など）</div>
           <div class="cc-spot-grid" id="cc-spot-grid"></div>
         </div>
 

@@ -4561,12 +4561,85 @@ ${trkPts}
   }
 
   let _ccSelectedIds = [];
+  // 🆕 カスタムスポット（ユーザー自由入力で Nominatim 解決したもの）の保持
+  const _ccCustomSpots = []; // { id, name, lat, lng, ... }
+
+  // Nominatim でジオコーディング → スポット情報を返す（失敗時 null）
+  async function geocodeFreeText(text) {
+    const q = String(text || '').trim();
+    if (!q) return null;
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&accept-language=ja&countrycodes=jp`;
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (!Array.isArray(data) || data.length === 0) return null;
+      const top = data[0];
+      const lat = parseFloat(top.lat);
+      const lng = parseFloat(top.lon);
+      if (!isFinite(lat) || !isFinite(lng)) return null;
+      return {
+        id: `custom_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        name: q,
+        displayName: top.display_name || q,
+        lat, lng,
+        area: '自由入力',
+        areaIcon: '✏️',
+        cat: 'other',
+        emoji: '📍',
+        desc: '',
+        tags: [],
+        bestTime: '',
+        budget: '',
+        stayMin: 30,
+        isCustom: true,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  // カスタムスポット込みの全ピッカー候補
+  function getAllPickerCandidates() {
+    return [..._ccCustomSpots, ...getAllSpotsForPicker()];
+  }
+
+  async function addCustomSpotFromQuery(query) {
+    const q = String(query || '').trim();
+    if (!q) return;
+    if (_ccSelectedIds.length >= 8) {
+      showToast('最大8個まで選択できます', 'info', 2200);
+      return;
+    }
+    // 検索中表示
+    const grid = document.getElementById('cc-spot-grid');
+    if (grid) {
+      grid.innerHTML = `<div class="cc-empty">📡 「${escapeHtml(q)}」を地図上で探しています...</div>`;
+    }
+    const spot = await geocodeFreeText(q);
+    if (!spot) {
+      showToast(`「${q}」が見つかりませんでした。別の表現でお試しください`, 'error', 3000);
+      renderCcSpotGrid(q);
+      return;
+    }
+    _ccCustomSpots.unshift(spot);
+    _ccSelectedIds.push(spot.id);
+    vib(20);
+    showToast(`✅ 「${spot.name}」を追加しました`, 'success', 2400);
+    // 検索フォームクリア
+    const search = document.getElementById('cc-spot-search');
+    if (search) search.value = '';
+    renderCcSpotGrid('');
+    renderCcSelectedList();
+    const cnt = document.getElementById('cc-stop-count');
+    if (cnt) cnt.textContent = String(_ccSelectedIds.length);
+  }
 
   function renderCcSpotGrid(query) {
     const grid = document.getElementById('cc-spot-grid');
     if (!grid) return;
     const q = String(query || '').trim().toLowerCase();
-    const all = getAllSpotsForPicker();
+    const all = getAllPickerCandidates();
     const filtered = q
       ? all.filter(s =>
           String(s.name).toLowerCase().includes(q) ||
@@ -4574,10 +4647,25 @@ ${trkPts}
           (s.tags || []).some(t => String(t).toLowerCase().includes(q))
         )
       : all;
-    grid.innerHTML = filtered.slice(0, 60).map(s => {
+    // 🆕 検索文字列があり、完全一致が無ければ「この名前で追加」カードを先頭に出す
+    const exactMatch = q && all.some(s => String(s.name).toLowerCase() === q);
+    const showCustomAdd = q.length > 0 && !exactMatch;
+    let html = '';
+    if (showCustomAdd) {
+      html += `
+        <button type="button" class="cc-spot-card cc-custom-add" id="cc-custom-add-btn">
+          <span class="cc-spot-emoji">➕</span>
+          <span class="cc-spot-info">
+            <span class="cc-spot-name">「${escapeHtml(query)}」を追加する</span>
+            <span class="cc-spot-area">📡 地図上で検索して追加</span>
+          </span>
+        </button>
+      `;
+    }
+    html += filtered.slice(0, 60).map(s => {
       const selected = _ccSelectedIds.includes(s.id);
       return `
-        <button type="button" class="cc-spot-card${selected ? ' selected' : ''}" data-id="${escapeHtml(s.id)}">
+        <button type="button" class="cc-spot-card${selected ? ' selected' : ''}${s.isCustom ? ' cc-spot-custom' : ''}" data-id="${escapeHtml(s.id)}">
           <span class="cc-spot-emoji">${s.emoji || '📍'}</span>
           <span class="cc-spot-info">
             <span class="cc-spot-name">${escapeHtml(s.name)}${selected ? ` <span class="cc-sel-num">${_ccSelectedIds.indexOf(s.id) + 1}</span>` : ''}</span>
@@ -4586,7 +4674,16 @@ ${trkPts}
         </button>
       `;
     }).join('');
-    grid.querySelectorAll('.cc-spot-card').forEach(el => {
+    if (!html) {
+      html = `<div class="cc-empty">検索結果がありません。<br>上の入力欄に施設名を入力 → 「Enter」または「追加」で自由に追加できます。</div>`;
+    }
+    grid.innerHTML = html;
+    // カスタム追加ボタン
+    const addBtn = document.getElementById('cc-custom-add-btn');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => addCustomSpotFromQuery(query));
+    }
+    grid.querySelectorAll('.cc-spot-card:not(.cc-custom-add)').forEach(el => {
       el.addEventListener('click', () => {
         const id = el.getAttribute('data-id');
         const idx = _ccSelectedIds.indexOf(id);
@@ -4614,7 +4711,7 @@ ${trkPts}
       list.innerHTML = '<div class="cc-empty">スポットを選んでください（最少3個）</div>';
       return;
     }
-    const all = getAllSpotsForPicker();
+    const all = getAllPickerCandidates();
     list.innerHTML = _ccSelectedIds.map((id, idx) => {
       const s = all.find(x => x.id === id);
       if (!s) return '';
@@ -4662,10 +4759,18 @@ ${trkPts}
       descI.value = editCourse.description || '';
       _ccSelectedIds = (editCourse.stopIds || []).slice();
       modal.dataset.editId = editCourse.id;
+      // 編集時、既存ストップにカスタム(id startsWith 'custom_')が含まれていれば復元
+      _ccCustomSpots.length = 0;
+      (editCourse.stops || []).forEach(s => {
+        if (s.id && String(s.id).startsWith('custom_')) {
+          _ccCustomSpots.push({ ...s, isCustom: true, area: s.area || '自由入力', areaIcon: s.areaIcon || '✏️', emoji: s.emoji || '📍' });
+        }
+      });
     } else {
       nameI.value = '';
       descI.value = '';
       _ccSelectedIds = [];
+      _ccCustomSpots.length = 0;
       delete modal.dataset.editId;
     }
     document.getElementById('cc-stop-count').textContent = String(_ccSelectedIds.length);
@@ -4676,6 +4781,66 @@ ${trkPts}
     if (search) {
       search.value = '';
       search.oninput = () => renderCcSpotGrid(search.value);
+      // 🆕 「➕ 追加」ボタンで自由入力スポットを Nominatim 解決して追加
+      const addBtn = document.getElementById('cc-add-custom-btn');
+      if (addBtn) {
+        addBtn.onclick = () => {
+          const q = search.value.trim();
+          if (!q) {
+            showToast('追加するスポット名を入力してください', 'info', 2200);
+            search.focus();
+            return;
+          }
+          const all = getAllPickerCandidates();
+          const exact = all.find(s => String(s.name).toLowerCase() === q.toLowerCase());
+          if (exact) {
+            if (!_ccSelectedIds.includes(exact.id)) {
+              if (_ccSelectedIds.length >= 8) {
+                showToast('最大8個まで選択できます', 'info', 2200);
+                return;
+              }
+              _ccSelectedIds.push(exact.id);
+              vib(10);
+              search.value = '';
+              renderCcSpotGrid('');
+              renderCcSelectedList();
+              const cnt = document.getElementById('cc-stop-count');
+              if (cnt) cnt.textContent = String(_ccSelectedIds.length);
+            }
+            return;
+          }
+          addCustomSpotFromQuery(q);
+        };
+      }
+      // 🆕 Enter キーで「自由入力スポット追加」
+      search.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const q = search.value.trim();
+          if (!q) return;
+          // 既に完全一致があれば、それを選択
+          const all = getAllPickerCandidates();
+          const exact = all.find(s => String(s.name).toLowerCase() === q.toLowerCase());
+          if (exact) {
+            if (!_ccSelectedIds.includes(exact.id)) {
+              if (_ccSelectedIds.length >= 8) {
+                showToast('最大8個まで選択できます', 'info', 2200);
+                return;
+              }
+              _ccSelectedIds.push(exact.id);
+              vib(10);
+              search.value = '';
+              renderCcSpotGrid('');
+              renderCcSelectedList();
+              const cnt = document.getElementById('cc-stop-count');
+              if (cnt) cnt.textContent = String(_ccSelectedIds.length);
+            }
+            return;
+          }
+          // それ以外は Nominatim で解決して自由追加
+          addCustomSpotFromQuery(q);
+        }
+      };
     }
   }
 
@@ -4697,7 +4862,7 @@ ${trkPts}
       }
       const modal = document.getElementById('create-course-modal');
       const editId = modal?.dataset.editId;
-      const all = getAllSpotsForPicker();
+      const all = getAllPickerCandidates();
       const stops = _ccSelectedIds.map(id => all.find(s => s.id === id)).filter(Boolean);
       const totalMin = stops.length * 12; // ざっくり 1スポット 12分
       const course = {
