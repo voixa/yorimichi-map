@@ -84,9 +84,9 @@
     ja: {
       brandName: '街歩きガチャ',
       brandTagline: 'あと◯分あったら、どこ寄る？',
-      tabCourse: '📖 おすすめから選ぶ',
+      tabCourse: '📖 おすすめ',
       tabRoute: '🎯 行き先指定',
-      tabStroll: '🌿 ぶらぶら歩く',
+      tabStroll: '🌿 ぶらぶら',
       todayLabel: '✨ 今日のおすすめ',
       todayCta: '歩く →',
       filtersLabel: '🔍 絞り込み',
