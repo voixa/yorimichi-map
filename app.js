@@ -692,9 +692,7 @@
       </div>
       ${extra.tags && extra.tags.length ? `<div class="detail-tags">${extra.tags.map(t => `<span class="detail-tag">#${escapeHtml(t)}</span>`).join('')}</div>` : ''}
       ${stop.desc ? `<p class="desc">${escapeHtml(stop.desc)}</p>` : ''}
-      <div class="ai-spot-guide" id="ai-spot-guide" hidden>
-        <div class="aig-loading">✨ AIガイド読み込み中…</div>
-      </div>
+      <div class="ai-spot-guide" id="ai-spot-guide" hidden style="display:none !important"></div>
       <div class="actions">
         <button class="add-btn" id="detail-fly">📍 地図でズーム</button>
         <a class="add-btn wiki-btn" id="detail-nav" target="_blank" rel="noopener">📱 ナビ起動</a>
@@ -3669,8 +3667,8 @@
 
     // 直近に適用したコースID（カップル共有等で参照）
     if (route.isCurated && route.courseId) state._lastAppliedCourseId = route.courseId;
-    // 🌤 出発前ブリーフィング（curated コースのみ・非同期）
-    if (route.isCurated && route.courseId) {
+    // 🌤 出発前ブリーフィング（AI機能・ユーザー要望により無効化）
+    if (false && route.isCurated && route.courseId) {
       const course = (window.YORIMICHI_COURSES || []).find(c => c.id === route.courseId);
       if (course) {
         showPreWalkBriefingBanner('loading', course);
@@ -4512,6 +4510,353 @@ ${trkPts}
       showToast('🙏 報告ありがとうございました。確認します', 'success', 3500);
     } catch (e) {
       showToast('送信に失敗しました', 'error', 2500);
+    }
+  }
+
+  // ✏️ マイコース：作成・保存・適用・シェア
+  function getMyCourses() {
+    try { return JSON.parse(localStorage.getItem('yorimichi-my-courses') || '[]'); } catch { return []; }
+  }
+  function saveMyCourses(list) {
+    try { localStorage.setItem('yorimichi-my-courses', JSON.stringify(list.slice(-50))); } catch {}
+  }
+  function deleteMyCourse(id) {
+    const list = getMyCourses().filter(c => c.id !== id);
+    saveMyCourses(list);
+  }
+
+  // 全スポットDBを集める（既存21コースのスポットを source として使う）
+  function getAllSpotsForPicker() {
+    const courses = (window.YORIMICHI_COURSES || []);
+    const result = [];
+    courses.forEach(c => {
+      (c.stops || []).forEach((s, idx) => {
+        if (s.lat == null || s.lng == null) return;
+        result.push({
+          id: `${c.id}::${idx}`,
+          name: s.name,
+          area: tField(c, 'areaName'),
+          areaIcon: c.areaIcon,
+          cat: s.cat || 'other',
+          emoji: s.emoji,
+          lat: s.lat, lng: s.lng,
+          desc: s.desc || '',
+          tags: s.tags || [],
+          bestTime: s.bestTime,
+          budget: s.budget,
+          stayMin: s.stayMin,
+        });
+      });
+    });
+    return result;
+  }
+
+  let _ccSelectedIds = [];
+
+  function renderCcSpotGrid(query) {
+    const grid = document.getElementById('cc-spot-grid');
+    if (!grid) return;
+    const q = String(query || '').trim().toLowerCase();
+    const all = getAllSpotsForPicker();
+    const filtered = q
+      ? all.filter(s =>
+          String(s.name).toLowerCase().includes(q) ||
+          String(s.area).toLowerCase().includes(q) ||
+          (s.tags || []).some(t => String(t).toLowerCase().includes(q))
+        )
+      : all;
+    grid.innerHTML = filtered.slice(0, 60).map(s => {
+      const selected = _ccSelectedIds.includes(s.id);
+      return `
+        <button type="button" class="cc-spot-card${selected ? ' selected' : ''}" data-id="${escapeHtml(s.id)}">
+          <span class="cc-spot-emoji">${s.emoji || '📍'}</span>
+          <span class="cc-spot-info">
+            <span class="cc-spot-name">${escapeHtml(s.name)}${selected ? ` <span class="cc-sel-num">${_ccSelectedIds.indexOf(s.id) + 1}</span>` : ''}</span>
+            <span class="cc-spot-area">${s.areaIcon || ''} ${escapeHtml(s.area || '')}</span>
+          </span>
+        </button>
+      `;
+    }).join('');
+    grid.querySelectorAll('.cc-spot-card').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = el.getAttribute('data-id');
+        const idx = _ccSelectedIds.indexOf(id);
+        if (idx >= 0) {
+          _ccSelectedIds.splice(idx, 1);
+        } else {
+          if (_ccSelectedIds.length >= 8) {
+            showToast('最大8個まで選択できます', 'info', 2200);
+            return;
+          }
+          _ccSelectedIds.push(id);
+        }
+        renderCcSpotGrid(query);
+        renderCcSelectedList();
+        const cnt = document.getElementById('cc-stop-count');
+        if (cnt) cnt.textContent = String(_ccSelectedIds.length);
+      });
+    });
+  }
+
+  function renderCcSelectedList() {
+    const list = document.getElementById('cc-selected-list');
+    if (!list) return;
+    if (_ccSelectedIds.length === 0) {
+      list.innerHTML = '<div class="cc-empty">スポットを選んでください（最少3個）</div>';
+      return;
+    }
+    const all = getAllSpotsForPicker();
+    list.innerHTML = _ccSelectedIds.map((id, idx) => {
+      const s = all.find(x => x.id === id);
+      if (!s) return '';
+      return `
+        <li class="cc-sel-row" data-id="${escapeHtml(id)}">
+          <span class="cc-sel-pos">${idx + 1}</span>
+          <span class="cc-sel-emoji">${s.emoji || '📍'}</span>
+          <span class="cc-sel-name">${escapeHtml(s.name)}</span>
+          <button type="button" class="cc-sel-up" data-action="up" aria-label="上へ">▲</button>
+          <button type="button" class="cc-sel-down" data-action="down" aria-label="下へ">▼</button>
+          <button type="button" class="cc-sel-remove" data-action="remove" aria-label="削除">×</button>
+        </li>
+      `;
+    }).join('');
+    list.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const li = btn.closest('.cc-sel-row');
+        const id = li?.getAttribute('data-id');
+        const idx = _ccSelectedIds.indexOf(id);
+        const act = btn.getAttribute('data-action');
+        if (idx < 0) return;
+        if (act === 'remove') {
+          _ccSelectedIds.splice(idx, 1);
+        } else if (act === 'up' && idx > 0) {
+          [_ccSelectedIds[idx - 1], _ccSelectedIds[idx]] = [_ccSelectedIds[idx], _ccSelectedIds[idx - 1]];
+        } else if (act === 'down' && idx < _ccSelectedIds.length - 1) {
+          [_ccSelectedIds[idx + 1], _ccSelectedIds[idx]] = [_ccSelectedIds[idx], _ccSelectedIds[idx + 1]];
+        }
+        renderCcSelectedList();
+        renderCcSpotGrid(document.getElementById('cc-spot-search')?.value || '');
+      });
+    });
+  }
+
+  function openCreateCourseModal(editCourse) {
+    const modal = document.getElementById('create-course-modal');
+    if (!modal) return;
+    modal.hidden = false;
+    // 既存コース編集モードならフォームに値セット
+    const nameI = document.getElementById('cc-name-input');
+    const descI = document.getElementById('cc-desc-input');
+    if (editCourse) {
+      nameI.value = editCourse.name || '';
+      descI.value = editCourse.description || '';
+      _ccSelectedIds = (editCourse.stopIds || []).slice();
+      modal.dataset.editId = editCourse.id;
+    } else {
+      nameI.value = '';
+      descI.value = '';
+      _ccSelectedIds = [];
+      delete modal.dataset.editId;
+    }
+    document.getElementById('cc-stop-count').textContent = String(_ccSelectedIds.length);
+    renderCcSpotGrid('');
+    renderCcSelectedList();
+    // 検索インプット連動
+    const search = document.getElementById('cc-spot-search');
+    if (search) {
+      search.value = '';
+      search.oninput = () => renderCcSpotGrid(search.value);
+    }
+  }
+
+  function setupMyCourseHandlers() {
+    const form = document.getElementById('create-course-form');
+    if (!form || form.dataset.bound) return;
+    form.dataset.bound = '1';
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('cc-name-input').value.trim();
+      const desc = document.getElementById('cc-desc-input').value.trim();
+      if (!name) {
+        showToast('コース名を入力してください', 'error', 2500);
+        return;
+      }
+      if (_ccSelectedIds.length < 3) {
+        showToast('最少3個のスポットを選んでください', 'error', 2500);
+        return;
+      }
+      const modal = document.getElementById('create-course-modal');
+      const editId = modal?.dataset.editId;
+      const all = getAllSpotsForPicker();
+      const stops = _ccSelectedIds.map(id => all.find(s => s.id === id)).filter(Boolean);
+      const totalMin = stops.length * 12; // ざっくり 1スポット 12分
+      const course = {
+        id: editId || ('my_' + Date.now()),
+        name,
+        description: desc,
+        stops: stops.map(s => ({
+          id: s.id,
+          name: s.name,
+          lat: s.lat, lng: s.lng,
+          cat: s.cat,
+          emoji: s.emoji,
+          desc: s.desc,
+          tags: s.tags,
+          bestTime: s.bestTime,
+          budget: s.budget,
+          stayMin: s.stayMin,
+        })),
+        stopIds: _ccSelectedIds.slice(),
+        areaName: stops[0]?.area || '',
+        areaIcon: stops[0]?.areaIcon || '✏️',
+        themeIcon: '✏️',
+        estimatedMin: totalMin,
+        createdAt: editId ? undefined : Date.now(),
+        updatedAt: Date.now(),
+        isMyCourse: true,
+      };
+      let list = getMyCourses();
+      if (editId) {
+        list = list.map(c => c.id === editId ? { ...c, ...course, createdAt: c.createdAt } : c);
+      } else {
+        list.push(course);
+      }
+      saveMyCourses(list);
+      showToast(`💾 マイコース「${name}」を保存しました`, 'success', 3000);
+      modal.hidden = true;
+      renderMyCoursesList();
+    });
+  }
+
+  function renderMyCoursesList() {
+    const listEl = document.getElementById('my-courses-list');
+    if (!listEl) return;
+    const list = getMyCourses().slice().reverse();
+    if (list.length === 0) {
+      listEl.innerHTML = `
+        <div class="mc-empty">
+          <div style="font-size:48px;opacity:0.4;margin-bottom:12px;">✏️</div>
+          <div style="font-weight:700;color:var(--text);">まだマイコースがありません</div>
+          <div style="font-size:12px;margin-top:6px;color:var(--text-muted);">「新しいコースを作る」から作成してください</div>
+        </div>
+      `;
+      return;
+    }
+    listEl.innerHTML = list.map(c => {
+      const thumb = buildCourseThumbSvg(c, { w: 64, h: 42 });
+      const d = c.updatedAt ? new Date(c.updatedAt) : null;
+      const dateStr = d ? `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}` : '';
+      return `
+        <div class="mc-card" data-id="${escapeHtml(c.id)}">
+          <div class="mc-header">
+            <span class="mc-emoji">${c.themeIcon || '✏️'}</span>
+            <div class="mc-body">
+              <div class="mc-name">${escapeHtml(c.name)}</div>
+              <div class="mc-meta">${c.stops.length}スポット ・ 約${c.estimatedMin}分 ・ ${escapeHtml(dateStr)}</div>
+            </div>
+            <span class="mc-thumb">${thumb}</span>
+          </div>
+          ${c.description ? `<div class="mc-desc">${escapeHtml(c.description)}</div>` : ''}
+          <div class="mc-actions">
+            <button class="mc-apply" data-action="apply" type="button">🚶 歩く</button>
+            <button class="mc-x" data-action="x" type="button" aria-label="Xでシェア">𝕏</button>
+            <button class="mc-line" data-action="line" type="button" aria-label="LINEで送る">LINE</button>
+            <button class="mc-link" data-action="link" type="button" aria-label="リンクコピー">🔗</button>
+            <button class="mc-edit" data-action="edit" type="button" aria-label="編集">✏️</button>
+            <button class="mc-delete" data-action="delete" type="button" aria-label="削除">🗑</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    listEl.querySelectorAll('.mc-card').forEach(card => {
+      const id = card.getAttribute('data-id');
+      const course = list.find(c => c.id === id);
+      if (!course) return;
+      card.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const act = btn.getAttribute('data-action');
+          if (act === 'apply') {
+            applyMyCourse(course);
+            document.getElementById('my-courses-modal').hidden = true;
+          } else if (act === 'x') {
+            shareMyCourseToX(course);
+          } else if (act === 'line') {
+            shareMyCourseToLine(course);
+          } else if (act === 'link') {
+            copyMyCourseLink(course);
+          } else if (act === 'edit') {
+            openCreateCourseModal(course);
+            document.getElementById('my-courses-modal').hidden = true;
+          } else if (act === 'delete') {
+            if (confirm(`「${course.name}」を削除しますか？`)) {
+              deleteMyCourse(course.id);
+              renderMyCoursesList();
+              showToast('🗑 削除しました', 'info', 2000);
+            }
+          }
+        });
+      });
+    });
+  }
+
+  function applyMyCourse(course) {
+    const route = {
+      id: course.id,
+      title: course.name,
+      stops: course.stops.map(s => ({ ...s })),
+      detourMin: course.estimatedMin || 60,
+      isCurated: false,
+      isMyCourse: true,
+      themeIcon: '✏️',
+    };
+    state.origin = {
+      lat: course.stops[0].lat, lng: course.stops[0].lng,
+      label: course.stops[0].name, shortLabel: course.stops[0].name,
+    };
+    state.dest = {
+      lat: course.stops[course.stops.length - 1].lat,
+      lng: course.stops[course.stops.length - 1].lng,
+      label: course.stops[course.stops.length - 1].name,
+      shortLabel: course.stops[course.stops.length - 1].name,
+    };
+    const oi = document.getElementById('origin-input');
+    if (oi) oi.value = state.origin.shortLabel;
+    const di = document.getElementById('dest-input');
+    if (di) di.value = state.dest.shortLabel;
+    try {
+      setEndpointMarker('origin', state.origin);
+      setEndpointMarker('dest', state.dest);
+    } catch {}
+    applyRoute(route);
+    forceShowWalkStartButton(`✨ マイコース「${course.name}」を設定！下の「🚶歩き始める」をタップ`);
+  }
+
+  function buildMyCourseShareText(course) {
+    const stops = course.stops.map(s => `${s.emoji || '📍'} ${s.name}`).slice(0, 5).join(' → ');
+    const url = `${location.origin}${location.pathname}?mycourse=${encodeURIComponent(course.id)}`;
+    return `「${course.name}」(${course.stops.length}スポット・約${course.estimatedMin}分)\n${stops}${course.stops.length > 5 ? '...' : ''}\n\n👣 街歩きガチャで歩こう\n${url}\n#街歩きガチャ`;
+  }
+
+  function shareMyCourseToX(course) {
+    const text = buildMyCourseShareText(course);
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank', 'noopener');
+    vib(15);
+  }
+  function shareMyCourseToLine(course) {
+    const text = buildMyCourseShareText(course);
+    const url = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`;
+    window.open(url, '_blank', 'noopener');
+  }
+  async function copyMyCourseLink(course) {
+    const text = buildMyCourseShareText(course);
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('📋 シェア文をコピーしました', 'success', 2200);
+    } catch {
+      showToast('コピー失敗', 'error', 2000);
     }
   }
 
@@ -8775,11 +9120,7 @@ ${trkPts}
           <span class="fav-icon">${isFavorite(course.id) ? '❤️' : '🤍'}</span>
           <span>${isFavorite(course.id) ? 'お気に入り済' : 'お気に入りに保存'}</span>
         </button>
-        <button class="btn-ai-tips" id="cd-ai-tips" type="button">
-          <span>✨</span><span>今日歩くコツをAIに聞く</span>
-        </button>
       </div>
-      <div class="cd-ai-tips-result" id="cd-ai-tips-result" hidden></div>
       ${walkCount > 0 ? `<div class="cd-walk-count">${courseLv ? `${courseLv.emoji} ${courseLv.lv} ・ ` : ''}🏅 完走 ${walkCount} 回</div>` : ''}
     `;
 
@@ -9216,6 +9557,19 @@ ${trkPts}
       $('#coin-history-modal').hidden = false;
     });
     $('#coin-history-close')?.addEventListener('click', () => { $('#coin-history-modal').hidden = true; });
+    // ✏️ マイコース
+    $('#ms-my-courses')?.addEventListener('click', () => {
+      renderMyCoursesList();
+      $('#my-courses-modal').hidden = false;
+    });
+    $('#my-courses-close')?.addEventListener('click', () => { $('#my-courses-modal').hidden = true; });
+    $('#my-courses-create-btn')?.addEventListener('click', () => {
+      $('#my-courses-modal').hidden = true;
+      openCreateCourseModal(null);
+    });
+    $('#create-course-close')?.addEventListener('click', () => { $('#create-course-modal').hidden = true; });
+    $('#create-course-btn')?.addEventListener('click', () => openCreateCourseModal(null));
+    setupMyCourseHandlers();
     // 📔 散歩日記モーダル
     $('#ms-journal')?.addEventListener('click', () => {
       renderJournalList();
@@ -9424,6 +9778,7 @@ ${trkPts}
     'yorimichi-textsize',
     'yorimichi-ai-request-history', 'yorimichi-weekly-summary-cache',
     'yorimichi-ai-usage',
+    'yorimichi-my-courses',
   ];
   // 動的キー（コース毎のメモ・写真）も含める
   function getDynamicDataKeys() {
@@ -13285,6 +13640,20 @@ ${hashtag}`;
     const params = new URLSearchParams(location.search);
     if (params.has('gacha')) setTimeout(() => showGachaModal(), 800);
     if (params.has('collection')) setTimeout(() => showCollection(), 800);
+    // ✏️ マイコース共有: ?mycourse=courseId で受信
+    const myCourseId = params.get('mycourse');
+    if (myCourseId) {
+      setTimeout(() => {
+        const c = getMyCourses().find(x => x.id === myCourseId);
+        if (c) {
+          if (confirm(`✏️ シェアされたマイコース「${c.name}」をセットしますか？`)) {
+            applyMyCourse(c);
+          }
+        } else {
+          showToast('そのコースは見つかりません（投稿者と同じ端末でのみ閲覧可）', 'info', 4500);
+        }
+      }, 1200);
+    }
     // 💑 カップル共有: ?couple=courseId で受信
     const coupleCourseId = params.get('couple');
     if (coupleCourseId) {

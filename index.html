@@ -253,6 +253,52 @@
     </div>
   </div>
 
+  <!-- ============ 自分でコース作成モーダル ============ -->
+  <div class="modal-backdrop" id="create-course-modal" hidden>
+    <div class="modal create-course-modal" role="dialog" aria-label="コース作成" aria-modal="true">
+      <button class="modal-close" id="create-course-close" type="button" aria-label="閉じる">✕</button>
+      <h2 class="modal-title">✏️ コースを作る</h2>
+      <p class="modal-sub">既存スポットから3〜8個を選んで、自分だけの散歩コースを作成しよう</p>
+
+      <form id="create-course-form" class="create-course-form">
+        <label class="cc-field">
+          <span>コース名 <em>*</em></span>
+          <input type="text" id="cc-name-input" required maxlength="40" placeholder="例: 谷根千レトロ散策" />
+        </label>
+        <label class="cc-field">
+          <span>説明（任意）</span>
+          <textarea id="cc-desc-input" maxlength="160" rows="2" placeholder="どんな散歩か簡単に説明..."></textarea>
+        </label>
+
+        <div class="cc-field">
+          <span>スポット選択（3〜8個）<em>*</em> <span class="cc-stop-count">選択中: <span id="cc-stop-count">0</span>個</span></span>
+          <input type="search" id="cc-spot-search" placeholder="🔎 スポット名・エリア名で検索…" />
+          <div class="cc-spot-grid" id="cc-spot-grid"></div>
+        </div>
+
+        <div class="cc-selected">
+          <div class="cc-selected-label">選択中（タップして並び替え/削除）</div>
+          <ol class="cc-selected-list" id="cc-selected-list"></ol>
+        </div>
+
+        <div class="cc-actions">
+          <button type="submit" class="btn-primary" id="cc-save-btn">💾 マイコースとして保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ マイコース一覧モーダル ============ -->
+  <div class="modal-backdrop" id="my-courses-modal" hidden>
+    <div class="modal my-courses-modal" role="dialog" aria-label="マイコース" aria-modal="true">
+      <button class="modal-close" id="my-courses-close" type="button" aria-label="閉じる">✕</button>
+      <h2 class="modal-title">📂 マイコース</h2>
+      <p class="modal-sub">自分で作ったコース。タップで開いて適用・シェアできる</p>
+      <button class="btn-primary" id="my-courses-create-btn" type="button" style="width:100%; margin-bottom: 12px;">✏️ 新しいコースを作る</button>
+      <div class="my-courses-list" id="my-courses-list"></div>
+    </div>
+  </div>
+
   <!-- ============ あなたの投稿スポット一覧モーダル ============ -->
   <div class="modal-backdrop" id="my-submissions-modal" hidden>
     <div class="modal my-submissions-modal" role="dialog" aria-label="あなたの投稿スポット" aria-modal="true">
@@ -532,6 +578,16 @@
           </button>
         </section>
 
+        <!-- 🆕 自分でコース作成 -->
+        <button class="create-course-btn" id="create-course-btn" type="button">
+          <span class="cc-icon">✏️</span>
+          <span class="cc-body">
+            <span class="cc-title">自分でコースを作る</span>
+            <span class="cc-sub">既存スポットから組み合わせて、Xでシェア</span>
+          </span>
+          <span class="cc-arrow">→</span>
+        </button>
+
         <!-- ❤️ お気に入りリマインダー（未完走のものがあれば） -->
         <section class="fav-reminder" id="fav-reminder" hidden>
           <div class="fr-header">
@@ -733,8 +789,8 @@
           <button class="mode-help-btn" id="mode-help-btn" type="button" aria-label="モードの違いを見る">？</button>
         </div>
 
-        <!-- 🤖 AI コース提案 -->
-        <section class="ai-suggest-section">
+        <!-- 🤖 AI コース提案 (非表示・ユーザー要望により) -->
+        <section class="ai-suggest-section" hidden>
           <div class="ai-suggest-title">
             <span class="ai-suggest-icon">🤖</span>
             <span>AIに相談してコースを選ぶ</span>
@@ -991,8 +1047,8 @@
             <!-- populated by JS -->
           </div>
 
-          <!-- ✨ AI週次サマリー -->
-          <section class="weekly-summary" id="weekly-summary" hidden>
+          <!-- ✨ AI週次サマリー (非表示) -->
+          <section class="weekly-summary" id="weekly-summary" hidden style="display:none !important">
             <div class="ws-header">
               <span class="ws-icon">✨</span>
               <span class="ws-title">今週のあなたへ</span>
@@ -1095,6 +1151,10 @@
             <button class="me-shortcut" id="ms-settings" type="button">
               <span class="ms-emoji">⚙️</span>
               <span class="ms-label">設定<br><small style="color:var(--text-muted);font-weight:500;">テーマ・音声</small></span>
+            </button>
+            <button class="me-shortcut" id="ms-my-courses" type="button">
+              <span class="ms-emoji">✏️</span>
+              <span class="ms-label">マイコース<br><small style="color:var(--text-muted);font-weight:500;">自作コース</small></span>
             </button>
             <button class="me-shortcut" id="ms-coin-history" type="button">
               <span class="ms-emoji">🪙</span>
@@ -1866,11 +1926,7 @@
       </div>
 
       <!-- AI ウォークレポート -->
-      <div class="walk-report" id="walk-report" hidden>
-        <div class="walk-report-header">
-          <span class="walk-report-icon">✍️</span>
-          <span class="walk-report-label">AIによる今日の振り返り</span>
-        </div>
+      <div class="walk-report" id="walk-report" hidden style="display:none !important">
         <div class="walk-report-haiku" id="walk-report-haiku" hidden></div>
         <div class="walk-report-text" id="walk-report-text">—</div>
       </div>

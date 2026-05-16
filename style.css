@@ -7729,6 +7729,190 @@ html.text-size-xlarge .modal-title { font-size: 22px; }
   white-space: pre-wrap;
 }
 
+/* ✏️ Create-course button (home) */
+.create-course-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: linear-gradient(135deg, #16a34a 0%, #06b6d4 100%);
+  color: white;
+  border: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  margin: 8px 0 12px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  box-shadow: 0 6px 18px rgba(22, 163, 74, 0.25);
+}
+.create-course-btn:active { transform: scale(0.99); }
+.cc-icon { font-size: 28px; }
+.cc-body { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.cc-title { font-weight: 800; font-size: 14px; }
+.cc-sub { font-size: 11px; opacity: 0.85; }
+.cc-arrow { font-size: 18px; opacity: 0.7; }
+
+/* ✏️ Create course modal */
+.create-course-modal { max-width: 520px; }
+.create-course-form { display: flex; flex-direction: column; gap: 14px; margin-top: 12px; }
+.cc-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 700; color: var(--text-muted); }
+.cc-field em { color: #dc2626; font-style: normal; }
+.cc-field input, .cc-field textarea {
+  background: var(--surface-1, white);
+  border: 1.5px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: inherit;
+  color: var(--text);
+}
+[data-theme="dark"] .cc-field input, [data-theme="dark"] .cc-field textarea { background: rgba(255,255,255,0.05); }
+.cc-field input:focus, .cc-field textarea:focus { outline: none; border-color: #16a34a; }
+.cc-stop-count { float: right; font-weight: 700; color: #16a34a; font-size: 11px; }
+.cc-spot-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 4px;
+  background: var(--surface-2);
+  border-radius: 10px;
+}
+@media (max-width: 480px) { .cc-spot-grid { grid-template-columns: 1fr; } }
+.cc-spot-card {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 8px;
+  padding: 8px 10px;
+  background: white;
+  border: 1.5px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  color: var(--text);
+  transition: border-color 0.15s ease;
+}
+[data-theme="dark"] .cc-spot-card { background: rgba(255,255,255,0.05); }
+.cc-spot-card.selected {
+  border-color: #16a34a;
+  background: rgba(22, 163, 74, 0.08);
+}
+.cc-spot-emoji { font-size: 18px; }
+.cc-spot-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.cc-spot-name { font-weight: 700; font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cc-sel-num {
+  background: #16a34a;
+  color: white;
+  padding: 1px 6px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 800;
+  margin-left: 4px;
+}
+.cc-spot-area { font-size: 10px; color: var(--text-muted); }
+.cc-selected {
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 10px;
+}
+.cc-selected-label { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
+.cc-selected-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.cc-empty { text-align: center; padding: 16px; color: var(--text-muted); font-size: 11px; }
+.cc-sel-row {
+  display: grid;
+  grid-template-columns: 22px 22px 1fr 28px 28px 28px;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  background: var(--surface-1, white);
+  border-radius: 6px;
+  font-size: 12px;
+}
+[data-theme="dark"] .cc-sel-row { background: rgba(255,255,255,0.05); }
+.cc-sel-pos {
+  width: 22px; height: 22px;
+  background: #16a34a;
+  color: white;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 800;
+}
+.cc-sel-emoji { font-size: 16px; text-align: center; }
+.cc-sel-name { font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cc-sel-up, .cc-sel-down, .cc-sel-remove {
+  background: var(--surface-2);
+  border: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text);
+}
+.cc-sel-remove { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
+
+/* 📂 マイコース一覧 */
+.my-courses-modal { max-width: 480px; }
+.my-courses-list { display: flex; flex-direction: column; gap: 10px; max-height: 60vh; overflow-y: auto; }
+.mc-empty { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+.mc-card {
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 12px;
+  border-left: 4px solid #16a34a;
+}
+.mc-header { display: grid; grid-template-columns: 32px 1fr 70px; align-items: center; gap: 10px; }
+.mc-emoji { font-size: 24px; }
+.mc-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mc-name { font-weight: 800; font-size: 14px; color: var(--text); }
+.mc-meta { font-size: 11px; color: var(--text-muted); }
+.mc-thumb { background: var(--surface-1, white); border-radius: 6px; padding: 3px; }
+[data-theme="dark"] .mc-thumb { background: rgba(255,255,255,0.05); }
+.mc-desc {
+  font-size: 12px;
+  color: var(--text);
+  margin: 8px 0;
+  padding: 6px 10px;
+  background: var(--surface-1, white);
+  border-radius: 6px;
+  border-left: 3px solid #06b6d4;
+}
+[data-theme="dark"] .mc-desc { background: rgba(255,255,255,0.05); }
+.mc-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.mc-apply {
+  flex: 1;
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: white;
+  border: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.mc-x, .mc-line, .mc-link, .mc-edit, .mc-delete {
+  background: var(--surface-1, white);
+  border: 1px solid var(--border, #e5e7eb);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.mc-x { background: #000; color: #fff; border-color: #000; }
+.mc-line { background: #06c755; color: white; border-color: #06c755; }
+.mc-delete { color: #dc2626; }
+[data-theme="dark"] .mc-link, [data-theme="dark"] .mc-edit { background: rgba(255,255,255,0.08); }
+
 /* 📋 My submissions list */
 .my-submissions-modal { max-width: 480px; }
 .my-submissions-list {
