@@ -1729,7 +1729,7 @@
     if (themeChips) themeChips.hidden = (mode === 'course');
     // Update collection button label
     const colBtn = $('#collection-btn span:last-child');
-    if (colBtn) colBtn.textContent = (mode === 'course') ? 'コース図鑑' : 'コレクション';
+    if (colBtn) colBtn.textContent = (mode === 'course') ? '全コース一覧' : 'コレクション';
     // Update empty state message
     const empty = $('#empty-state p');
     if (empty) {

@@ -5003,8 +5003,8 @@ button:focus-visible,
   transition: transform 0.15s, box-shadow 0.15s;
   font-family: inherit;
 }
-.mfb-icon { font-size: 16px; }
-.mfb-label { font-size: 12px; font-weight: 700; }
+.mfb-icon { font-size: 16px; line-height: 1; }
+.mfb-label { font-size: 12px; font-weight: 700; white-space: nowrap; }
 .map-fullscreen-btn:hover {
   transform: scale(1.05);
   box-shadow: 0 6px 16px rgba(0,0,0,0.2);
