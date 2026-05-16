@@ -11323,49 +11323,68 @@ button, a, .main-tab, .tab, [role="button"], input[type="button"], input[type="s
   .awb-cta { padding: 4px 8px; font-size: 10px; }
 }
 
-/* Main tabs: floating TOP bar on mobile (常に見える、画面上部に固定) */
+/* Main tabs: floating TOP bar on mobile (常に見える、ヘッダー直下に固定) */
 @media (max-width: 768px) {
+  /* 📱 モバイルではヘッダーをコンパクト化（ブランド+レベルだけ） */
+  .app-header {
+    height: 44px !important;
+    padding: 0 10px !important;
+    gap: 8px !important;
+  }
+  .app-header .brand-name { font-size: 15px !important; }
+  .app-header .brand-tagline { display: none !important; }
+  .app-header .map-style-btn,
+  .app-header .lang-btn,
+  .app-header .theme-toggle {
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 13px !important;
+  }
+  .app-header .profile-btn { padding: 2px 8px !important; font-size: 11px !important; }
+
+  /* layout は header(44px) + main-tabs(44px) の下から開始 */
+  .layout {
+    top: 88px !important;
+  }
+
   .main-tab {
-    min-height: 40px;
-    padding: 6px 4px;
+    min-height: 36px;
+    padding: 4px 4px;
     font-size: 11px;
     flex-direction: row;
     line-height: 1.2;
     gap: 4px;
     justify-content: center;
   }
-  /* main-tabs を画面上部に常駐させる（ホーム/探す/マイ のいずれでも常に見える） */
+  /* main-tabs をヘッダー直下に固定（ヘッダーを覆わない） */
   .main-tabs {
     position: fixed !important;
     left: 8px;
     right: 8px;
-    top: calc(6px + env(safe-area-inset-top, 0px));
+    top: calc(44px + 2px + env(safe-area-inset-top, 0px));
     bottom: auto !important;
     margin: 0 !important;
     padding: 3px;
-    z-index: 8500; /* walk-hud(8000) より上 */
+    z-index: 1100; /* app-header(1000) より少し上 */
     background: var(--surface);
     box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08);
-    border-radius: 16px;
+    border-radius: 14px;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
   [data-theme="dark"] .main-tabs {
     background: rgba(31, 31, 39, 0.95);
   }
-  /* fullscreen 時もトップに（変更なし） */
   body.map-fullscreen .main-tabs {
-    top: calc(6px + env(safe-area-inset-top, 0px));
+    top: calc(44px + 2px + env(safe-area-inset-top, 0px));
   }
-  /* active-walk-bar は panel-inner の中で sticky のまま */
   .active-walk-bar {
     top: 0;
     margin-top: 4px;
   }
-  /* panel-inner には main-tabs(top) 分の上余白を確保（コンテンツが tabs に隠れないよう） */
+  /* panel-inner は元の padding に戻す（main-tabs はパネル上ではなく独立して固定なので余白不要） */
   .panel-inner {
-    padding-top: 56px !important;
-    padding-bottom: 16px !important;
+    padding: 8px 16px 16px !important;
   }
   body.walking .panel-inner {
     padding-bottom: 220px !important;
@@ -11375,6 +11394,10 @@ button, a, .main-tab, .tab, [role="button"], input[type="button"], input[type="s
   .map-submissions-btn,
   .map-recenter-btn {
     display: none !important;
+  }
+  /* map-fullscreen-btn は main-tabs の下に少しずらす（被らないように） */
+  .map-fullscreen-btn {
+    top: calc(96px + env(safe-area-inset-top, 0px)) !important;
   }
 }
 
