@@ -8596,7 +8596,21 @@ html.text-size-xlarge .modal-title { font-size: 22px; }
     z-index: 10;
     box-shadow: 0 -2px 20px rgba(0,0,0,0.2), 0 8px 20px rgba(255, 126, 61, 0.4);
     margin: 12px 0 8px;
+    padding: 14px 12px !important;
+    flex-wrap: nowrap !important;
   }
+  /* 🆕 R8#1: ガチャを回す ラベル/コストを縦割れ防止 */
+  .btn-turn .turn-label {
+    white-space: nowrap;
+    font-size: 15px;
+  }
+  .btn-turn .turn-cost {
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+  .btn-turn .turn-icon { font-size: 22px; flex-shrink: 0; }
 }
 
 /* 🎯 Gacha settings collapsible */
@@ -8791,23 +8805,25 @@ html.text-size-xlarge .modal-title { font-size: 22px; }
 }
 
 /* 📂 All courses button - 目立つアクセントカラー */
+/* 🆕 R8#3: 全コース一覧から選ぶ をテキストリンク風に控えめに（ガチャが主役） */
 .all-courses-btn {
-  width: 100%;
-  background: linear-gradient(135deg, #1976d2, #00897b);
-  color: white;
-  border: 0;
-  padding: 14px;
-  border-radius: 14px;
-  font-weight: 800;
-  font-size: 14px;
-  margin: 12px 0 10px;
+  display: block;
+  margin: 8px auto 6px;
+  background: transparent;
+  color: #1976d2;
+  border: 1.5px solid #1976d2;
+  padding: 8px 14px;
+  border-radius: 100px;
+  font-weight: 700;
+  font-size: 12px;
   cursor: pointer;
   font-family: inherit;
-  transition: transform 0.1s ease, box-shadow 0.15s ease;
-  box-shadow: 0 6px 16px rgba(25, 118, 210, 0.3);
+  transition: background 0.15s, color 0.15s;
 }
-.all-courses-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(25, 118, 210, 0.4); }
-.all-courses-btn:active { transform: scale(0.98); }
+.all-courses-btn:hover { background: rgba(25, 118, 210, 0.08); }
+.all-courses-btn:active { transform: scale(0.97); }
+[data-theme="dark"] .all-courses-btn { color: #64b5f6; border-color: #64b5f6; }
+[data-theme="dark"] .all-courses-btn:hover { background: rgba(100, 181, 246, 0.12); }
 
 /* Toast: モーダル開いてる時は画面上端に */
 body.modal-open .toast {
