@@ -1960,15 +1960,15 @@
       setTimeout(() => state.map.invalidateSize(), 250);
     });
 
-    // Auto-collapse panel when user starts dragging the map (mobile)
+    // Auto-collapse panel when user MANUALLY drags the map (mobile)
+    // 🐛 fix: 'movestart' は fitBounds 等のプログラム変化でも発火するため、
+    // 'dragstart' に変更してユーザーの手動ドラッグ時のみ collapse させる。
     if (state.map) {
-      let panelWasCollapsed = false;
-      state.map.on('movestart', () => {
+      state.map.on('dragstart', () => {
         if (window.innerWidth > 768) return; // mobile only
         if (panel.classList.contains('collapsed')) return;
         panel.classList.add('collapsed');
         handle.setAttribute('aria-expanded', 'false');
-        panelWasCollapsed = true;
       });
     }
 
