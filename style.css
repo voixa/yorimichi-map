@@ -11511,13 +11511,64 @@ button, a, .main-tab, .tab, [role="button"], input[type="button"], input[type="s
   .home-primary-row .qs-body { display: block !important; }
   .home-primary-row .cc-body { display: block !important; min-width: 0; }
 
-  /* 🆕 R2#2: featured-card のサムネ非表示でタイトル領域確保 */
+  /* 🆕 R2#2 + R4#1: featured-card のサムネ非表示でタイトル領域確保、タイトルは2行折返し許可 */
   .featured-thumb {
     display: none !important;
   }
-  .featured-title { font-size: 14px !important; }
-  .featured-emoji { width: 48px !important; height: 48px !important; font-size: 28px !important; }
-  .featured-cta { padding: 6px 10px !important; font-size: 12px !important; }
+  .featured-title {
+    font-size: 14px !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.3;
+    word-break: break-word;
+  }
+  .featured-meta {
+    white-space: normal !important;
+    overflow: visible !important;
+    line-height: 1.3;
+  }
+  .featured-emoji { width: 44px !important; height: 44px !important; font-size: 26px !important; }
+  .featured-cta { padding: 6px 10px !important; font-size: 12px !important; flex-shrink: 0; }
+
+  /* 🆕 R4#2: gacha-btn 内のタイトルが縦書き化されないよう確実に横並び */
+  .gacha-banner .gacha-btn {
+    grid-template-columns: 48px 1fr !important;
+    gap: 10px !important;
+    padding: 12px !important;
+  }
+  .gacha-banner .gacha-machine { width: 48px !important; height: 48px !important; }
+  .gacha-banner .gacha-globe { width: 32px !important; height: 32px !important; }
+  .gacha-banner .gacha-base { width: 40px !important; height: 14px !important; bottom: 4px !important; left: 4px !important; }
+  .gacha-banner .gacha-title {
+    font-size: 14px !important;
+    white-space: nowrap !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+  }
+  .gacha-banner .gacha-meta {
+    font-size: 11px !important;
+    flex-wrap: wrap;
+    gap: 6px !important;
+  }
+  .gacha-banner .gacha-counter,
+  .gacha-banner .gacha-coins { white-space: nowrap; }
+
+  /* 🆕 R4#3: 達成済みミッション行は控えめに */
+  .mission-item.completed {
+    opacity: 0.5 !important;
+  }
+  .mission-item.completed .mission-label {
+    text-decoration: line-through;
+    text-decoration-color: rgba(0,0,0,0.3);
+  }
+  .mission-item.completed .mission-reward {
+    text-decoration: none !important;
+  }
 
   /* 🆕 R2#3: mode-tab ラベルが長くなったのでサイズ調整 */
   .mode-tab-label {
