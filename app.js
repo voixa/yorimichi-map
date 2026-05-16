@@ -4732,9 +4732,55 @@ ${trkPts}
         list.push(course);
       }
       saveMyCourses(list);
+      vib(20);
       showToast(`💾 マイコース「${name}」を保存しました`, 'success', 3000);
       modal.hidden = true;
+      // 🚀 保存直後に「保存しました」画面を出し、歩く/シェアボタンを目立たせる
+      setTimeout(() => showMyCourseSavedScreen(course), 200);
+    });
+  }
+
+  // ✅ マイコース保存後の確認画面（歩く・シェアボタン揃え）
+  function showMyCourseSavedScreen(course) {
+    // 既存があれば消す
+    document.querySelectorAll('.mc-saved-overlay').forEach(el => el.remove());
+    const overlay = document.createElement('div');
+    overlay.className = 'mc-saved-overlay';
+    overlay.innerHTML = `
+      <div class="mc-saved-card">
+        <div class="mc-saved-icon">💾✨</div>
+        <h3 class="mc-saved-title">マイコースを保存しました！</h3>
+        <div class="mc-saved-info">
+          <div class="mc-saved-name">${escapeHtml(course.name)}</div>
+          <div class="mc-saved-meta">📍 ${course.stops.length}スポット ・ 約${course.estimatedMin}分</div>
+        </div>
+        <div class="mc-saved-actions">
+          <button class="mcs-walk" type="button">🚶 今すぐ歩く</button>
+          <button class="mcs-x" type="button">𝕏 でシェア</button>
+          <button class="mcs-line" type="button">📱 LINE で送る</button>
+          <button class="mcs-link" type="button">🔗 リンクコピー</button>
+          <button class="mcs-mycourses" type="button">📂 マイコース一覧</button>
+          <button class="mcs-close" type="button">閉じる</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector('.mcs-walk').onclick = () => {
+      overlay.remove();
+      applyMyCourse(course);
+    };
+    overlay.querySelector('.mcs-x').onclick = () => shareMyCourseToX(course);
+    overlay.querySelector('.mcs-line').onclick = () => shareMyCourseToLine(course);
+    overlay.querySelector('.mcs-link').onclick = () => copyMyCourseLink(course);
+    overlay.querySelector('.mcs-mycourses').onclick = () => {
+      overlay.remove();
       renderMyCoursesList();
+      const m = document.getElementById('my-courses-modal');
+      if (m) m.hidden = false;
+    };
+    overlay.querySelector('.mcs-close').onclick = () => overlay.remove();
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.remove();
     });
   }
 

@@ -7913,6 +7913,132 @@ html.text-size-xlarge .modal-title { font-size: 22px; }
 .mc-delete { color: #dc2626; }
 [data-theme="dark"] .mc-link, [data-theme="dark"] .mc-edit { background: rgba(255,255,255,0.08); }
 
+/* ✨ マイコース保存後の確認オーバーレイ */
+.mc-saved-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: mcSavedFadeIn 0.25s ease-out;
+}
+@keyframes mcSavedFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.mc-saved-card {
+  background: var(--surface-1, white);
+  border-radius: 20px;
+  padding: 24px 20px;
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  animation: mcSavedSlideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 2px solid #16a34a;
+}
+[data-theme="dark"] .mc-saved-card {
+  background: var(--surface-2, #1e293b);
+  border-color: #22c55e;
+}
+@keyframes mcSavedSlideUp {
+  from { opacity: 0; transform: translateY(30px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.mc-saved-icon {
+  font-size: 48px;
+  margin-bottom: 8px;
+  animation: mcSavedBounce 0.8s ease-out;
+}
+@keyframes mcSavedBounce {
+  0%, 100% { transform: scale(1); }
+  20% { transform: scale(1.3) rotate(-5deg); }
+  40% { transform: scale(0.9); }
+  60% { transform: scale(1.1) rotate(3deg); }
+  80% { transform: scale(0.95); }
+}
+.mc-saved-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: #16a34a;
+  margin: 0 0 14px;
+}
+[data-theme="dark"] .mc-saved-title { color: #4ade80; }
+.mc-saved-info {
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+}
+[data-theme="dark"] .mc-saved-info {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.08));
+}
+.mc-saved-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+.mc-saved-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.mc-saved-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mc-saved-actions button {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 0;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.mc-saved-actions button:active { transform: scale(0.97); }
+.mcs-walk {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: white;
+  font-size: 16px !important;
+  padding: 14px !important;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.35);
+}
+.mcs-walk:hover { box-shadow: 0 6px 18px rgba(34, 197, 94, 0.5); }
+.mcs-x {
+  background: #000;
+  color: #fff;
+}
+.mcs-line {
+  background: #06c755;
+  color: white;
+}
+.mcs-link {
+  background: var(--surface-2, #f1f5f9);
+  color: var(--text);
+  border: 1px solid var(--border, #e5e7eb) !important;
+}
+[data-theme="dark"] .mcs-link { background: rgba(255, 255, 255, 0.08); }
+.mcs-mycourses {
+  background: linear-gradient(135deg, #06b6d4, #0ea5e9);
+  color: white;
+}
+.mcs-close {
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px !important;
+  padding: 8px !important;
+}
+
 /* 📋 My submissions list */
 .my-submissions-modal { max-width: 480px; }
 .my-submissions-list {
