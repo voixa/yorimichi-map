@@ -9636,16 +9636,22 @@ ${trkPts}
       if (!label || !sub) return;
       // CTAラベルは常に「ガチャを引く」で統一、modeによって sub だけ変える
       label.textContent = '🎰 ガチャを引く';
-      // 🆕 R6#1: ガチャ料金/無料残回数を sub に明示
+      // 🆕 R6#1 + R7#1: ガチャ料金/無料残回数を sub に明示（単行コンパクト）
       const gacha = state.gacha || {};
       const usedTotal = gacha.freeUsedTotal || 0;
       const freeRemain = Math.max(0, 3 - usedTotal); // INITIAL_FREE = 3
       const coins = state.coins || 0;
       let costText = '';
       if (freeRemain > 0) {
-        costText = `✨ 無料お試し残${freeRemain}回（その後 🪙2枚 / 回）`;
+        costText = `✨ 無料${freeRemain}回 → 🪙2/回`;
       } else {
-        costText = `🪙 コイン2枚で1回 ・ 残高 ${coins}枚`;
+        costText = `🪙2/回 ・ 残高 ${coins}枚`;
+      }
+      // 🆕 R7#2: コイン残高バッジ（CTA右端に常時表示）
+      const coinBadge = $('#dcta-coin-badge');
+      if (coinBadge) {
+        coinBadge.textContent = `🪙${coins}`;
+        coinBadge.title = `コイン残高: ${coins}枚`;
       }
       if (state.mode === 'course') {
         sub.textContent = costText;

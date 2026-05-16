@@ -664,15 +664,24 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
-  padding: 4px 0;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.filters-summary:hover { background: rgba(0, 0, 0, 0.04); }
+[data-theme="dark"] .filters-summary:hover { background: rgba(255, 255, 255, 0.05); }
+.filters-section[open] .filters-summary {
+  background: rgba(255, 64, 129, 0.08);
+  color: #ff4081;
 }
 .filters-summary::-webkit-details-marker { display: none; }
 .filters-summary::after {
   content: '▼';
-  font-size: 10px;
-  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 900;
+  color: #ff4081;
   transition: transform var(--t-fast);
   margin-left: 6px;
 }
@@ -9674,8 +9683,20 @@ small { font-size: 0.85em; }
 .dcta-icon { font-size: 32px; flex-shrink: 0; }
 .dcta-body { flex: 1; min-width: 0; }
 .dcta-label { font-weight: 800; font-size: 15px; margin-bottom: 2px; }
-.dcta-sub { font-size: 12px; opacity: 0.9; }
+.dcta-sub { font-size: 12px; opacity: 0.9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dcta-arrow { font-size: 22px; font-weight: 900; flex-shrink: 0; }
+/* 🆕 R7#2: コイン残高バッジ */
+.dcta-coin-badge {
+  background: rgba(255, 255, 255, 0.22);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-weight: 800;
+  font-size: 13px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  white-space: nowrap;
+}
 
 /* mode description */
 .mode-desc-wrap {
