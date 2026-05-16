@@ -13731,6 +13731,14 @@ ${hashtag}`;
           'rare-up': '✨ レア確率UP！LR/SR が出やすくなります'
         };
         $('#capsule-hint').textContent = labels[quickMode];
+        // 🆕 R9#1: フィルター意味をchipの下に表示
+        const descLabels = {
+          'all': '🌍 全部: 21コースから運命の1本',
+          'undiscovered': '🔍 未発見: まだ歩いていないコースのみ',
+          'rare-up': '✨ レアUP: SUPER RARE の確率が2倍に'
+        };
+        const descEl = $('#quick-modes-desc');
+        if (descEl) descEl.textContent = descLabels[quickMode] || '';
         renderPoolPreview();
       });
     });

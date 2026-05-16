@@ -1308,15 +1308,17 @@
 
         <!-- Quick gacha modes (course mode のみ表示) -->
         <div class="quick-modes" id="quick-modes-course">
-          <button class="quick-mode active" data-quickmode="all" type="button">🌍 全部</button>
-          <button class="quick-mode" data-quickmode="undiscovered" type="button">🔍 未発見</button>
-          <button class="quick-mode" data-quickmode="rare-up" type="button">✨ レアUP</button>
+          <button class="quick-mode active" data-quickmode="all" type="button" title="21コース全てを抽選対象">🌍 全部</button>
+          <button class="quick-mode" data-quickmode="undiscovered" type="button" title="まだ完走していないコースのみを抽選">🔍 未発見</button>
+          <button class="quick-mode" data-quickmode="rare-up" type="button" title="SUPER RARE 確率2倍">✨ レアUP</button>
         </div>
+        <div class="quick-modes-desc" id="quick-modes-desc">🌍 全部: 21コースから運命の1本</div>
 
         <!-- 🎯 ガチャ詳細設定（折りたたみ） -->
         <details class="gacha-settings" id="gacha-settings">
           <summary class="gacha-settings-summary">
             <span>🎯 こだわり設定</span>
+            <span class="gacha-settings-hint">エリア / 所要時間 / テーマ</span>
             <span class="gacha-settings-badges" id="gacha-settings-badges"></span>
             <span class="gacha-settings-arrow">▾</span>
           </summary>
