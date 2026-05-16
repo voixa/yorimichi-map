@@ -11061,9 +11061,14 @@ body:has(.walk-hud:not([hidden])) .leaflet-bottom.leaflet-right {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* 🆕 R10#2: ガチャ結果モーダルの「このコースで行く」を主役級に強調 */
+/* 🆕 R10#2 + R13#1: ガチャ結果モーダルのアクション行を2行構造に
+   行1: 「このコースで行く」(緑) フル幅メインCTA
+   行2: もう一回引く + ♡ 並列 */
+.result-actions {
+  grid-template-columns: 1fr auto !important;
+}
 .result-actions #result-add {
-  flex: 1;
+  grid-column: 1 / -1; /* 1行目フル幅 */
   background: linear-gradient(135deg, #16a34a 0%, #22c55e 50%, #4ade80 100%) !important;
   color: white !important;
   padding: 16px 18px !important;
