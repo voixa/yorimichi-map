@@ -1740,7 +1740,8 @@
     // Update results header label
     const resultsCount = $('#results-count');
     if (resultsCount && state.candidates.length === 0) {
-      resultsCount.textContent = (mode === 'course') ? 'コースを引くとここに表示' : '候補：0 件';
+      // 🆕 R14#1: 動線が分かるよう ↑ で誘導
+      resultsCount.textContent = (mode === 'course') ? '↑ ガチャを引くとここに結果が出ます' : '候補：0 件';
     }
     // Update summary header label
     const sumHeader = $('#summary-header');
@@ -9665,13 +9666,14 @@ ${trkPts}
       }
       if (state.mode === 'course') {
         sub.textContent = costText;
-        if (desc) desc.textContent = '📖 キュレーション済みコース21本から運命の一本を引く';
+        // 🆕 R14#3: モード説明を短縮（タブ名と重複しない最小限の補足のみ）
+        if (desc) desc.textContent = '💡 キュレーション21コースから1本';
       } else if (state.mode === 'route') {
         sub.textContent = costText;
-        if (desc) desc.textContent = '🎯 出発地と目的地を入れると AI が街歩きコースを動的生成';
+        if (desc) desc.textContent = '💡 出発地→目的地で AI 生成';
       } else if (state.mode === 'stroll') {
         sub.textContent = costText;
-        if (desc) desc.textContent = '🌿 出発地のみ入れて、AIが周辺の散歩コースを生成';
+        if (desc) desc.textContent = '💡 出発地のみで AI が散歩コース生成';
       }
     }
     // 既存の setMode が呼ばれた後に CTA も更新（observer 風）
