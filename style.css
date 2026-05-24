@@ -7977,6 +7977,7 @@ html.text-size-xlarge .modal-title { font-size: 22px; }
   gap: 6px;
   max-height: 200px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* 🐛 BugFix#12: iOS慣性スクロール */
   padding: 4px;
   background: var(--surface-2);
   border-radius: 10px;
@@ -8061,7 +8062,7 @@ html.text-size-xlarge .modal-title { font-size: 22px; }
 
 /* 📂 マイコース一覧 */
 .my-courses-modal { max-width: 480px; }
-.my-courses-list { display: flex; flex-direction: column; gap: 10px; max-height: 60vh; overflow-y: auto; }
+.my-courses-list { display: flex; flex-direction: column; gap: 10px; max-height: 60vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .mc-empty { text-align: center; padding: 40px 20px; color: var(--text-muted); }
 .mc-card {
   background: var(--surface-2);
@@ -9204,6 +9205,7 @@ small { font-size: 0.85em; }
   margin-top: 12px;
   max-height: 60vh;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* 🐛 BugFix#12: iOS慣性 */
 }
 .all-courses-item {
   display: grid;

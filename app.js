@@ -2410,14 +2410,34 @@
     return true;
   }
   function saveCompletion() {
-    try {
+    const writeAll = () => {
       localStorage.setItem('yorimichi-completed', JSON.stringify([...state.completedCourses]));
       const cs = {};
       Object.entries(state.completedStops).forEach(([k, set]) => { cs[k] = [...set]; });
       localStorage.setItem('yorimichi-completed-stops', JSON.stringify(cs));
       localStorage.setItem('yorimichi-walk-counts', JSON.stringify(state.walkCounts));
       localStorage.setItem('yorimichi-walk-history', JSON.stringify(state.walkHistory));
-    } catch (e) {}
+    };
+    try {
+      writeAll();
+    } catch (e) {
+      console.warn('saveCompletion failed', e);
+      // 🆕 BugFix#13: QuotaExceeded 時に古い写真を順次パージしてリトライ
+      if (e && (e.name === 'QuotaExceededError' || /quota/i.test(String(e.message || '')))) {
+        try {
+          const keysToTry = Object.keys(localStorage).filter(k => k.startsWith('yorimichi-photos-'));
+          // 古いキーから半分パージ
+          keysToTry.sort();
+          const toRemove = keysToTry.slice(0, Math.ceil(keysToTry.length / 2));
+          toRemove.forEach(k => { try { localStorage.removeItem(k); } catch {} });
+          writeAll();
+          try { showToast('⚠️ 古い写真を整理して保存しました', 'warning', 3500); } catch {}
+        } catch (e2) {
+          console.error('saveCompletion retry failed', e2);
+          try { showToast('保存に失敗しました。設定 → クラウド同期を有効化推奨', 'error', 4000); } catch {}
+        }
+      }
+    }
     // クラウド同期スケジュール
     try { if (typeof scheduleSync === 'function') scheduleSync('completion'); } catch {}
   }
@@ -11035,9 +11055,19 @@ ${trkPts}
     if (navigator.geolocation) {
       state.activeWalk.gpsWatchId = navigator.geolocation.watchPosition(
         onGpsUpdate,
-        (err) => console.warn('GPS error', err),
+        // 🆕 BugFix#14: GPS失敗時にユーザーに通知（静かに死ぬのを防ぐ）
+        (err) => {
+          console.warn('GPS error on resume', err);
+          let msg = 'GPS取得に失敗しました';
+          if (err && err.code === 1) msg = 'GPS権限が許可されていません。設定で許可してください';
+          else if (err && err.code === 2) msg = 'GPS信号が取得できません。屋外で再試行してください';
+          else if (err && err.code === 3) msg = 'GPSタイムアウト。再試行してください';
+          try { showToast('⚠️ ' + msg, 'warning', 4500); } catch {}
+        },
         { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
       );
+    } else {
+      try { showToast('⚠️ この端末は位置情報に対応していません', 'warning', 4000); } catch {}
     }
     persistActiveWalk();
     const btn = $('#walk-hud-pause');
