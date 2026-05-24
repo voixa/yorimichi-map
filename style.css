@@ -6908,21 +6908,40 @@ body.map-fullscreen #map-container {
   gap: 8px;
   margin-bottom: 14px;
 }
+/* 🆕 R18#2: stat カードを浮き感+色付きグラデで魅力的に */
 .me-stat {
   background: var(--surface-2);
-  border-radius: 10px;
-  padding: 10px;
+  border-radius: 12px;
+  padding: 12px 8px;
   text-align: center;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  position: relative;
+  overflow: hidden;
+}
+.me-stat:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.06); }
+/* 数値が非0 (=実績あり) の statカードは色付きグラデで強調 */
+.me-stat.has-value {
+  background: linear-gradient(135deg, rgba(255, 126, 61, 0.10), rgba(255, 64, 129, 0.10));
+  border: 1px solid rgba(255, 64, 129, 0.18);
+}
+[data-theme="dark"] .me-stat.has-value {
+  background: linear-gradient(135deg, rgba(255, 126, 61, 0.18), rgba(255, 64, 129, 0.18));
 }
 .me-stat-num {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 900;
   color: var(--brand);
   line-height: 1;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
+}
+.me-stat.has-value .me-stat-num {
+  background: linear-gradient(135deg, #ff7e3d, #ff4081);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 .me-stat-label {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
   font-weight: 700;
 }
@@ -11507,6 +11526,20 @@ button, a, .main-tab, .tab, [role="button"], input[type="button"], input[type="s
   .awb-name { font-size: 12px; }
   .awb-progress-bar { width: 50px; }
   .awb-cta { padding: 4px 8px; font-size: 10px; }
+}
+
+/* 🆕 R18#1: 全 button 要素に統一的なタップフィードバック
+   個別 button styles で transform 上書きしてる場合は :active を尊重 */
+button:not(:disabled):active {
+  transform: scale(0.97);
+  transition: transform 0.08s ease-out;
+}
+/* 既存の transform 演出を上書きしないよう、特定の :active 持ちは個別CSSで明示している */
+
+/* 🆕 R18#3: モーダル backdrop に backdrop-filter blur で奥行き */
+.modal-backdrop {
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
 }
 
 /* 🆕 R17#3: マイタブ feed 空状態の誘導カード */

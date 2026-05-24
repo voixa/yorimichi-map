@@ -5573,20 +5573,22 @@ ${trkPts}
     const hours = Math.floor(s.totalMin / 60);
     const mins = s.totalMin % 60;
     const timeLabel = hours > 0 ? `${hours}h${mins > 0 ? ' ' + mins + 'm' : ''}` : `${mins}m`;
+    // 🆕 R18#2: 0より大きい stat には .has-value クラスで色付き強調
+    const cv = (v) => (v && v > 0) ? ' has-value' : '';
     grid.innerHTML = `
-      <div class="me-stat">
+      <div class="me-stat${cv(s.completed)}">
         <div class="me-stat-num">${s.completed}</div>
         <div class="me-stat-label">完走コース</div>
       </div>
-      <div class="me-stat">
+      <div class="me-stat${cv(s.totalStamps)}">
         <div class="me-stat-num">${s.totalStamps}</div>
         <div class="me-stat-label">獲得スタンプ</div>
       </div>
-      <div class="me-stat">
+      <div class="me-stat${cv(s.totalMin)}">
         <div class="me-stat-num">${timeLabel}</div>
         <div class="me-stat-label">累計散歩時間</div>
       </div>
-      <div class="me-stat">
+      <div class="me-stat${cv(state.loginStreak)}">
         <div class="me-stat-num">🔥${state.loginStreak || 0}</div>
         <div class="me-stat-label">連続日数</div>
       </div>
