@@ -643,11 +643,12 @@
           </div>
         </section>
 
-        <!-- 🔥 連続記録バッジ（ある時だけ目立つ） -->
-        <section class="streak-badge" id="streak-badge-home" hidden>
+        <!-- 🔥 連続記録バッジ（ある時だけ目立つ） — クリックで散歩履歴へ -->
+        <button class="streak-badge" id="streak-badge-home" hidden type="button" aria-label="散歩履歴を見る">
           <span class="streak-flame">🔥</span>
           <span class="streak-text" id="streak-text-home">—</span>
-        </section>
+          <span class="streak-arrow" aria-hidden="true">›</span>
+        </button>
 
         <!-- 🆕 統合ステータスバー（天気・Tip・ライブを1行に） -->
         <section class="status-bar" id="status-bar" hidden>
@@ -1526,6 +1527,7 @@
         <div class="sub-badge">★ プレミアム</div>
         <h3 class="sub-title">街歩きガチャ プレミアム</h3>
         <div class="sub-price"><span class="sub-amount">¥480</span><span class="sub-period">/月</span></div>
+        <div class="sub-value-hint">✨ 価値 ¥1,500+ / 月相当</div>
         <ul class="sub-benefits">
           <li>🎰 ガチャ <strong>使い放題</strong>（コイン消費なし）</li>
           <li>👑 限定LRコース 月3本</li>

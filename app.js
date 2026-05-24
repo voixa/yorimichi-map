@@ -6993,6 +6993,13 @@ ${trkPts}
     }
     text.textContent = `連続${streak}日${suffix}`;
     badge.hidden = false;
+    // 🆕 R21#2: クリックで散歩履歴を開く（1度だけ bind）
+    if (!badge.dataset.boundClick) {
+      badge.dataset.boundClick = '1';
+      badge.addEventListener('click', () => {
+        try { showWalkLog(); } catch {}
+      });
+    }
   }
 
   // 初回ユーザー向けウェルカムカード制御

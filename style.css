@@ -7076,6 +7076,7 @@ body.map-fullscreen #map-container {
   gap: 8px;
   padding: 10px 14px;
   background: linear-gradient(90deg, #ff6b00 0%, #ff9800 100%);
+  border: 0;
   border-radius: 100px;
   margin: 8px 0;
   color: white;
@@ -7084,7 +7085,21 @@ body.map-fullscreen #map-container {
   box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3);
   animation: streakPulse 2s ease-in-out infinite;
   width: fit-content;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.12s ease, box-shadow 0.18s ease;
 }
+.streak-badge:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(255, 107, 0, 0.45); }
+.streak-badge:active { transform: scale(0.96); }
+/* 🆕 R21#2: クリック誘導用の › アロー */
+.streak-arrow {
+  font-size: 16px;
+  font-weight: 900;
+  opacity: 0.85;
+  margin-left: 2px;
+  transition: transform 0.2s ease;
+}
+.streak-badge:hover .streak-arrow { transform: translateX(3px); }
 @keyframes streakPulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.02); }
@@ -9784,28 +9799,38 @@ small { font-size: 0.85em; }
 .home-more {
   margin: 12px 0 8px;
 }
+/* 🆕 R21#3: home-more expander スタイルを「絞り込み」と統一 */
 .home-more-summary {
   cursor: pointer;
-  padding: 10px 12px;
+  padding: 10px 14px;
   background: var(--surface-2);
-  border-radius: 10px;
+  border-radius: 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
   list-style: none;
   color: var(--text);
+  transition: background 0.15s ease;
+}
+.home-more-summary:hover { background: var(--border); }
+[data-theme="dark"] .home-more-summary:hover { background: rgba(255,255,255,0.05); }
+.home-more[open] .home-more-summary {
+  background: rgba(255, 64, 129, 0.08);
+  color: #ff4081;
 }
 .home-more-summary::-webkit-details-marker { display: none; }
 .home-more-summary::after {
   content: '▼';
-  font-size: 10px;
-  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 900;
+  color: #ff4081;
   transition: transform 0.2s;
+  margin-left: 6px;
 }
-.home-more[open] .home-more-summary::after {
-  transform: rotate(180deg);
+.home-more:not([open]) .home-more-summary::after {
+  transform: rotate(-90deg);
 }
 .home-more-hint {
   font-size: 11px;
@@ -10236,16 +10261,46 @@ small { font-size: 0.85em; }
 .sub-price { display: flex; align-items: baseline; gap: 4px; margin: 0 0 14px; }
 .sub-amount { font-size: 32px; font-weight: 900; color: #ffd700; }
 .sub-period { font-size: 14px; color: #cbd5e1; }
+/* 🆕 R21#1: プレミアム benefits をチェックマーク+背景帯で価値見える化 */
 .sub-benefits {
   list-style: none;
   padding: 0;
-  margin: 0 0 18px;
+  margin: 0 0 14px;
   font-size: 13px;
-  line-height: 1.8;
+  line-height: 1.5;
   color: #e2e8f0;
 }
-.sub-benefits li { padding: 2px 0; }
+.sub-benefits li {
+  padding: 8px 12px;
+  margin: 4px 0;
+  background: rgba(255, 215, 0, 0.08);
+  border-radius: 8px;
+  border-left: 3px solid #ffd700;
+  position: relative;
+  padding-left: 32px;
+}
+.sub-benefits li::before {
+  content: '✓';
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #ffd700;
+  font-weight: 900;
+  font-size: 14px;
+}
 .sub-benefits strong { color: #ffd700; }
+.sub-value-hint {
+  display: inline-block;
+  background: rgba(255, 215, 0, 0.18);
+  color: #ffd700;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  border: 1px solid rgba(255, 215, 0, 0.35);
+}
 .sub-cta {
   width: 100%;
   background: linear-gradient(90deg, #ffd700, #ff9800) !important;
