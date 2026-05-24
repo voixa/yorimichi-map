@@ -2447,10 +2447,13 @@
     const INITIAL_FREE = 3;
     const usedTotal = gacha.freeUsedTotal || 0;
     const freeRemain = Math.max(0, INITIAL_FREE - usedTotal);
-    $('#gacha-counter').textContent = freeRemain > 0
+    // 🆕 BugFix#7: 全 gacha UI 要素を nullガードして安全に更新
+    const counter = $('#gacha-counter');
+    if (counter) counter.textContent = freeRemain > 0
       ? `無料お試し残${freeRemain}回`
       : `🪙 ${gacha.coins}コイン`;
-    $('#gacha-coins').textContent = `🪙 ${gacha.coins}`;
+    const coins = $('#gacha-coins');
+    if (coins) coins.textContent = `🪙 ${gacha.coins}`;
     if ($('#modal-free-counter')) $('#modal-free-counter').textContent = freeRemain > 0 ? `${usedTotal}/${INITIAL_FREE}` : '使用済';
     if ($('#modal-coins')) $('#modal-coins').textContent = String(gacha.coins);
     if ($('#free-remaining')) $('#free-remaining').textContent = String(freeRemain);
@@ -4823,7 +4826,9 @@ ${trkPts}
       _ccCustomSpots.length = 0;
       delete modal.dataset.editId;
     }
-    document.getElementById('cc-stop-count').textContent = String(_ccSelectedIds.length);
+    // 🆕 BugFix#9: nullガード
+    const stopCount = document.getElementById('cc-stop-count');
+    if (stopCount) stopCount.textContent = String(_ccSelectedIds.length);
     renderCcSpotGrid('');
     renderCcSelectedList();
     // 検索インプット連動
@@ -4900,8 +4905,11 @@ ${trkPts}
     form.dataset.bound = '1';
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      const name = document.getElementById('cc-name-input').value.trim();
-      const desc = document.getElementById('cc-desc-input').value.trim();
+      // 🆕 BugFix#9: input nullガード
+      const nameEl = document.getElementById('cc-name-input');
+      const descEl = document.getElementById('cc-desc-input');
+      const name = (nameEl?.value || '').trim();
+      const desc = (descEl?.value || '').trim();
       if (!name) {
         showToast('コース名を入力してください', 'error', 2500);
         return;
@@ -8056,14 +8064,16 @@ ${trkPts}
     if (!c) { sec.hidden = true; return; }
     // 完走0回ユーザーには見せない（welcome-card 優先）
     if (state.completedCourses.size === 0) { sec.hidden = true; return; }
-    document.getElementById('lucky-emoji').textContent = c.themeIcon || c.areaIcon || '🌳';
-    document.getElementById('lucky-title').textContent = tField(c, 'name');
+    // 🆕 BugFix#9: 子要素 null ガード
+    const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setText('lucky-emoji', c.themeIcon || c.areaIcon || '🌳');
+    setText('lucky-title', tField(c, 'name'));
     const diff = (typeof computeCourseDifficulty === 'function') ? computeCourseDifficulty(c) : { icon: '🚶', label: '' };
-    document.getElementById('lucky-meta').textContent = `${c.areaIcon || ''} ${tField(c, 'areaName')} ・ 約${c.estimatedMin || '?'}分 ・ ${diff.icon} ${diff.label}`;
+    setText('lucky-meta', `${c.areaIcon || ''} ${tField(c, 'areaName')} ・ 約${c.estimatedMin || '?'}分 ・ ${diff.icon} ${diff.label}`);
     // 日替わり タグライン
     const tags = ['今日の運命の一本', '🌟 引きの強い1日に', '🍀 偶然の出会いを', '✨ 直感を信じて', '🎯 今日はこれで決まり！'];
     const day = (new Date(getResetDate() + 'T00:00:00')).getDay();
-    document.getElementById('lucky-tagline').textContent = tags[day % tags.length];
+    setText('lucky-tagline', tags[day % tags.length]);
     const btn = document.getElementById('lucky-card-btn');
     if (btn) btn.onclick = () => showCourseDetail(c);
     const sBtn = document.getElementById('lucky-share-btn');
@@ -8822,6 +8832,8 @@ ${trkPts}
     } catch {}
   }
 
+  // 🆕 BugFix#11: pushSync 連続失敗カウンタ
+  let _pushSyncFailCount = 0;
   async function pushSync(reason) {
     if (!isCloudSyncEnabled()) return;
     const userId = getOrCreateUserId();
@@ -8835,8 +8847,18 @@ ${trkPts}
       });
       if (res.ok) {
         try { localStorage.setItem(CLOUD_SYNC_LAST_KEY, String(Date.now())); } catch {}
+        _pushSyncFailCount = 0; // 成功でリセット
+      } else {
+        _pushSyncFailCount++;
       }
-    } catch (e) { console.warn('cloud sync push failed', e); }
+    } catch (e) {
+      console.warn('cloud sync push failed', e);
+      _pushSyncFailCount++;
+    }
+    // 5回連続失敗で1回だけユーザーに警告（再表示は別タブ起動などで0に戻る）
+    if (_pushSyncFailCount === 5) {
+      try { showToast('⚠️ クラウド同期が連続して失敗しています。データが端末のみに保存されています', 'warning', 5000); } catch {}
+    }
   }
 
   function scheduleSync(reason = 'change') {
@@ -13651,8 +13673,12 @@ ${hashtag}`;
     if (wlFilter) wlFilter.addEventListener('change', () => renderWalkLog());
     if (wlSort) wlSort.addEventListener('change', () => renderWalkLog());
 
+    // 🆕 BugFix#6: AI feature が非表示の時はバインドを完全スキップ（無駄実行回避）
+    const _aiSection = document.querySelector('.ai-suggest-section');
+    const _aiHidden = !_aiSection || _aiSection.hidden;
+
     // 🎤 AI 音声入力（Web Speech API）
-    const micBtn = $('#ai-suggest-mic');
+    const micBtn = !_aiHidden && $('#ai-suggest-mic');
     if (micBtn) {
       const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRec) {
@@ -13707,8 +13733,8 @@ ${hashtag}`;
     }
 
     // 🤖 AI コース提案
-    const aiBtn = $('#ai-suggest-btn');
-    const aiInput = $('#ai-suggest-input');
+    const aiBtn = !_aiHidden && $('#ai-suggest-btn');
+    const aiInput = !_aiHidden && $('#ai-suggest-input');
     if (aiBtn && aiInput) {
       const submit = () => {
         const v = aiInput.value.trim();

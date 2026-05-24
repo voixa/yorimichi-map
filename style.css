@@ -1252,7 +1252,9 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
   bottom: 24px; left: 24px;
   width: 320px;
   max-width: calc(100% - 48px);
+  /* 🐛 BugFix#8: iOS Safari URLバーずれ対策 (dvh フォールバック) */
   max-height: calc(100vh - 200px);
+  max-height: calc(100dvh - 200px);
   overflow-y: auto;
   background: var(--surface);
   border-radius: var(--radius);

@@ -52,7 +52,7 @@
     <!-- Body -->
     <rect x="40" y="240" width="160" height="80" rx="8" fill="#c62828"/>
     <rect x="50" y="258" width="60" height="22" rx="4" fill="#1a1a1a"/>
-    <text x="80" y="276" text-anchor="middle" font-size="14" font-weight="800" fill="#ffd54f" font-family="sans-serif">¥100</text>
+    <text x="80" y="276" text-anchor="middle" font-size="14" font-weight="800" fill="#ffd54f" font-family="sans-serif">🪙2</text>
     <!-- Handle -->
     <circle cx="160" cy="280" r="22" fill="#ffd54f" stroke="#fff" stroke-width="3"/>
     <rect x="148" y="277" width="24" height="6" rx="3" fill="#5a3a00"/>
