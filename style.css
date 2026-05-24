@@ -1605,7 +1605,19 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
     width: auto;
   }
 
-  .toast { bottom: calc(50vh + 32px); }
+  /* 🆕 R16#3: モバイルで toast を下部 main-tabs (~80px) の上に固定 */
+  .toast {
+    position: fixed !important;
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+    left: 50% !important;
+    max-width: calc(100vw - 32px);
+    font-size: 14px !important;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.25) !important;
+    z-index: 9000 !important;
+  }
+  body.walking .toast {
+    bottom: calc(300px + env(safe-area-inset-bottom, 0px)) !important;
+  }
 
   .loader { top: 12px; }
 }
@@ -2001,20 +2013,28 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+/* 🆕 R16#1: モーダル ✕ ボタンを iOS推奨タッチ領域(44x44)に拡大 */
 .modal-close {
   position: absolute;
-  top: 12px; right: 12px;
-  width: 32px; height: 32px;
+  top: 10px; right: 10px;
+  width: 44px; height: 44px;
   border-radius: 50%;
   background: var(--surface-2);
   border: none;
-  font-size: 16px;
-  color: var(--text-muted);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
   display: grid;
   place-items: center;
   z-index: 2;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.12s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
-.modal-close:hover { background: var(--border); color: var(--text); }
+.modal-close:hover { background: var(--border); transform: scale(1.05); }
+.modal-close:active { transform: scale(0.94); }
+[data-theme="dark"] .modal-close { background: rgba(255,255,255,0.10); }
+[data-theme="dark"] .modal-close:hover { background: rgba(255,255,255,0.18); }
 
 .modal-title {
   margin: 0 0 6px 0;

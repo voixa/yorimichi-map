@@ -6947,7 +6947,17 @@ ${trkPts}
       badge.hidden = true;
       return;
     }
-    text.textContent = `連続${streak}日 ・ がんばってる！`;
+    // 🆕 R16#2: 次のバッジマイルストーンまでの残日数を表示してモチベUP
+    const milestones = [3, 7, 14, 30, 60, 100];
+    const nextMs = milestones.find(m => m > streak);
+    let suffix;
+    if (nextMs) {
+      const remain = nextMs - streak;
+      suffix = ` ・ あと${remain}日で${nextMs}日連続🏅`;
+    } else {
+      suffix = ' ・ がんばってる！';
+    }
+    text.textContent = `連続${streak}日${suffix}`;
     badge.hidden = false;
   }
 
