@@ -9103,6 +9103,36 @@ ${trkPts}
     try { localStorage.setItem('yorimichi-invite', JSON.stringify(inviteData)); } catch {}
   }
 
+  // 🆕 R20#3: コイン購入成功の祝賀オーバーレイ
+  function showCoinPurchaseSuccess(coins) {
+    document.querySelectorAll('.coin-purchase-overlay').forEach(el => el.remove());
+    const overlay = document.createElement('div');
+    overlay.className = 'coin-purchase-overlay';
+    overlay.innerHTML = `
+      <div class="cps-card">
+        <div class="cps-confetti">
+          ${Array.from({length: 12}, (_, i) => `<span class="cps-conf cps-conf-${i}">🪙</span>`).join('')}
+        </div>
+        <div class="cps-icon">🪙</div>
+        <div class="cps-title">+${coins} コイン獲得！</div>
+        <div class="cps-sub">${coins / 2} 回ガチャが引けます</div>
+        <button class="cps-cta" type="button">🎰 ガチャを引く</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector('.cps-cta').onclick = () => {
+      overlay.remove();
+      try { showGachaModal(); } catch {}
+    };
+    setTimeout(() => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.remove();
+      });
+    }, 100);
+    // 6秒で自動消滅
+    setTimeout(() => overlay.remove(), 6000);
+  }
+
   async function verifyAndGrantCoinsFromUrl() {
     const params = new URLSearchParams(location.search);
     const status = params.get('coins');
@@ -9138,7 +9168,8 @@ ${trkPts}
         gacha.coins += data.coins;
         gachaSave();
         gachaUpdateUI();
-        showToast(`🪙 ${data.coins} コインを付与しました！`, 'success', 4000);
+        // 🆕 R20#3: コイン購入成功で祝賀オーバーレイ + confetti
+        showCoinPurchaseSuccess(data.coins);
         consumed.push(sessionId);
         // 直近100件まで保持
         if (consumed.length > 100) consumed = consumed.slice(-100);
