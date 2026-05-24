@@ -5123,7 +5123,9 @@ body.map-fullscreen .map-fullscreen-btn::before {
   content: '⛶';
 }
 body.map-fullscreen #map-container {
+  /* 🐛 BugFix: iOS Safari の URL バー分ずれる問題対策 - dvh 優先、フォールバック vh */
   height: 100vh !important;
+  height: 100dvh !important;
 }
 
 /* マップ「現在地に戻る」ボタン */
@@ -12148,29 +12150,8 @@ input[type="search"]::-webkit-search-cancel-button:hover {
     margin-top: 4px;
   }
 
-  /* 🆕 R4#2: gacha-btn 内のタイトルが縦書き化されないよう確実に横並び */
-  .gacha-banner .gacha-btn {
-    grid-template-columns: 48px 1fr !important;
-    gap: 10px !important;
-    padding: 12px !important;
-  }
-  .gacha-banner .gacha-machine { width: 48px !important; height: 48px !important; }
-  .gacha-banner .gacha-globe { width: 32px !important; height: 32px !important; }
-  .gacha-banner .gacha-base { width: 40px !important; height: 14px !important; bottom: 4px !important; left: 4px !important; }
-  .gacha-banner .gacha-title {
-    font-size: 14px !important;
-    white-space: nowrap !important;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: block;
-  }
-  .gacha-banner .gacha-meta {
-    font-size: 11px !important;
-    flex-wrap: wrap;
-    gap: 6px !important;
-  }
-  .gacha-banner .gacha-counter,
-  .gacha-banner .gacha-coins { white-space: nowrap; }
+  /* 🗑 R23/BugFix: 旧 R4#2 の .gacha-banner 装飾を削除
+     （R5#1 で display:none 済み = dead code） */
 
   /* 🆕 R4#3: 達成済みミッション行は控えめに */
   .mission-item.completed {

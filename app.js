@@ -104,8 +104,8 @@
       brandName: 'Machiaruki Gacha',
       brandTagline: 'Got a few extra minutes? Where to stop by?',
       tabCourse: '📖 Curated',
-      tabRoute: '🎯 Free Route',
-      tabStroll: '🌿 Stroll',
+      tabRoute: '🎯 Destination',
+      tabStroll: '🌿 Wander',
       todayLabel: '✨ Today\'s Pick',
       todayCta: 'Walk →',
       filtersLabel: '🔍 Filter',
@@ -113,9 +113,9 @@
       filterTags: 'Mood tags',
       gachaTitleCourse: 'Spin the Course Gacha',
       gachaTitleFree: 'Spin the Detour Gacha',
-      colCourse: 'Course Dex',
+      colCourse: 'All Courses',
       colCollection: 'Collection',
-      share: 'Share',
+      share: 'Tell a Friend',
       walkStartCourse: 'Start walking this course',
       walkStartFree: 'Start walking this route',
     },
@@ -4156,9 +4156,13 @@ ${trkPts}
     let cache = null;
     try { cache = JSON.parse(localStorage.getItem('yorimichi-weekly-summary-cache') || 'null'); } catch {}
     const weekStartStr = cutoffStr;
+    // 🐛 BugFix: ws-content / ws-meta が DOM に無い時の null 参照を防止
+    const wsContent = document.getElementById('ws-content');
+    const wsMeta = document.getElementById('ws-meta');
+    if (!wsContent || !wsMeta) return;
     if (cache && cache.weekStart === weekStartStr && cache.walks === weekWalks.length) {
-      document.getElementById('ws-content').textContent = cache.summary;
-      document.getElementById('ws-meta').textContent = `📅 直近7日 ・ ${weekWalks.length}回散歩`;
+      wsContent.textContent = cache.summary;
+      wsMeta.textContent = `📅 直近7日 ・ ${weekWalks.length}回散歩`;
       const refreshBtn = document.getElementById('ws-refresh-btn');
       if (refreshBtn) refreshBtn.onclick = () => {
         try { localStorage.removeItem('yorimichi-weekly-summary-cache'); } catch {}
@@ -4167,8 +4171,8 @@ ${trkPts}
       return;
     }
     // 新規生成
-    document.getElementById('ws-content').innerHTML = `<span class="loader-spinner-small"></span> AIが今週を振り返り中...`;
-    document.getElementById('ws-meta').textContent = '';
+    wsContent.innerHTML = `<span class="loader-spinner-small"></span> AIが今週を振り返り中...`;
+    wsMeta.textContent = '';
     const completed = weekWalks.filter(h => h.completed).length;
     const totalMin = weekWalks.reduce((s, h) => {
       const c = (window.YORIMICHI_COURSES || []).find(x => x.id === h.courseId);
@@ -4208,8 +4212,8 @@ ${trkPts}
       if (!res.ok) throw new Error('failed');
       const data = await res.json();
       const summary = data.summary || '今週も散歩おつかれさまでした。';
-      document.getElementById('ws-content').textContent = summary;
-      document.getElementById('ws-meta').textContent = `📅 直近7日 ・ ${weekWalks.length}回散歩 ・ ${completed}完走`;
+      if (wsContent) wsContent.textContent = summary;
+      if (wsMeta) wsMeta.textContent = `📅 直近7日 ・ ${weekWalks.length}回散歩 ・ ${completed}完走`;
       // キャッシュ
       try {
         localStorage.setItem('yorimichi-weekly-summary-cache', JSON.stringify({
@@ -4217,7 +4221,7 @@ ${trkPts}
         }));
       } catch {}
     } catch (e) {
-      document.getElementById('ws-content').textContent = `今週は${weekWalks.length}回散歩しました ・ ${completed}コース完走。お疲れさまです 🌟`;
+      if (wsContent) wsContent.textContent = `今週は${weekWalks.length}回散歩しました ・ ${completed}コース完走。お疲れさまです 🌟`;
     }
     const refreshBtn = document.getElementById('ws-refresh-btn');
     if (refreshBtn) refreshBtn.onclick = () => {
@@ -6801,7 +6805,7 @@ ${trkPts}
   }
 
   // ===== Streak Save (連続記録の救済) =====
-  // 連続日数が切れる直前に通知＋3コインで救済
+  // 連続日数が切れる直前に通知＋2コインで救済
   const STREAK_SAVE_COST = 3;
 
   function getDateString(d = new Date()) {
@@ -7205,7 +7209,7 @@ ${trkPts}
   async function requestAiCustomCourse(userText) {
     const resultsEl = document.getElementById('ai-suggest-results');
     if (!resultsEl || !userText.trim()) return;
-    // 🪙 コイン消費 (3コイン、無料2回/日)
+    // 🪙 コイン消費 (2コイン、無料は本体ガチャの初回3回のみ)
     if (!tryConsumeAiCost('custom-course')) return;
     resultsEl.hidden = false;
     resultsEl.innerHTML = `<div class="ai-loading"><span class="loader-spinner-small"></span> AIがあなただけのコースを設計中...</div>`;
@@ -10426,7 +10430,7 @@ ${trkPts}
   // ============================================================
   // Daily login bonus
   // ============================================================
-  // 1ガチャ=3コイン に合わせて再設計（連数で報酬感を表示）
+  // 1ガチャ=2コイン に合わせて再設計（連数で報酬感を表示）
   const STREAK_REWARDS = [
     { day: 2,  coins: 3,   msg: '2日目！🪙3（1連分）ゲット' },
     { day: 3,  coins: 6,   msg: '三日坊主突破！🪙6（2連分）' },

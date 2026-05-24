@@ -4,7 +4,7 @@
  * - Network-first for navigation (HTML)
  * - Network-only for API/Nominatim/Overpass/OSRM (always fresh)
  */
-const CACHE = 'yorimichi-v153';
+const CACHE = 'yorimichi-v154';
 const TILE_CACHE = 'yorimichi-tiles-v44';
 const PHOTO_CACHE = 'yorimichi-photos-v44';
 const OFFLINE_URL = './offline.html';
@@ -14,6 +14,7 @@ const ASSETS = [
   './index.html',
   './lp.html',
   './about.html',
+  './profile.html',
   './offline.html',
   './style.css',
   './app.js',
@@ -21,6 +22,7 @@ const ASSETS = [
   './photos.js',
   './manifest.json',
   './og.png',
+  './og.svg',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
 ];
