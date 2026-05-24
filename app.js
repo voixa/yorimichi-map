@@ -305,6 +305,30 @@
     _showNextToast();
   }
 
+  // 🆕 R23#2: 再試行ボタン付きトースト（ネットワークエラー等）
+  function showRetryToast(msg, onRetry, duration = 6000) {
+    document.querySelectorAll('.undo-toast').forEach(el => el.remove());
+    const toast = document.createElement('div');
+    toast.className = 'undo-toast retry-toast';
+    toast.innerHTML = `
+      <span class="undo-toast-msg">✕ ${escapeHtml(msg)}</span>
+      <button class="undo-toast-btn retry-btn" type="button">↻ 再試行</button>
+    `;
+    document.body.appendChild(toast);
+    let dismissed = false;
+    const dismiss = () => {
+      if (dismissed) return;
+      dismissed = true;
+      toast.classList.add('out');
+      setTimeout(() => { try { toast.remove(); } catch {} }, 250);
+    };
+    toast.querySelector('.retry-btn').addEventListener('click', () => {
+      try { onRetry && onRetry(); } catch (e) { console.warn('retry failed', e); }
+      dismiss();
+    });
+    setTimeout(dismiss, duration);
+  }
+
   // ↩ Undo付きトースト（独立したスナックバー、5秒間表示）
   function showUndoToast(msg, onUndo, duration = 5000) {
     // 既存の Undo を消す
@@ -3817,11 +3841,12 @@
         window.location.href = data.url;
       } else {
         console.error('checkout response:', data);
-        showToast('❌ 決済の準備に失敗しました', 'error', 3000);
+        // 🆕 R23#2: 再試行ボタン付きトーストで詰まりを回避
+        showRetryToast('決済の準備に失敗しました', () => startStripeCheckout(packId));
       }
     } catch (e) {
       console.error(e);
-      showToast('❌ ネットワークエラーで決済を開始できませんでした', 'error', 3000);
+      showRetryToast('ネットワークエラーで決済を開始できませんでした', () => startStripeCheckout(packId));
     }
   }
 
@@ -9833,18 +9858,30 @@ ${trkPts}
 
     // 🚶 常時表示バー: タップで地図にフォーカス（パネルを閉じる）
     const awb = document.getElementById('active-walk-bar');
-    if (awb) awb.addEventListener('click', () => {
-      vib(15);
-      // パネルを最小化してマップ全画面に
-      try {
-        document.body.classList.add('map-fullscreen');
-        const fsBtn = document.getElementById('map-fullscreen-btn');
-        if (fsBtn) fsBtn.textContent = '⛔';
-        if (state.map) setTimeout(() => state.map.invalidateSize(), 350);
-      } catch {}
-      // 一時停止中なら overlay を表示
-      if (state.activeWalk?.paused) showPauseOverlay();
-    });
+    if (awb) {
+      awb.style.cursor = 'pointer';
+      awb.title = 'タップで地図を全画面表示';
+      awb.addEventListener('click', () => {
+        vib(15);
+        // 🆕 R23#3: 散歩中バー → discoverタブに切替 + マップ全画面
+        try {
+          // discover tab に切替（散歩中はマップが主役）
+          const dt = document.querySelector('.main-tab[data-main-tab="discover"]');
+          if (dt && !dt.classList.contains('active')) dt.click();
+          document.body.classList.add('map-fullscreen');
+          const fsBtn = document.getElementById('map-fullscreen-btn');
+          if (fsBtn) {
+            const icon = fsBtn.querySelector('.mfb-icon');
+            const label = fsBtn.querySelector('.mfb-label');
+            if (icon) icon.textContent = '⛔';
+            if (label) label.textContent = '解除';
+          }
+          if (state.map) setTimeout(() => state.map.invalidateSize(), 350);
+        } catch {}
+        // 一時停止中なら overlay を表示
+        if (state.activeWalk?.paused) showPauseOverlay();
+      });
+    }
     // 起動時の初期タブ復元
     try {
       const saved = localStorage.getItem(MAIN_TAB_KEY) || 'home';

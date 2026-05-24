@@ -7019,6 +7019,7 @@ body.map-fullscreen #map-container {
 .me-shortcut .ms-label { line-height: 1.3; }
 
 /* ===== Welcome card (first-time users) ===== */
+/* 🆕 R23#1: welcome-card にシマー光沢 + 強化 */
 .welcome-card {
   background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 50%, #ffd54f 100%);
   border-radius: 18px;
@@ -7029,6 +7030,20 @@ body.map-fullscreen #map-container {
   position: relative;
   overflow: hidden;
 }
+.welcome-card::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%);
+  animation: welcome-shimmer 4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes welcome-shimmer {
+  0%, 100% { transform: translate(-100%, -100%); }
+  50% { transform: translate(100%, 100%); }
+}
+.welcome-card > * { position: relative; z-index: 1; }
 [data-theme="dark"] .welcome-card {
   background: linear-gradient(135deg, #3e3520 0%, #4a3f25 50%, #5a4830 100%);
 }
@@ -10648,6 +10663,21 @@ body:has(.walk-hud:not([hidden])) .leaflet-bottom.leaflet-right {
 }
 .undo-toast.out {
   animation: undo-slide-out 0.25s ease-in forwards;
+}
+/* 🆕 R23#2: エラー再試行 toast はピンク強調 */
+.undo-toast.retry-toast {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.20);
+}
+.undo-toast .retry-btn {
+  background: white;
+  color: #dc2626;
+  font-weight: 900;
+}
+@media (max-width: 768px) {
+  .undo-toast.retry-toast {
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+  }
 }
 .undo-toast-msg {
   flex: 1;
