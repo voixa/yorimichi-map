@@ -5449,9 +5449,21 @@ ${trkPts}
     });
 
     if (events.length === 0) {
-      titleEl.hidden = true;
-      feedEl.hidden = true;
-      feedEl.innerHTML = '';
+      // 🆕 R17#3: 空でも誘導カードを表示（初回ユーザーに次の一歩を提示）
+      titleEl.hidden = false;
+      feedEl.hidden = false;
+      feedEl.innerHTML = `
+        <div class="me-feed-empty">
+          <div class="mfe-icon">📝</div>
+          <div class="mfe-title">まだ散歩記録がありません</div>
+          <div class="mfe-desc">1コース歩くと、写真や思い出がここに溜まっていきます</div>
+          <button class="mfe-cta" id="mfe-go-discover" type="button">🎰 さっそくコースを引きに行く →</button>
+        </div>
+      `;
+      const goBtn = feedEl.querySelector('#mfe-go-discover');
+      if (goBtn) goBtn.onclick = () => {
+        document.querySelector('.main-tab[data-main-tab="discover"]')?.click();
+      };
       return;
     }
 
