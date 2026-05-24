@@ -3766,9 +3766,29 @@
   function showShop() {
     $('#gacha-modal').hidden = true;
     $('#shop-modal').hidden = false;
+    // 🆕 R19#1-fix: バックエンドの stripe_mode が test の時だけテストバナー表示
+    refreshShopTestBanner();
   }
   function hideShop() {
     $('#shop-modal').hidden = true;
+  }
+  // バックエンドの stripe_mode を確認してテストバナーの表示判定（live なら隠す）
+  let _shopModeChecked = false;
+  async function refreshShopTestBanner() {
+    const banner = document.getElementById('shop-test-banner');
+    if (!banner) return;
+    if (_shopModeChecked) return;
+    try {
+      const res = await fetch(`${API_BASE}/health`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && data.stripe_mode === 'test') {
+        banner.hidden = false;
+      } else {
+        banner.hidden = true;
+      }
+      _shopModeChecked = true;
+    } catch {}
   }
 
   // ---------- Stripe Checkout integration ----------
@@ -13860,10 +13880,30 @@ ${hashtag}`;
     const allCoursesClose = $('#all-courses-close');
     const allCoursesList = $('#all-courses-list');
     const allCoursesSearch = $('#all-courses-search');
+    // 🆕 R19#3: 全コース一覧のフィルタータブ状態
+    let _acFilter = 'all'; // all | undone | done | fav
     function renderAllCoursesList(query) {
       if (!allCoursesList) return;
       const q = String(query || '').trim().toLowerCase();
-      const courses = (window.YORIMICHI_COURSES || []).slice().sort((a, b) => {
+      const allCourses = (window.YORIMICHI_COURSES || []);
+      // 全件カウントを各タブに表示
+      const cntAll = allCourses.length;
+      const cntDone = allCourses.filter(c => state.completedCourses.has(c.id)).length;
+      const cntUndone = cntAll - cntDone;
+      const cntFav = allCourses.filter(c => isFavorite(c.id)).length;
+      const setCnt = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = n; };
+      setCnt('ac-cnt-all', cntAll);
+      setCnt('ac-cnt-undone', cntUndone);
+      setCnt('ac-cnt-done', cntDone);
+      setCnt('ac-cnt-fav', cntFav);
+      // フィルター適用
+      const filterByTab = (c) => {
+        if (_acFilter === 'done') return state.completedCourses.has(c.id);
+        if (_acFilter === 'undone') return !state.completedCourses.has(c.id);
+        if (_acFilter === 'fav') return isFavorite(c.id);
+        return true;
+      };
+      const courses = allCourses.slice().filter(filterByTab).sort((a, b) => {
         const ad = state.completedCourses.has(a.id) ? 1 : 0;
         const bd = state.completedCourses.has(b.id) ? 1 : 0;
         if (ad !== bd) return ad - bd; // 未完走を先頭に
@@ -13922,6 +13962,15 @@ ${hashtag}`;
         acsTimer = setTimeout(() => renderAllCoursesList(allCoursesSearch.value), 200);
       });
     }
+    // 🆕 R19#3: フィルタータブのクリック処理
+    document.querySelectorAll('.ac-filter-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.ac-filter-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        _acFilter = tab.dataset.acFilter || 'all';
+        renderAllCoursesList(allCoursesSearch?.value || '');
+      });
+    });
     if (allCoursesModal) allCoursesModal.addEventListener('click', (e) => {
       if (e.target === allCoursesModal) allCoursesModal.hidden = true;
     });

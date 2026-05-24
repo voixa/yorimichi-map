@@ -463,7 +463,14 @@
       <button class="modal-close" id="all-courses-close" type="button" aria-label="閉じる">✕</button>
       <h2 class="modal-title">📂 全コース一覧</h2>
       <p class="modal-sub">タップして詳細を見る</p>
-      <input type="search" id="all-courses-search" class="course-search-input" placeholder="🔎 コース名・スポット名で絞り込み…" />
+      <input type="search" id="all-courses-search" class="course-search-input" placeholder="🔎 コース・スポット検索" />
+      <!-- 🆕 R19#3: 完走済 / 未完走 / お気に入り のフィルタータブ -->
+      <div class="ac-filter-tabs" role="tablist" aria-label="コース絞り込み">
+        <button class="ac-filter-tab active" data-ac-filter="all" type="button">すべて <span class="ac-fcount" id="ac-cnt-all">0</span></button>
+        <button class="ac-filter-tab" data-ac-filter="undone" type="button">🚶 未完走 <span class="ac-fcount" id="ac-cnt-undone">0</span></button>
+        <button class="ac-filter-tab" data-ac-filter="done" type="button">🏅 完走済 <span class="ac-fcount" id="ac-cnt-done">0</span></button>
+        <button class="ac-filter-tab" data-ac-filter="fav" type="button">❤️ お気に入り <span class="ac-fcount" id="ac-cnt-fav">0</span></button>
+      </div>
       <div class="all-courses-list" id="all-courses-list">
         <!-- populated by JS -->
       </div>
@@ -1477,7 +1484,8 @@
       <h2 class="modal-title">🪙 コインショップ</h2>
       <p class="modal-sub">街歩きガチャを楽しむためのコインを購入できます</p>
 
-      <div class="shop-test-banner" style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 12px; padding: 12px; margin: 12px 0; text-align: center; font-weight: 700; color: #856404; font-size: 13px;">
+      <!-- shop-test-banner はバックエンドが test mode の時のみJSが表示 -->
+      <div class="shop-test-banner" id="shop-test-banner" hidden style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 12px; padding: 12px; margin: 12px 0; text-align: center; font-weight: 700; color: #856404; font-size: 13px;">
         🧪 <strong>テストモード</strong>：実際の請求は発生しません<br>
         <span style="font-weight: 400; font-size: 12px;">テストカード: <code style="background:#fff;padding:2px 6px;border-radius:4px;">4242 4242 4242 4242</code> / 任意の将来日 / CVC任意</span>
       </div>

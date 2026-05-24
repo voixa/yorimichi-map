@@ -9071,6 +9071,53 @@ small { font-size: 0.85em; }
 .all-courses-modal {
   max-width: 480px;
 }
+/* 🆕 R19#3: 全コース一覧モーダルのフィルタータブ */
+.ac-filter-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 10px 0 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+.ac-filter-tab {
+  background: var(--surface-2);
+  border: 1.5px solid transparent;
+  color: var(--text-muted);
+  padding: 7px 11px;
+  border-radius: 100px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  flex-shrink: 0;
+}
+.ac-filter-tab:hover { background: var(--border); }
+.ac-filter-tab.active {
+  background: rgba(255, 64, 129, 0.10);
+  color: #ff4081;
+  border-color: #ff4081;
+  font-weight: 800;
+}
+[data-theme="dark"] .ac-filter-tab.active {
+  background: rgba(255, 64, 129, 0.20);
+}
+.ac-fcount {
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.08);
+  color: inherit;
+  padding: 1px 7px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 800;
+  margin-left: 4px;
+}
+.ac-filter-tab.active .ac-fcount {
+  background: rgba(255, 64, 129, 0.20);
+}
+[data-theme="dark"] .ac-fcount { background: rgba(255, 255, 255, 0.10); }
 .all-courses-list {
   display: flex;
   flex-direction: column;
@@ -10927,6 +10974,44 @@ body:has(.walk-hud:not([hidden])) .leaflet-bottom.leaflet-right {
   margin-bottom: 16px;
   position: relative;
   overflow: hidden;
+  animation: cert-celebrate-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+/* 🆕 R19#2: 完走証明書登場時の祝賀アニメ */
+@keyframes cert-celebrate-in {
+  0% { opacity: 0; transform: scale(0.6) rotate(-3deg); }
+  60% { opacity: 1; transform: scale(1.05) rotate(1deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+/* 🎉 紙吹雪エフェクト（cert-modal全体に降りかかる） */
+.cert-modal::before {
+  content: '🎉';
+  position: absolute;
+  top: -10px; left: 12%;
+  font-size: 28px;
+  animation: cert-confetti-fall 2.4s ease-in 0.2s 1 both;
+  pointer-events: none;
+  z-index: 5;
+}
+.cert-modal::after {
+  content: '✨';
+  position: absolute;
+  top: -10px; right: 14%;
+  font-size: 30px;
+  animation: cert-confetti-fall 2.6s ease-in 0.4s 1 both;
+  pointer-events: none;
+  z-index: 5;
+}
+@keyframes cert-confetti-fall {
+  0% { transform: translateY(0) rotate(0); opacity: 1; }
+  100% { transform: translateY(140vh) rotate(540deg); opacity: 0; }
+}
+/* メダルにキラっと光る効果 */
+.cert-medal {
+  animation: cert-medal-shine 1.8s ease-in-out infinite;
+}
+@keyframes cert-medal-shine {
+  0%, 100% { filter: drop-shadow(0 2px 6px rgba(0,0,0,0.2)); }
+  50% { filter: drop-shadow(0 2px 12px rgba(255, 215, 0, 0.8)); }
 }
 .certificate::before, .certificate::after {
   content: '';
