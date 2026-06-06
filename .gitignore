@@ -47,3 +47,7 @@ test-results/
 # Local test outputs
 _ai_test*.json
 _test_payload.json
+
+# iOS (Capacitor) ビルド成果物
+# www/ は scripts/sync-www.mjs が再生成するためコミット不要
+www/
