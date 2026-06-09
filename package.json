@@ -7,15 +7,9 @@
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:install": "playwright install chromium --with-deps",
-    "serve": "python -m http.server 8765",
-    "build:ios": "node scripts/sync-www.mjs",
-    "ios:sync": "npm run build:ios && npx cap sync ios",
-    "ios:add": "npm run build:ios && npx cap add ios"
+    "serve": "python -m http.server 8765"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.4.0",
-    "@capacitor/core": "^8.4.0",
-    "@capacitor/ios": "^8.4.0",
     "@playwright/test": "^1.46.0"
   }
 }

@@ -1,0 +1,1052 @@
+/* ============================================================
+ * Yorimichi Map — Curated Courses
+ * ------------------------------------------------------------
+ * Hand-picked walking courses by area.
+ * Each stop has: name, lat, lng, cat, emoji, desc
+ *                + photo, bestTime, budget, tags
+ * ============================================================ */
+
+window.YORIMICHI_COURSES = [
+
+  // ============== 吉祥寺エリア ==============
+
+  {
+    id: 'kichijoji_park',
+    name: '吉祥寺 王道・公園と路地裏散歩',    name_en: 'Kichijoji Classic: Parks & Hidden Alleys',
+    area: 'kichijoji',
+    areaName: '吉祥寺',
+    areaName_en: 'Kichijoji',
+    areaIcon: '🌳',
+    themeIcon: '🌿',
+    rarity: 'sr',
+    description: '住みたい街No.1の魅力を体感する定番コース。ハーモニカ横丁の昭和情緒から井の頭公園のスワンボートまで、吉祥寺らしさをまるごと味わえます。',
+    description_en: "Experience why Kichijoji is Tokyo's most-loved neighborhood. From the retro Showa-era Harmonica Yokocho alleys to the swan boats of Inokashira Park.",
+    description_en: 'Experience why Kichijoji is Tokyo\'s most-loved neighborhood. From the retro Showa-era Harmonica Yokocho alleys to the swan boats of Inokashira Park.',
+    travelMode: 'walk',
+    estimatedMin: 75,
+    budget: '¥1,500-3,000',
+    tags: ['初めての吉祥寺', '雨でもOK', '定番'],
+    origin: { lat: 35.7029, lng: 139.5800, name: '吉祥寺駅 北口', shortLabel: '吉祥寺駅 北口' },
+    dest:   { lat: 35.7008, lng: 139.5710, name: '井の頭恩賜公園', name_en: 'Inokashira Park', shortLabel: '井の頭恩賜公園' },
+    stops: [
+      {
+        lat: 35.7038, lng: 139.5800, name: 'ハーモニカ横丁・小ざさ', cat: 'sweets', emoji: '🍶',
+        photoBg: 'linear-gradient(135deg, #ff7e3d 0%, #d50000 100%)',
+        bestTime: '11:00-22:00', budget: '¥500-2,000', stayMin: 30,
+        tags: ['昭和レトロ', '路地', '幻の羊羹'],
+        desc: '昭和の闇市の名残ハーモニカ横丁の入口。「小ざさ」の幻の羊羹は早朝6時から行列。100軒以上の小店をハシゴ。'
+      },
+      {
+        lat: 35.7048, lng: 139.5775, name: '中道通り', name_en: 'Nakamichi Street', cat: 'cafe', emoji: '☕',
+        photoBg: 'linear-gradient(135deg, #6d4c41 0%, #3e2723 100%)',
+        bestTime: '11:00-18:00', budget: '¥1,000-3,000', stayMin: 25,
+        tags: ['散策', '雑貨', 'カフェ'],
+        desc: '個人店が並ぶ吉祥寺らしい裏通り。雑貨・古着・カフェが詰まっています。'
+      },
+      {
+        lat: 35.7022, lng: 139.5750, name: '七井橋通り', cat: 'sweets', emoji: '🍰',
+        photoBg: 'linear-gradient(135deg, #ffd54f 0%, #ff9800 100%)',
+        bestTime: '11:00-19:00', budget: '¥500-1,500', stayMin: 20,
+        tags: ['食べ歩き', '商店街'],
+        desc: '駅から井の頭公園へ続く下り坂の商店街。テイクアウトグルメを片手に公園へ。'
+      },
+      {
+        lat: 35.7008, lng: 139.5710, name: '井の頭恩賜公園', name_en: 'Inokashira Park', cat: 'park', emoji: '🌳',
+        photoBg: 'linear-gradient(135deg, #66bb6a 0%, #2e7d32 100%)',
+        bestTime: '10:00-16:00', budget: '無料', stayMin: 60,
+        tags: ['公園', 'デート', 'ピクニック', 'スワンボート'],
+        desc: 'スワンボートと桜並木。週末は大道芸人で賑わいます。'
+      },
+    ]
+  },
+
+  {
+    id: 'kichijoji_food',
+    name: '吉祥寺 老舗グルメ食べ歩き',
+    name_en: 'Kichijoji Old Gourmet: Walking & Tasting',
+    area: 'kichijoji',
+    areaName: '吉祥寺',
+    areaName_en: 'Kichijoji',
+    areaIcon: '🌳',
+    themeIcon: '🍴',
+    rarity: 'r',
+    description: 'メンチカツ、焼き鳥、和菓子。地元民が愛し続ける老舗の名物を食べ歩く、吉祥寺の食文化満喫コース。',
+    description_en: 'Menchi-katsu, yakitori, traditional sweets. Walk through Kichijoji food culture loved by locals for generations.',
+    travelMode: 'walk',
+    estimatedMin: 50,
+    budget: '¥1,500-2,500',
+    tags: ['食べ歩き', '老舗', '名物'],
+    origin: { lat: 35.7029, lng: 139.5800, name: '吉祥寺駅 北口', shortLabel: '吉祥寺駅 北口' },
+    dest:   { lat: 35.7012, lng: 139.5755, name: '井の頭公園口', shortLabel: '井の頭公園口' },
+    stops: [
+      {
+        lat: 35.7040, lng: 139.5800, name: 'さとう (吉祥寺)', name_en: 'Sato Kichijoji', cat: 'sweets', emoji: '🥩',
+        photoBg: 'linear-gradient(135deg, #d84315 0%, #6d4c41 100%)',
+        bestTime: '10:00-19:00', budget: '¥200-500', stayMin: 15,
+        tags: ['行列', '名物メンチ', '500円以下'],
+        desc: '行列必至の名物・元祖丸メンチカツ（200円）。テレビでもおなじみ。'
+      },
+      {
+        lat: 35.7036, lng: 139.5793, name: '小ざさ', name_en: 'Kosasa (Yokan Shop)', cat: 'sweets', emoji: '🍡',
+        photoBg: 'linear-gradient(135deg, #d4af37 0%, #ff9800 100%)',
+        bestTime: '6:00-9:00', budget: '¥600-1,500', stayMin: 5,
+        tags: ['早朝向け', '幻の名物'],
+        desc: '一日150本限定の幻の羊羹。最中は午後の楽しみに。'
+      },
+      {
+        lat: 35.7012, lng: 139.5755, name: 'いせや 総本店', name_en: 'Iseya Honten (Yakitori)', cat: 'cafe', emoji: '🍢',
+        photoBg: 'linear-gradient(135deg, #c62828 0%, #8d6e63 100%)',
+        bestTime: '12:00-22:00', budget: '¥1,000-2,500', stayMin: 45,
+        tags: ['焼き鳥', '老舗', '昼飲み'],
+        desc: '創業90年の焼き鳥屋。井の頭公園口の煙にひかれて自然と足が向く。'
+      },
+    ]
+  },
+
+  {
+    id: 'kichijoji_subculture',
+    name: '吉祥寺 古着とサブカル巡り',
+    name_en: 'Kichijoji Vintage & Subculture',
+    area: 'kichijoji',
+    areaName: '吉祥寺',
+    areaName_en: 'Kichijoji',
+    areaIcon: '🌳',
+    themeIcon: '🎭',
+    rarity: 'r',
+    description: '個性的な古着屋と中古レコード店、サブカル名所を巡る吉祥寺らしい一日。掘り出し物との出会いを楽しんで。',
+    description_en: 'Browse unique vintage stores, used record shops, and subculture landmarks. Find your treasure in the alleys.',
+    travelMode: 'walk',
+    estimatedMin: 80,
+    budget: '¥3,000-10,000',
+    tags: ['古着', 'サブカル', '掘り出し物'],
+    origin: { lat: 35.7029, lng: 139.5800, name: '吉祥寺駅 北口', shortLabel: '吉祥寺駅 北口' },
+    dest:   { lat: 35.7034, lng: 139.5793, name: '吉祥寺駅', shortLabel: '吉祥寺駅' },
+    stops: [
+      {
+        lat: 35.7036, lng: 139.5805, name: 'ヴィレッジヴァンガード 吉祥寺店', name_en: 'Village Vanguard Kichijoji', cat: 'bookstore', emoji: '📚',
+        photoBg: 'linear-gradient(135deg, #6a1b9a 0%, #ad1457 100%)',
+        bestTime: '11:00-22:00', budget: '¥500-3,000', stayMin: 30,
+        tags: ['雑貨', 'サブカル', '本'],
+        desc: '本とサブカルグッズが詰まった「遊べる本屋」の代表的店舗。'
+      },
+      {
+        lat: 35.7042, lng: 139.5783, name: 'CHICAGO 吉祥寺店', name_en: 'CHICAGO Kichijoji', cat: 'art', emoji: '👕',
+        photoBg: 'linear-gradient(135deg, #1565c0 0%, #6a1b9a 100%)',
+        bestTime: '11:00-20:00', budget: '¥1,000-5,000', stayMin: 25,
+        tags: ['古着', 'アメカジ', 'リーズナブル'],
+        desc: '古着とアメカジの定番店。掘り出し物が多く、リーズナブル。'
+      },
+      {
+        lat: 35.7050, lng: 139.5790, name: 'スパイラル レコード', name_en: 'Spiral Records', cat: 'art', emoji: '💿',
+        photoBg: 'linear-gradient(135deg, #424242 0%, #1565c0 100%)',
+        bestTime: '13:00-20:00', budget: '¥800-5,000', stayMin: 30,
+        tags: ['レコード', 'ジャズ', '試聴可'],
+        desc: 'ジャズ・ソウル中心の名物中古レコード店。試聴できる店内。'
+      },
+      {
+        lat: 35.7045, lng: 139.5780, name: '中道通り', name_en: 'Nakamichi Street', cat: 'cafe', emoji: '☕',
+        photoBg: 'linear-gradient(135deg, #6d4c41 0%, #3e2723 100%)',
+        bestTime: '11:00-18:00', budget: '¥1,000-3,000', stayMin: 25,
+        tags: ['散策', '雑貨', 'カフェ'],
+        desc: '個性派ショップと古民家カフェが並ぶ路地。雑貨屋巡りも楽しい。'
+      },
+    ]
+  },
+
+  {
+    id: 'kichijoji_night',
+    name: '吉祥寺 夜のハシゴ酒コース',
+    name_en: 'Kichijoji Bar Hopping by Night',
+    area: 'kichijoji',
+    areaName: '吉祥寺',
+    areaName_en: 'Kichijoji',
+    areaIcon: '🌳',
+    themeIcon: '🍻',
+    rarity: 'sr',
+    description: 'ハーモニカ横丁から始まり、隠れ家バーで夜更けまで。地元民しか知らない夜の吉祥寺。',
+    description_en: 'Start at Harmonica Yokocho, end at a hidden alley bar. The local-only nightlife of Kichijoji.',
+    travelMode: 'walk',
+    estimatedMin: 180,
+    budget: '¥4,000-8,000',
+    tags: ['夜飲み', 'ハシゴ', '大人'],
+    origin: { lat: 35.7029, lng: 139.5800, name: '吉祥寺駅 北口', shortLabel: '吉祥寺駅 北口' },
+    dest:   { lat: 35.7029, lng: 139.5800, name: '吉祥寺駅 北口', shortLabel: '吉祥寺駅 北口' },
+    stops: [
+      {
+        lat: 35.7038, lng: 139.5798, name: 'ハーモニカ横丁（夜）', name_en: 'Harmonica Yokocho (Night)', cat: 'sweets', emoji: '🍶',
+        photoBg: 'linear-gradient(135deg, #ff5252 0%, #6a1b9a 100%)',
+        bestTime: '17:00-20:00', budget: '¥1,500-3,000', stayMin: 60,
+        tags: ['立ち飲み', '昭和'],
+        desc: '夕方からハシゴ酒のスタート地点。1軒目はサクッと立ち飲みで。'
+      },
+      {
+        lat: 35.7012, lng: 139.5755, name: 'いせや 公園口', name_en: 'Iseya Park Entrance', cat: 'cafe', emoji: '🍢',
+        photoBg: 'linear-gradient(135deg, #c62828 0%, #1a1a1a 100%)',
+        bestTime: '18:00-22:00', budget: '¥1,500-2,500', stayMin: 60,
+        tags: ['焼き鳥', '老舗'],
+        desc: '夜の井の頭公園の煙の香り。2軒目は焼き鳥で腹ごしらえ。'
+      },
+      {
+        lat: 35.7045, lng: 139.5780, name: '中道通りの隠れ家バー', name_en: 'Hidden Bar on Nakamichi Street', cat: 'cafe', emoji: '🥃',
+        photoBg: 'linear-gradient(135deg, #1a1a1a 0%, #4a148c 100%)',
+        bestTime: '21:00-26:00', budget: '¥2,000-4,000', stayMin: 60,
+        tags: ['バー', '深夜', 'ウイスキー'],
+        desc: '中道通り裏の隠れ家。締めにウイスキーを一杯。'
+      },
+    ]
+  },
+
+  {
+    id: 'kichijoji_rainy',
+    name: '吉祥寺 雨の日でも楽しめる屋内コース',
+    name_en: 'Kichijoji Indoor Rainy-Day Course',
+    area: 'kichijoji',
+    areaName: '吉祥寺',
+    areaName_en: 'Kichijoji',
+    areaIcon: '🌳',
+    themeIcon: '☔',
+    rarity: 'r',
+    description: 'デパート、本屋、カフェ、レコード店。雨の日こそ吉祥寺の屋内文化を満喫。',
+    description_en: 'Department stores, bookshops, cafes, record stores. Enjoy Kichijoji indoor culture even when it rains.',
+    travelMode: 'walk',
+    estimatedMin: 100,
+    budget: '¥2,000-5,000',
+    tags: ['雨でもOK', '屋内', 'のんびり'],
+    origin: { lat: 35.7029, lng: 139.5800, name: '吉祥寺駅 アトレ', shortLabel: '吉祥寺駅 アトレ' },
+    dest:   { lat: 35.7036, lng: 139.5805, name: '吉祥寺駅', shortLabel: '吉祥寺駅' },
+    stops: [
+      {
+        lat: 35.7029, lng: 139.5800, name: 'アトレ吉祥寺', name_en: 'Atre Kichijoji', cat: 'cafe', emoji: '🛍',
+        photoBg: 'linear-gradient(135deg, #6a1b9a 0%, #ec407a 100%)',
+        bestTime: '10:00-21:00', budget: '¥500-3,000', stayMin: 30,
+        tags: ['駅直結', '雨OK'],
+        desc: '駅直結の駅ビル。地下のスイーツ街は雨の日でも満員。'
+      },
+      {
+        lat: 35.7036, lng: 139.5805, name: 'ヴィレッジヴァンガード 吉祥寺店', name_en: 'Village Vanguard Kichijoji', cat: 'bookstore', emoji: '📚',
+        photoBg: 'linear-gradient(135deg, #6a1b9a 0%, #ad1457 100%)',
+        bestTime: '11:00-22:00', budget: '¥500-3,000', stayMin: 30,
+        tags: ['雑貨', '本'],
+        desc: '時間を忘れて本とサブカルグッズを物色。'
+      },
+      {
+        lat: 35.7050, lng: 139.5790, name: 'スパイラル レコード', name_en: 'Spiral Records', cat: 'art', emoji: '💿',
+        photoBg: 'linear-gradient(135deg, #424242 0%, #1565c0 100%)',
+        bestTime: '13:00-20:00', budget: '¥800-5,000', stayMin: 30,
+        tags: ['レコード', '試聴可'],
+        desc: '雨音を聴きながらジャズのレコードを試聴。'
+      },
+    ]
+  },
+
+  {
+    id: 'kichijoji_dawn',
+    name: '【限定】霧の井の頭・早朝禁忌の弁天さま',
+    name_en: '[Limited] Misty Inokashira & Forbidden Benten Shrine',
+    area: 'kichijoji',
+    areaName: '吉祥寺',
+    areaName_en: 'Kichijoji',
+    areaIcon: '🌳',
+    themeIcon: '🌅',
+    rarity: 'legendary',
+    description: '早朝5:30〜のみ味わえる伝説のコース。霧に包まれる井の頭池、デート禁忌の伝承を持つ弁財天、玉川上水沿いの森。観光客が眠る時間に歩く特別な吉祥寺。',
+    description_en: 'A legendary course only available 5:30am onwards. The misty Inokashira pond, the Benten shrine with break-up legend, and the forested Tamagawa-josui canal.',
+    travelMode: 'walk',
+    estimatedMin: 100,
+    budget: '¥1,500-3,000（一部施設は事前予約制）',
+    tags: ['早朝限定', 'パワースポット', '上級者向け'],
+    origin: { lat: 35.7029, lng: 139.5800, name: '吉祥寺駅 公園口', shortLabel: '吉祥寺駅 公園口' },
+    dest:   { lat: 35.6975, lng: 139.5740, name: '三鷹の森公園周辺', shortLabel: '三鷹の森公園周辺' },
+    stops: [
+      {
+        lat: 35.7008, lng: 139.5710, name: '井の頭池（早朝）', name_en: 'Inokashira Pond (Dawn)', cat: 'viewpoint', emoji: '🌅',
+        photoBg: 'linear-gradient(135deg, #ff8a65 0%, #ffa726 50%, #4fc3f7 100%)',
+        bestTime: '5:30-7:00', budget: '無料', stayMin: 20,
+        tags: ['早朝限定', '霧', '写真映え'],
+        desc: '早朝のみ見られる霧と水面。鴨の親子に出会えることも。'
+      },
+      {
+        lat: 35.6996, lng: 139.5704, name: '井の頭弁財天', name_en: 'Inokashira Benzaiten Shrine', cat: 'shrine', emoji: '⛩️',
+        photoBg: 'linear-gradient(135deg, #c2185b 0%, #6a1b9a 100%)',
+        bestTime: '6:00-9:00', budget: '無料', stayMin: 15,
+        tags: ['パワースポット', '伝承'],
+        desc: '関東屈指の弁天様。「カップルで来ると別れる」伝承で有名。'
+      },
+      {
+        lat: 35.7001, lng: 139.5710, name: 'カフェ どんぐり山', name_en: 'Cafe Donguri-yama', cat: 'cafe', emoji: '☕',
+        photoBg: 'linear-gradient(135deg, #6d4c41 0%, #4caf50 100%)',
+        bestTime: '8:00-17:00', budget: '¥600-1,500', stayMin: 30,
+        tags: ['公園内', '隠れ家', '木洩れ日'],
+        desc: '公園内の隠れた名カフェ。木洩れ日とコーヒーで一息。'
+      },
+      {
+        lat: 35.6975, lng: 139.5740, name: '玉川上水沿いの森', name_en: 'Tamagawa-josui Canal Forest', cat: 'viewpoint', emoji: '🌳',
+        photoBg: 'linear-gradient(135deg, #66bb6a 0%, #1565c0 100%)',
+        bestTime: '8:00-17:00', budget: '無料', stayMin: 30,
+        tags: ['緑陰', '小鳥', '散策路'],
+        desc: '木漏れ日の射す散策路。玉川上水沿いの静かな森を歩く。',
+        desc_en: 'A peaceful forest path along the Tamagawa-josui canal with dappled sunlight.'
+      },
+    ]
+  },
+
+  // ============== 谷根千エリア ==============
+
+  {
+    id: 'yanesen_classic',
+    name: '谷根千 下町情緒・夕やけだんだんコース',
+    name_en: 'Yanesen Classic: Sunset Steps & Cat Town',
+    area: 'yanesen',
+    areaName: '谷中・根津・千駄木',
+    areaName_en: 'Yanaka, Nezu & Sendagi',
+    areaIcon: '🏮',
+    themeIcon: '🐈',
+    rarity: 'sr',
+    description: '昭和の下町情緒を残す人気エリア。猫に出会える「夕やけだんだん」、千本鳥居の根津神社、老舗カフェまで。',
+    description_en: 'The famous old-town atmosphere of Tokyo. Cats at Yuyake-Dandan steps, the thousand torii of Nezu Shrine, and old-school cafes.',
+    travelMode: 'walk',
+    estimatedMin: 90,
+    budget: '¥1,500-3,000',
+    tags: ['下町', '猫', '寺社', '定番'],
+    origin: { lat: 35.7281, lng: 139.7711, name: '日暮里駅 西口', shortLabel: '日暮里駅 西口' },
+    dest:   { lat: 35.7281, lng: 139.7622, name: '千駄木駅', shortLabel: '千駄木駅' },
+    stops: [
+      {
+        lat: 35.7271, lng: 139.7700, name: '夕やけだんだん', name_en: 'Yuyake Dandan (Sunset Steps)', cat: 'viewpoint', emoji: '🌅',
+        photoBg: 'linear-gradient(135deg, #ff8a65 0%, #d84315 100%)',
+        bestTime: '16:00-18:00', budget: '無料', stayMin: 15,
+        tags: ['猫', '夕日', '写真映え'],
+        desc: '猫が集まる夕日の階段。富士見の名所で写真映え抜群。'
+      },
+      {
+        lat: 35.7253, lng: 139.7634, name: 'カヤバ珈琲', name_en: 'Kayaba Coffee', cat: 'cafe', emoji: '☕',
+        photoBg: 'linear-gradient(135deg, #6d4c41 0%, #3e2723 100%)',
+        bestTime: '8:00-18:00', budget: '¥800-1,500', stayMin: 45,
+        tags: ['古民家', '老舗', '玉子サンド'],
+        desc: '築100年の古民家を改装した名物喫茶。玉子サンドが看板メニュー。'
+      },
+      {
+        lat: 35.7203, lng: 139.7613, name: '根津神社', name_en: 'Nezu Shrine', cat: 'shrine', emoji: '⛩️',
+        photoBg: 'linear-gradient(135deg, #c62828 0%, #b71c1c 100%)',
+        bestTime: '9:00-17:00', budget: '無料', stayMin: 30,
+        tags: ['千本鳥居', 'つつじ', 'パワースポット'],
+        desc: '徳川綱吉ゆかりの古社。乙女稲荷の千本鳥居が圧巻。'
+      },
+      {
+        lat: 35.7257, lng: 139.7611, name: '腰塚', name_en: 'Koshizuka (Wagashi)', cat: 'sweets', emoji: '🍡',
+        photoBg: 'linear-gradient(135deg, #d4af37 0%, #ff9800 100%)',
+        bestTime: '10:00-18:00', budget: '¥300-800', stayMin: 15,
+        tags: ['和菓子', '老舗', 'お土産'],
+        desc: '昭和10年創業の老舗和菓子店。手土産にも人気。'
+      },
+    ]
+  },
+
+  {
+    id: 'yanesen_food',
+    name: '谷根千 食べ歩き・揚げたて惣菜の旅',
+    name_en: 'Yanesen Street Food: Fried & Fresh',
+    area: 'yanesen',
+    areaName: '谷中・根津・千駄木',
+    areaName_en: 'Yanaka, Nezu & Sendagi',
+    areaIcon: '🏮',
+    themeIcon: '🍴',
+    rarity: 'r',
+    description: 'コロッケ、肉まん、メンチ。谷中銀座の食べ歩きパラダイス。手に提げた揚げ物の油の跡が勲章。',
+    description_en: 'Croquettes, niku-man, menchi-katsu. The food paradise of Yanaka Ginza shopping street, with oil-stained paper as your medal.',
+    travelMode: 'walk',
+    estimatedMin: 60,
+    budget: '¥1,000-2,000',
+    tags: ['食べ歩き', '商店街', '揚げ物'],
+    origin: { lat: 35.7281, lng: 139.7711, name: '日暮里駅 西口', shortLabel: '日暮里駅 西口' },
+    dest:   { lat: 35.7271, lng: 139.7700, name: '夕やけだんだん', name_en: 'Yuyake Dandan (Sunset Steps)', shortLabel: '夕やけだんだん' },
+    stops: [
+      {
+        lat: 35.7268, lng: 139.7693, name: '谷中銀座商店街', name_en: 'Yanaka Ginza Shopping Street', cat: 'sweets', emoji: '🍢',
+        photoBg: 'linear-gradient(135deg, #d84315 0%, #6d4c41 100%)',
+        bestTime: '11:00-18:00', budget: '¥500-1,500', stayMin: 60,
+        tags: ['商店街', '食べ歩き', '昭和'],
+        desc: '夕やけだんだんから続く下町商店街。食べ歩きの聖地。'
+      },
+      {
+        lat: 35.7270, lng: 139.7691, name: 'すずきの惣菜', name_en: 'Suzuki no Sozai (Menchi)', cat: 'sweets', emoji: '🥩',
+        photoBg: 'linear-gradient(135deg, #d84315 0%, #ff9800 100%)',
+        bestTime: '11:00-19:00', budget: '¥100-500', stayMin: 10,
+        tags: ['揚げ物', '元祖', '行列'],
+        desc: '元祖メンチカツ。揚げたてを紙に包んで食べ歩く。'
+      },
+      {
+        lat: 35.7269, lng: 139.7695, name: '岡埜栄泉', name_en: 'Okano Eisen', cat: 'sweets', emoji: '🍡',
+        photoBg: 'linear-gradient(135deg, #d4af37 0%, #6d4c41 100%)',
+        bestTime: '10:00-18:00', budget: '¥300-1,000', stayMin: 15,
+        tags: ['和菓子', '老舗', '豆大福'],
+        desc: '創業120年。看板の豆大福は売り切れ必至。'
+      },
+    ]
+  },
+
+  {
+    id: 'yanesen_temples',
+    name: '谷根千 古寺と猫の路地巡り',
+    name_en: 'Yanesen Temples & Cat Alleys',
+    area: 'yanesen',
+    areaName: '谷中・根津・千駄木',
+    areaName_en: 'Yanaka, Nezu & Sendagi',
+    areaIcon: '🏮',
+    themeIcon: '🏯',
+    rarity: 'sr',
+    description: '谷中霊園、寺町の路地、ノスタルジックな朝の散歩。猫と寺社を辿る静かなコース。',
+    description_en: 'Yanaka cemetery, the historic temple alleys, and a quiet morning walk. A peaceful course tracing cats and shrines.',
+    travelMode: 'walk',
+    estimatedMin: 110,
+    budget: '¥500-1,500',
+    tags: ['寺社', '猫', '早朝向け', '静か'],
+    origin: { lat: 35.7281, lng: 139.7711, name: '日暮里駅 南口', shortLabel: '日暮里駅 南口' },
+    dest:   { lat: 35.7203, lng: 139.7613, name: '根津神社', name_en: 'Nezu Shrine', shortLabel: '根津神社' },
+    stops: [
+      {
+        lat: 35.7263, lng: 139.7705, name: '谷中霊園', name_en: 'Yanaka Cemetery', cat: 'park', emoji: '🌸',
+        photoBg: 'linear-gradient(135deg, #66bb6a 0%, #a5d6a7 100%)',
+        bestTime: '6:00-9:00', budget: '無料', stayMin: 30,
+        tags: ['桜', '静か', '早朝'],
+        desc: '徳川慶喜も眠る都内屈指の桜の名所。早朝の散策が格別。'
+      },
+      {
+        lat: 35.7220, lng: 139.7665, name: '観音寺の築地塀', name_en: 'Kannon-ji Earthen Wall', cat: 'shrine', emoji: '🏯',
+        photoBg: 'linear-gradient(135deg, #6d4c41 0%, #3e2723 100%)',
+        bestTime: '9:00-16:00', budget: '無料', stayMin: 15,
+        tags: ['歴史', '土塀', '撮影'],
+        desc: '区指定有形文化財の土塀。江戸期の風情をそのまま。'
+      },
+      {
+        lat: 35.7234, lng: 139.7642, name: 'カフェ ねんねこ家', name_en: 'Cafe Nennekoya', cat: 'cafe', emoji: '🐈',
+        photoBg: 'linear-gradient(135deg, #6d4c41 0%, #ff9800 100%)',
+        bestTime: '11:00-18:00', budget: '¥800-1,500', stayMin: 45,
+        tags: ['猫', '古民家', 'カフェ'],
+        desc: '招き猫だらけの古民家カフェ。本物の看板猫もいます。'
+      },
+      {
+        lat: 35.7203, lng: 139.7613, name: '根津神社', name_en: 'Nezu Shrine', cat: 'shrine', emoji: '⛩️',
+        photoBg: 'linear-gradient(135deg, #c62828 0%, #b71c1c 100%)',
+        bestTime: '9:00-17:00', budget: '無料', stayMin: 30,
+        tags: ['千本鳥居', 'パワースポット'],
+        desc: '徳川綱吉ゆかりの古社。'
+      },
+    ]
+  },
+
+  // ============== 神保町エリア ==============
+
+  {
+    id: 'jimbocho_books',
+    name: '神保町 古本街めぐり王道コース',
+    name_en: 'Jimbocho Used Book Streets',
+    area: 'jimbocho',
+    areaName: '神田・神保町',
+    areaName_en: 'Kanda & Jimbocho',
+    areaIcon: '📚',
+    themeIcon: '📖',
+    rarity: 'sr',
+    description: '世界最大級の古書店街。100軒以上が並ぶ通りを、純喫茶を挟みながら巡る知的散歩。',
+    description_en: "World's largest used book district. Walk through 100+ shops, with retro coffee houses to rest.",
+    travelMode: 'walk',
+    estimatedMin: 90,
+    budget: '¥1,500-5,000',
+    tags: ['古本', '老舗喫茶', '雨でもOK'],
+    origin: { lat: 35.6957, lng: 139.7595, name: '神保町駅 A1出口', shortLabel: '神保町駅' },
+    dest:   { lat: 35.6991, lng: 139.7553, name: '九段下駅', shortLabel: '九段下駅' },
+    stops: [
+      {
+        lat: 35.6960, lng: 139.7580, name: '東京堂書店', name_en: 'Tokyodo Bookstore', cat: 'bookstore', emoji: '📚',
+        photoBg: 'linear-gradient(135deg, #6d4c41 0%, #3e2723 100%)',
+        bestTime: '10:00-22:00', budget: '¥1,000-3,000', stayMin: 30,
+        tags: ['人文書', '老舗', '建物'],
+        desc: '人文・思想書に強い1890年創業の老舗。建物自体も登録有形文化財。'
+      },
+      {
+        lat: 35.6963, lng: 139.7572, name: 'さぼうる', name_en: 'Saboru (Coffee)', cat: 'cafe', emoji: '☕',
+        photoBg: 'linear-gradient(135deg, #5d4037 0%, #1b1b1b 100%)',
+        bestTime: '11:00-22:00', budget: '¥800-1,500', stayMin: 45,
+        tags: ['昭和30年創業', '地下喫茶', 'ナポリタン'],
+        desc: '昭和30年創業の地下純喫茶。名物ナポリタンと丸太の店内。'
+      },
+      {
+        lat: 35.6970, lng: 139.7565, name: '一誠堂書店', name_en: 'Issendo Bookstore', cat: 'bookstore', emoji: '📜',
+        photoBg: 'linear-gradient(135deg, #6d4c41 0%, #d4af37 100%)',
+        bestTime: '10:00-18:30', budget: '¥1,000-50,000', stayMin: 30,
+        tags: ['美術書', '浮世絵', '希少本'],
+        desc: '美術書・浮世絵・古典籍で全国的に有名な老舗古書店。'
+      },
+      {
+        lat: 35.6978, lng: 139.7567, name: 'ラドリオ', name_en: 'Ladrio (Coffee)', cat: 'cafe', emoji: '☕',
+        photoBg: 'linear-gradient(135deg, #4a148c 0%, #1a1a1a 100%)',
+        bestTime: '12:00-22:30', budget: '¥800-2,000', stayMin: 40,
+        tags: ['ウィンナーコーヒー発祥', '昭和24年'],
+        desc: '日本のウィンナーコーヒー発祥の店。昭和24年創業の老舗喫茶。'
+      },
+    ]
+  },
+
+  {
+    id: 'jimbocho_curry',
+    name: '神保町 カレーストリート',
+    name_en: 'Jimbocho Curry Street',
+    area: 'jimbocho',
+    areaName: '神田・神保町',
+    areaName_en: 'Kanda & Jimbocho',
+    areaIcon: '📚',
+    themeIcon: '🍛',
+    rarity: 'r',
+    description: '神保町は知る人ぞ知るカレーの街。本屋の合間に潜む老舗カレー店をハシゴする昼の冒険。',
+    description_en: "Jimbocho is secretly Tokyo's curry capital. Hop between historic curry shops hidden among the bookstores.",
+    travelMode: 'walk',
+    estimatedMin: 60,
+    budget: '¥2,000-3,500',
+    tags: ['カレー', 'ハシゴ', 'ランチ向け'],
+    origin: { lat: 35.6957, lng: 139.7595, name: '神保町駅 A6出口', shortLabel: '神保町駅' },
+    dest:   { lat: 35.6957, lng: 139.7595, name: '神保町駅', shortLabel: '神保町駅' },
+    stops: [
+      {
+        lat: 35.6963, lng: 139.7585, name: '共栄堂', name_en: 'Kyoeido (Sumatra Curry)', cat: 'sweets', emoji: '🍛',
+        photoBg: 'linear-gradient(135deg, #d84315 0%, #6d4c41 100%)',
+        bestTime: '11:00-21:00', budget: '¥1,000-1,500', stayMin: 40,
+        tags: ['昭和初期', 'スマトラカレー', '老舗'],
+        desc: '昭和初期創業の老舗。インドネシア風「スマトラカレー」が名物。'
+      },
+      {
+        lat: 35.6968, lng: 139.7593, name: 'ボンディ', name_en: 'Bondy (European Curry)', cat: 'sweets', emoji: '🍛',
+        photoBg: 'linear-gradient(135deg, #ff6f00 0%, #e65100 100%)',
+        bestTime: '11:00-22:30', budget: '¥1,500-2,000', stayMin: 50,
+        tags: ['欧風カレー', '行列', 'チーズ'],
+        desc: '日本における欧風カレーの代表格。じゃがいもとチーズ付きで知られる。'
+      },
+      {
+        lat: 35.6960, lng: 139.7570, name: '神田カレーグランプリ巡礼', name_en: 'Kanda Curry Grand Prix Tour', cat: 'sweets', emoji: '🏆',
+        photoBg: 'linear-gradient(135deg, #d4af37 0%, #ff9800 100%)',
+        bestTime: '11:00-15:00', budget: '無料', stayMin: 30,
+        tags: ['歴代受賞店', 'カレーマップ'],
+        desc: '神田カレーグランプリの歴代受賞店マップを片手に街を歩く文化体験。'
+      },
+    ]
+  },
+
+  // ============== 浅草エリア ==============
+
+  {
+    id: 'asakusa_classic',
+    name: '浅草 雷門・仲見世・浅草寺の王道コース',
+    name_en: 'Asakusa: Kaminarimon, Nakamise, Sensoji',
+    area: 'asakusa',
+    areaName: '浅草',
+    areaName_en: 'Asakusa',
+    areaIcon: '🎎',
+    themeIcon: '🏮',
+    rarity: 'sr',
+    description: '雷門の大提灯から仲見世の食べ歩き、浅草寺の本堂まで。下町情緒と日本文化を一気に体感。',
+    description_en: 'From the giant lantern of Kaminarimon, through the Nakamise food street, to the main hall of Sensoji. Old Tokyo and Japanese culture in one walk.',
+    travelMode: 'walk',
+    estimatedMin: 75,
+    budget: '¥1,500-3,000',
+    tags: ['観光名所', '食べ歩き', '外国人にも人気'],
+    origin: { lat: 35.7100, lng: 139.7967, name: '浅草駅', shortLabel: '浅草駅' },
+    dest:   { lat: 35.7148, lng: 139.7967, name: '浅草寺 本堂', name_en: 'Sensoji Main Hall', shortLabel: '浅草寺' },
+    stops: [
+      {
+        lat: 35.7110, lng: 139.7965, name: '雷門', name_en: 'Kaminarimon', cat: 'shrine', emoji: '🏮',
+        photoBg: 'linear-gradient(135deg, #c62828 0%, #b71c1c 100%)',
+        bestTime: '8:00-20:00', budget: '無料', stayMin: 10,
+        tags: ['総門', '巨大提灯', '写真スポット'],
+        desc: '浅草寺の総門。3.9m・700kgの巨大提灯は浅草の象徴。'
+      },
+      {
+        lat: 35.7129, lng: 139.7968, name: '仲見世通り', name_en: 'Nakamise Shopping Street', cat: 'sweets', emoji: '🍡',
+        photoBg: 'linear-gradient(135deg, #ff6f00 0%, #d84315 100%)',
+        bestTime: '10:00-19:00', budget: '¥500-2,000', stayMin: 40,
+        tags: ['日本最古級商店街', '食べ歩き', '人形焼き'],
+        desc: '日本最古級の商店街。人形焼・雷おこし・揚げ饅頭などを食べ歩き。'
+      },
+      {
+        lat: 35.7138, lng: 139.7968, name: '舟和 本店', name_en: 'Funawa Main Store', cat: 'sweets', emoji: '🍠',
+        photoBg: 'linear-gradient(135deg, #d4af37 0%, #ff9800 100%)',
+        bestTime: '10:00-21:00', budget: '¥500-1,500', stayMin: 30,
+        tags: ['芋ようかん', '明治35年', '甘味処'],
+        desc: '明治35年創業。看板の芋ようかんは100年以上愛される名物。'
+      },
+      {
+        lat: 35.7148, lng: 139.7967, name: '浅草寺 本堂', name_en: 'Sensoji Main Hall', cat: 'shrine', emoji: '⛩️',
+        photoBg: 'linear-gradient(135deg, #c62828 0%, #d4af37 100%)',
+        bestTime: '6:00-17:00', budget: '無料', stayMin: 30,
+        tags: ['都内最古', '観音様', 'おみくじ'],
+        desc: '都内最古の寺院（628年創建）。本堂で観音様にお参り、おみくじも忘れずに。'
+      },
+    ]
+  },
+
+  {
+    id: 'asakusa_hidden',
+    name: '【限定】明け方の浅草寺と隅田川',
+    name_en: '[Limited] Dawn at Sensoji & Sumida River',
+    area: 'asakusa',
+    areaName: '浅草',
+    areaName_en: 'Asakusa',
+    areaIcon: '🎎',
+    themeIcon: '🌅',
+    rarity: 'legendary',
+    description: '観光客がまだ眠る早朝5:00〜の浅草。誰もいない雷門、本堂の朝の勤行、隅田川のスカイツリー。一生に一度の体験。',
+    description_en: "5:00am Asakusa with no tourists. The empty Kaminarimon, monks' morning chant, and Sumida riverside view of Skytree. Once-in-a-lifetime experience.",
+    travelMode: 'walk',
+    estimatedMin: 90,
+    budget: '無料',
+    tags: ['早朝限定', '静寂', '上級者向け'],
+    origin: { lat: 35.7100, lng: 139.7967, name: '浅草駅 早朝', shortLabel: '浅草駅' },
+    dest:   { lat: 35.7100, lng: 139.7995, name: '隅田公園', shortLabel: '隅田公園' },
+    stops: [
+      {
+        lat: 35.7110, lng: 139.7965, name: '雷門（無人）', name_en: 'Kaminarimon (No Crowd)', cat: 'shrine', emoji: '🏮',
+        photoBg: 'linear-gradient(135deg, #1a237e 0%, #c62828 100%)',
+        bestTime: '5:00-6:30', budget: '無料', stayMin: 15,
+        tags: ['誰もいない', '写真映え', '神秘'],
+        desc: '観光客が来る前の雷門。誰もいない巨大提灯の前で写真を。'
+      },
+      {
+        lat: 35.7148, lng: 139.7967, name: '浅草寺 朝の勤行', name_en: 'Sensoji Morning Service', cat: 'shrine', emoji: '🛕',
+        photoBg: 'linear-gradient(135deg, #5d4037 0%, #c62828 100%)',
+        bestTime: '6:00-6:30', budget: '無料', stayMin: 30,
+        tags: ['お経', '読経', '朝の浅草寺'],
+        desc: '毎朝6時から行われる僧侶の朝のお勤め。本堂内で参拝可能。'
+      },
+      {
+        lat: 35.7100, lng: 139.7995, name: '隅田公園・スカイツリー眺望', name_en: 'Sumida Park & Skytree View', cat: 'viewpoint', emoji: '🌅',
+        photoBg: 'linear-gradient(135deg, #1976d2 0%, #ff9800 100%)',
+        bestTime: '5:30-7:00', budget: '無料', stayMin: 30,
+        tags: ['朝日', 'スカイツリー', '隅田川'],
+        desc: '隅田川越しのスカイツリー。朝日と一緒の絶景は早朝の特権。'
+      },
+    ]
+  },
+
+  // ============== 原宿・表参道エリア ==============
+
+  {
+    id: 'meiji_classic',
+    name: '原宿表参道 王道・神宮の杜とけやき並木',
+    name_en: 'Harajuku-Omotesando Classic: Sacred Forest & Zelkova Avenue',
+    area: 'meiji',
+    areaName: '原宿表参道',
+    areaName_en: 'Harajuku-Omotesando',
+    areaIcon: '🌸',
+    themeIcon: '🌳',
+    rarity: 'sr',
+    description: '都心の聖域・明治神宮の杜から、ファッションの聖地・表参道のけやき並木へ。江戸と現代が交差する東京の王道散歩。',
+    description_en: "From the sacred forest of Meiji Shrine to the zelkova-lined Omotesando boulevard. A walk where ancient Edo meets modern Tokyo fashion.",
+    travelMode: 'walk',
+    estimatedMin: 90,
+    budget: '¥1,500-3,500',
+    tags: ['定番', '神社', 'ファッション', '緑'],
+    origin: { lat: 35.6705, lng: 139.7027, name: '原宿駅', shortLabel: '原宿駅' },
+    dest:   { lat: 35.6627, lng: 139.7128, name: '表参道駅', shortLabel: '表参道駅' },
+    stops: [
+      {
+        lat: 35.6764, lng: 139.6993, name: '明治神宮', name_en: 'Meiji Shrine', cat: 'shrine', emoji: '⛩️',
+        photoBg: 'linear-gradient(135deg, #2e7d32 0%, #66bb6a 100%)',
+        bestTime: '7:00-17:00', budget: '無料', stayMin: 40,
+        tags: ['神社', '杜', 'パワースポット'],
+        desc: '都心とは思えない深い杜に囲まれた神社。鳥居をくぐると別世界。'
+      },
+      {
+        lat: 35.6712, lng: 139.7032, name: '代々木公園', name_en: 'Yoyogi Park', cat: 'park', emoji: '🌳',
+        photoBg: 'linear-gradient(135deg, #66bb6a 0%, #2e7d32 100%)',
+        bestTime: '6:00-19:00', budget: '無料', stayMin: 25,
+        tags: ['公園', '広場', 'ピクニック'],
+        desc: '都心最大級の緑地。週末はストリートパフォーマーで賑わう。'
+      },
+      {
+        lat: 35.6700, lng: 139.7038, name: '竹下通り', name_en: 'Takeshita Street', cat: 'shop', emoji: '🛍️',
+        photoBg: 'linear-gradient(135deg, #ec407a 0%, #ab47bc 100%)',
+        bestTime: '11:00-19:00', budget: '¥500-2,000',
+        stayMin: 20,
+        tags: ['若者', '原宿カルチャー', '食べ歩き'],
+        desc: '原宿カルチャーの中心地。クレープ・カラフル雑貨・古着で寄り道。'
+      },
+      {
+        lat: 35.6651, lng: 139.7106, name: '表参道けやき並木', name_en: 'Omotesando Zelkova Avenue', cat: 'viewpoint', emoji: '🌳',
+        photoBg: 'linear-gradient(135deg, #8d6e63 0%, #4caf50 100%)',
+        bestTime: '10:00-18:00', budget: '無料', stayMin: 20,
+        tags: ['並木道', 'シャンゼリゼ通り風', '建築'],
+        desc: '都心のシャンゼリゼ通り。けやき並木と現代建築の調和。'
+      },
+    ]
+  },
+
+  // ============== 鎌倉エリア ==============
+
+  {
+    id: 'kamakura_classic',
+    name: '鎌倉 王道・八幡宮と大仏の道',
+    name_en: 'Kamakura Classic: Hachimangu Shrine & the Great Buddha',
+    area: 'kamakura',
+    areaName: '鎌倉',
+    areaName_en: 'Kamakura',
+    areaIcon: '🏯',
+    themeIcon: '🏯',
+    rarity: 'sr',
+    description: '鎌倉幕府開府の地を、源頼朝の鶴岡八幡宮から日本を代表する大仏まで歩く。武家文化と海風の道。',
+    description_en: "Walk from Tsurugaoka Hachimangu Shrine, the spiritual heart of Minamoto no Yoritomo's shogunate, to the iconic Great Buddha. Samurai culture meets sea breeze.",
+    travelMode: 'walk',
+    estimatedMin: 110,
+    budget: '¥2,000-4,000',
+    tags: ['歴史', '神社', '大仏', '海'],
+    origin: { lat: 35.3192, lng: 139.5500, name: '鎌倉駅', shortLabel: '鎌倉駅' },
+    dest:   { lat: 35.3097, lng: 139.5359, name: '長谷駅', shortLabel: '長谷駅' },
+    stops: [
+      {
+        lat: 35.3261, lng: 139.5564, name: '鶴岡八幡宮', name_en: 'Tsurugaoka Hachimangu', cat: 'shrine', emoji: '⛩️',
+        photoBg: 'linear-gradient(135deg, #c62828 0%, #b71c1c 100%)',
+        bestTime: '8:00-17:00', budget: '無料', stayMin: 30,
+        tags: ['歴史', '武家', 'パワースポット'],
+        desc: '源頼朝が鎌倉幕府の中心に据えた古社。大石段が壮観。'
+      },
+      {
+        lat: 35.3216, lng: 139.5535, name: '小町通り', name_en: 'Komachi Street', cat: 'shop', emoji: '🛍️',
+        photoBg: 'linear-gradient(135deg, #d84315 0%, #ff8a65 100%)',
+        bestTime: '10:00-18:00', budget: '¥500-2,000', stayMin: 30,
+        tags: ['食べ歩き', '土産', '商店街'],
+        desc: '鎌倉駅から八幡宮へ続く食べ歩き商店街。和スイーツ・しらす丼。'
+      },
+      {
+        lat: 35.3164, lng: 139.5360, name: '高徳院（鎌倉大仏）', name_en: 'Kotoku-in (Great Buddha)', cat: 'temple', emoji: '🏯',
+        photoBg: 'linear-gradient(135deg, #6d4c41 0%, #4caf50 100%)',
+        bestTime: '8:00-17:00', budget: '¥300', stayMin: 30,
+        tags: ['国宝', '大仏', '撮影スポット'],
+        desc: '高さ約11mの青銅大仏。胎内拝観も可能（追加料金）。'
+      },
+      {
+        lat: 35.3097, lng: 139.5345, name: '由比ヶ浜', name_en: 'Yuigahama Beach', cat: 'viewpoint', emoji: '🌊',
+        photoBg: 'linear-gradient(135deg, #4fc3f7 0%, #ffd54f 100%)',
+        bestTime: '15:00-18:00', budget: '無料', stayMin: 30,
+        tags: ['海', '夕日', '波音'],
+        desc: '鎌倉を代表する海岸。江ノ電の音と海風で武家文化散歩を締めくくる。'
+      },
+    ]
+  },
+
+  // ============== 下北沢エリア ==============
+
+  {
+    id: 'shimokita_culture',
+    name: '下北沢 サブカル・古着とライブハウスの路地',
+    name_en: 'Shimokitazawa Subculture: Vintage & Live Houses',
+    area: 'shimokita',
+    areaName: '下北沢',
+    areaName_en: 'Shimokitazawa',
+    areaIcon: '🎸',
+    themeIcon: '🎸',
+    rarity: 'sr',
+    description: '東京の若者文化の聖地・下北沢。古着屋、ライブハウス、小劇場、独立系カフェが密集する路地裏を歩く。',
+    description_en: 'The youth culture mecca of Tokyo. Wander narrow alleys packed with vintage shops, live houses, indie theaters, and quirky cafes.',
+    travelMode: 'walk',
+    estimatedMin: 80,
+    budget: '¥1,500-3,500',
+    tags: ['サブカル', '古着', '若者文化', '路地裏'],
+    origin: { lat: 35.6614, lng: 139.6677, name: '下北沢駅', shortLabel: '下北沢駅' },
+    dest:   { lat: 35.6589, lng: 139.6691, name: '下北沢南口', shortLabel: '下北沢南口' },
+    stops: [
+      {
+        lat: 35.6620, lng: 139.6680, name: '北口商店街', name_en: 'North Gate Shotengai', cat: 'shop', emoji: '🛍️',
+        photoBg: 'linear-gradient(135deg, #ff7043 0%, #d84315 100%)',
+        bestTime: '11:00-19:00', budget: '¥500-2,000', stayMin: 25,
+        tags: ['商店街', '昭和レトロ', '食べ歩き'],
+        desc: '昭和の香りが残る商店街。下町感と若者カルチャーが入り混じる入り口。'
+      },
+      {
+        lat: 35.6618, lng: 139.6664, name: '古着屋ストリート', name_en: 'Vintage Street', cat: 'shop', emoji: '👕',
+        photoBg: 'linear-gradient(135deg, #ab47bc 0%, #5e35b1 100%)',
+        bestTime: '12:00-19:00', budget: '¥1,000-5,000', stayMin: 30,
+        tags: ['古着', 'ヴィンテージ', '宝探し'],
+        desc: '日本最大級の古着エリア。一点もののヴィンテージウェアを探す。'
+      },
+      {
+        lat: 35.6595, lng: 139.6685, name: 'ボーナストラック', name_en: 'Bonus Track', cat: 'shop', emoji: '🎬',
+        photoBg: 'linear-gradient(135deg, #26a69a 0%, #00897b 100%)',
+        bestTime: '11:00-21:00', budget: '¥500-2,500', stayMin: 30,
+        tags: ['複合施設', 'カフェ', '本屋'],
+        desc: '小田急線地下化で生まれた新スポット。独立系の店舗が並ぶ。'
+      },
+      {
+        lat: 35.6589, lng: 139.6691, name: '南口路地裏', name_en: 'South Gate Alleys', cat: 'shop', emoji: '🍻',
+        photoBg: 'linear-gradient(135deg, #5d4037 0%, #795548 100%)',
+        bestTime: '17:00-23:00', budget: '¥1,500-3,500', stayMin: 30,
+        tags: ['居酒屋', '夜景', 'ローカル'],
+        desc: '夜の下北沢を彩る飲み屋路地。地元民とサブカル好きが集う。'
+      },
+    ]
+  },
+
+  // ============== 京都・祇園エリア ==============
+
+  {
+    id: 'gion_classic',
+    name: '祇園・東山 王道・八坂と石畳の路地',
+    name_en: 'Gion-Higashiyama Classic: Yasaka & Cobblestone Alleys',
+    area: 'gion',
+    areaName: '祇園・東山',
+    areaName_en: 'Gion-Higashiyama',
+    areaIcon: '🍵',
+    themeIcon: '🏯',
+    rarity: 'sr',
+    description: '京都の代表的な観光エリア。八坂神社から二年坂・三年坂の石畳を抜け、清水寺へと続く王道散歩。京町家と苔むす石垣の風景。',
+    description_en: "Kyoto's most iconic walking area. From Yasaka Shrine, through the cobblestone slopes of Nineizaka and Sanneizaka, to Kiyomizu-dera. Old townhouses and mossy stone walls.",
+    travelMode: 'walk',
+    estimatedMin: 100,
+    budget: '¥2,000-4,000',
+    tags: ['京都王道', '神社', '石畳', '町家'],
+    origin: { lat: 35.0036, lng: 135.7785, name: '祇園四条駅', shortLabel: '祇園四条駅' },
+    dest:   { lat: 34.9949, lng: 135.7853, name: '清水寺', shortLabel: '清水寺' },
+    stops: [
+      {
+        lat: 35.0034, lng: 135.7787, name: '八坂神社', name_en: 'Yasaka Shrine', cat: 'shrine', emoji: '⛩️',
+        photoBg: 'linear-gradient(135deg, #c62828 0%, #b71c1c 100%)',
+        bestTime: '7:00-19:00', budget: '無料', stayMin: 25,
+        tags: ['神社', '祇園祭', '夜灯籠'],
+        desc: '祇園のシンボル。朱塗りの西楼門と境内の灯籠が印象的。'
+      },
+      {
+        lat: 35.0011, lng: 135.7805, name: '花見小路', name_en: 'Hanamikoji Street', cat: 'viewpoint', emoji: '🏯',
+        photoBg: 'linear-gradient(135deg, #6d4c41 0%, #4e342e 100%)',
+        bestTime: '10:00-17:00', budget: '無料', stayMin: 20,
+        tags: ['町家', '京情緒', '撮影スポット'],
+        desc: '祇園を代表する石畳の通り。茶屋と料亭の格子戸が連なる。'
+      },
+      {
+        lat: 34.9985, lng: 135.7821, name: '二年坂・三年坂', name_en: 'Ninenzaka & Sannenzaka', cat: 'viewpoint', emoji: '🏯',
+        photoBg: 'linear-gradient(135deg, #8d6e63 0%, #5d4037 100%)',
+        bestTime: '8:00-17:00', budget: '無料', stayMin: 25,
+        tags: ['石畳', '坂道', '伝建地区'],
+        desc: '清水寺へ続く伝統的建造物群保存地区。和雑貨店・甘味処が並ぶ。'
+      },
+      {
+        lat: 34.9949, lng: 135.7853, name: '清水寺', name_en: 'Kiyomizu-dera', cat: 'temple', emoji: '🏯',
+        photoBg: 'linear-gradient(135deg, #d84315 0%, #bf360c 100%)',
+        bestTime: '6:00-18:00', budget: '¥400', stayMin: 30,
+        tags: ['国宝', '舞台', '世界遺産'],
+        desc: '京都を代表する寺院。「清水の舞台」からの眺めは別格。'
+      },
+    ]
+  },
+
+  {
+    id: 'fushimi_inari',
+    name: '【限定】伏見稲荷・千本鳥居の早朝',
+    name_en: '[Limited] Fushimi Inari: Early Morning Through Thousand Torii',
+    area: 'fushimi',
+    areaName: '伏見',
+    areaName_en: 'Fushimi',
+    areaIcon: '⛩️',
+    themeIcon: '🌅',
+    rarity: 'legendary',
+    description: '日本一の千本鳥居を観光客が来る前の静寂な早朝に歩く伝説のコース。朱の鳥居が朝日に照らされる光景は息を呑む美しさ。',
+    description_en: "Walk through Japan's iconic thousand torii at Fushimi Inari before the tourists arrive. A legendary course where vermilion gates glow in the early morning sun.",
+    travelMode: 'walk',
+    estimatedMin: 110,
+    budget: '¥1,000-2,500（要早起き）',
+    tags: ['早朝限定', '世界遺産', '鳥居', '上級者向け'],
+    origin: { lat: 34.9671, lng: 135.7727, name: '伏見稲荷駅', shortLabel: '伏見稲荷駅' },
+    dest:   { lat: 34.9670, lng: 135.7806, name: '稲荷山頂上', shortLabel: '稲荷山頂上' },
+    stops: [
+      {
+        lat: 34.9676, lng: 135.7727, name: '伏見稲荷大社 楼門', name_en: 'Fushimi Inari Romon Gate', cat: 'shrine', emoji: '⛩️',
+        photoBg: 'linear-gradient(135deg, #ff6f00 0%, #c62828 100%)',
+        bestTime: '5:30-7:00', budget: '無料', stayMin: 20,
+        tags: ['朱塗り', '楼門', '早朝'],
+        desc: '日本全国に約3万社あるお稲荷様の総本宮。朱塗りの楼門が圧巻。'
+      },
+      {
+        lat: 34.9681, lng: 135.7740, name: '千本鳥居（入口）', name_en: 'Senbon Torii (Entrance)', cat: 'shrine', emoji: '⛩️',
+        photoBg: 'linear-gradient(135deg, #d84315 0%, #ff6f00 100%)',
+        bestTime: '5:30-7:30', budget: '無料', stayMin: 30,
+        tags: ['世界的名所', '撮影スポット', '神秘的'],
+        desc: '世界中から人が集まる名所。早朝なら独り占め、奉納者の名が刻まれた鳥居の連なりは圧巻。'
+      },
+      {
+        lat: 34.9670, lng: 135.7806, name: '稲荷山中腹（四ツ辻）', name_en: 'Inari Mountain Yotsutsuji', cat: 'viewpoint', emoji: '🌅',
+        photoBg: 'linear-gradient(135deg, #ff8a65 0%, #ffd54f 100%)',
+        bestTime: '6:30-8:00', budget: '無料', stayMin: 30,
+        tags: ['眺望', '京都市街', '休憩所'],
+        desc: '稲荷山の中腹四ツ辻からは京都市街が一望。茶店の甘酒で一息。'
+      },
+    ]
+  },
+
+  // ============== 大阪・道頓堀エリア ==============
+
+  {
+    id: 'dotombori_classic',
+    name: '道頓堀・心斎橋 王道・グリコと食い倒れ',
+    name_en: 'Dotombori-Shinsaibashi Classic: Glico & Foodie Heaven',
+    area: 'dotombori',
+    areaName: '道頓堀・心斎橋',
+    areaName_en: 'Dotombori-Shinsaibashi',
+    areaIcon: '🐙',
+    themeIcon: '🍜',
+    rarity: 'sr',
+    description: '大阪の食い倒れ文化を代表するエリア。道頓堀川のネオン、グリコ看板、そしてたこ焼き・お好み焼きの香り。',
+    description_en: "The heart of Osaka's foodie culture. Dotombori canal neon lights, the iconic Glico sign, and the aromas of takoyaki and okonomiyaki.",
+    travelMode: 'walk',
+    estimatedMin: 90,
+    budget: '¥2,000-4,500',
+    tags: ['食い倒れ', 'ネオン', '大阪定番'],
+    origin: { lat: 34.6688, lng: 135.5022, name: 'なんば駅', shortLabel: 'なんば駅' },
+    dest:   { lat: 34.6745, lng: 135.5009, name: '心斎橋筋商店街', shortLabel: '心斎橋筋商店街' },
+    stops: [
+      {
+        lat: 34.6687, lng: 135.5021, name: '道頓堀川 グリコ前', name_en: 'Dotombori Glico Sign', cat: 'viewpoint', emoji: '🌃',
+        photoBg: 'linear-gradient(135deg, #ff6f00 0%, #c62828 100%)',
+        bestTime: '17:00-23:00', budget: '無料', stayMin: 20,
+        tags: ['ネオン', '撮影スポット', 'シンボル'],
+        desc: '大阪のシンボル・グリコの看板。川面に映るネオンが大阪らしさの極み。'
+      },
+      {
+        lat: 34.6692, lng: 135.5019, name: '道頓堀商店街', name_en: 'Dotombori Shotengai', cat: 'shop', emoji: '🍜',
+        photoBg: 'linear-gradient(135deg, #d84315 0%, #ff8a65 100%)',
+        bestTime: '11:00-23:00', budget: '¥1,000-3,000', stayMin: 30,
+        tags: ['食い倒れ', 'たこ焼き', 'お好み焼き'],
+        desc: 'たこ焼き・お好み焼き・串カツが軒を連ねる食の天国。'
+      },
+      {
+        lat: 34.6712, lng: 135.5012, name: '法善寺横丁', name_en: 'Hozenji Yokocho', cat: 'shrine', emoji: '⛩️',
+        photoBg: 'linear-gradient(135deg, #4e342e 0%, #6d4c41 100%)',
+        bestTime: '15:00-21:00', budget: '無料', stayMin: 20,
+        tags: ['路地裏', '苔のお寺', '昭和'],
+        desc: '苔むしたお地蔵様で有名な小さな寺と路地裏の昭和情緒。'
+      },
+      {
+        lat: 34.6745, lng: 135.5009, name: '心斎橋筋商店街', name_en: 'Shinsaibashi-suji Shotengai', cat: 'shop', emoji: '🛍️',
+        photoBg: 'linear-gradient(135deg, #ec407a 0%, #ab47bc 100%)',
+        bestTime: '10:00-21:00', budget: '¥1,000-5,000', stayMin: 30,
+        tags: ['アーケード', '買い物', '老舗'],
+        desc: '長さ約580mのアーケード商店街。老舗から最新ファッションまで。'
+      },
+    ]
+  },
+
+  // ============== ヴェネツィア・サン・マルコエリア ==============
+
+  {
+    id: 'sanmarco_classic',
+    name: 'San Marco 王道・水の都の中心',
+    name_en: 'San Marco Classic: Heart of the Floating City',
+    area: 'sanmarco',
+    areaName: 'サン・マルコ',
+    areaName_en: 'San Marco',
+    areaIcon: '🛶',
+    themeIcon: '🏛️',
+    rarity: 'legendary',
+    description: '水の都ヴェネツィアの中心。サン・マルコ広場、ドゥカーレ宮殿、ため息の橋、そして運河沿いのカフェ。観光客の波が引いた朝が最高。',
+    description_en: 'The heart of Venice. St. Mark\'s Square, Doge\'s Palace, Bridge of Sighs, and canalside cafes. Best in the early morning when the crowds thin out.',
+    travelMode: 'walk',
+    estimatedMin: 120,
+    budget: '€20-40',
+    tags: ['世界遺産', '海外', '水の都'],
+    origin: { lat: 45.4341, lng: 12.3387, name: 'サン・マルコ広場', shortLabel: 'San Marco' },
+    dest:   { lat: 45.4347, lng: 12.3402, name: 'リアルト橋', shortLabel: 'Rialto' },
+    stops: [
+      {
+        lat: 45.4341, lng: 12.3387, name: 'サン・マルコ広場', name_en: "Piazza San Marco", cat: 'viewpoint', emoji: '🕊️',
+        photoBg: 'linear-gradient(135deg, #d4af37 0%, #fff8e1 100%)',
+        bestTime: '7:00-10:00', budget: '無料', stayMin: 30,
+        tags: ['世界遺産', '広場', '鳩'],
+        desc: 'ナポレオンが「世界一美しい広場」と讃えた場所。早朝の鳩は格別。',
+        desc_en: 'Napoleon called it "the world\'s finest drawing room". Best with morning pigeons.'
+      },
+      {
+        lat: 45.4344, lng: 12.3390, name: 'サン・マルコ大聖堂', name_en: "St. Mark's Basilica", cat: 'temple', emoji: '🏛️',
+        photoBg: 'linear-gradient(135deg, #b8860b 0%, #d4af37 100%)',
+        bestTime: '9:30-17:00', budget: '€3', stayMin: 30,
+        tags: ['ビザンティン建築', '黄金モザイク', '世界遺産'],
+        desc: 'ビザンティン建築の傑作。内部は数千平米の黄金モザイク。',
+        desc_en: 'Masterpiece of Byzantine architecture, with thousands of square meters of golden mosaics.'
+      },
+      {
+        lat: 45.4337, lng: 12.3401, name: 'ため息の橋', name_en: 'Bridge of Sighs', cat: 'viewpoint', emoji: '🌉',
+        photoBg: 'linear-gradient(135deg, #5d4037 0%, #8d6e63 100%)',
+        bestTime: '10:00-18:00', budget: '無料', stayMin: 15,
+        tags: ['ロマン', '撮影スポット', '伝説'],
+        desc: '囚人がドゥカーレ宮殿から牢獄へ渡る際にこの橋でため息をついたと伝わる。',
+        desc_en: 'Prisoners crossing from the Doge\'s Palace to the prison were said to sigh at this bridge.'
+      },
+      {
+        lat: 45.4347, lng: 12.3402, name: 'リアルト橋', name_en: 'Rialto Bridge', cat: 'viewpoint', emoji: '🌉',
+        photoBg: 'linear-gradient(135deg, #1976d2 0%, #b8860b 100%)',
+        bestTime: '8:00-19:00', budget: '無料', stayMin: 25,
+        tags: ['運河', 'ゴンドラ', 'ヴェネツィアの象徴'],
+        desc: '大運河に架かる最古の橋。ゴンドラと水上バスが行き交う絶景。',
+        desc_en: 'The oldest bridge over the Grand Canal. Gondolas and water taxis pass below.'
+      },
+    ]
+  },
+
+  {
+    id: 'kamakura_temple',
+    name: '【限定】古都鎌倉・苔と禅の北鎌倉',
+    name_en: '[Limited] Ancient Kamakura: Moss & Zen of Kita-Kamakura',
+    area: 'kamakura',
+    areaName: '鎌倉',
+    areaName_en: 'Kamakura',
+    areaIcon: '🏯',
+    themeIcon: '🍃',
+    rarity: 'legendary',
+    description: '北鎌倉の禅寺をめぐる伝説のコース。苔の絨毯、紫陽花の名所、禅の精神を肌で感じる早朝散歩。',
+    description_en: "A legendary course through the Zen temples of Kita-Kamakura. Moss carpets, hydrangea gardens, and the spirit of Zen Buddhism in early morning.",
+    travelMode: 'walk',
+    estimatedMin: 120,
+    budget: '¥1,500-3,000',
+    tags: ['上級者向け', '禅', '苔', '早朝限定'],
+    origin: { lat: 35.3375, lng: 139.5455, name: '北鎌倉駅', shortLabel: '北鎌倉駅' },
+    dest:   { lat: 35.3261, lng: 139.5564, name: '鶴岡八幡宮', shortLabel: '鶴岡八幡宮' },
+    stops: [
+      {
+        lat: 35.3375, lng: 139.5455, name: '円覚寺', name_en: 'Engaku-ji', cat: 'temple', emoji: '🏯',
+        photoBg: 'linear-gradient(135deg, #4caf50 0%, #1b5e20 100%)',
+        bestTime: '8:00-16:30', budget: '¥500', stayMin: 30,
+        tags: ['禅', '国宝', '紫陽花'],
+        desc: '臨済宗の大本山。北条時宗が開いた禅寺、舎利殿は国宝。'
+      },
+      {
+        lat: 35.3329, lng: 139.5468, name: '建長寺', name_en: 'Kencho-ji', cat: 'temple', emoji: '🏯',
+        photoBg: 'linear-gradient(135deg, #5d4037 0%, #6d4c41 100%)',
+        bestTime: '8:30-16:30', budget: '¥500', stayMin: 30,
+        tags: ['鎌倉五山', '禅'],
+        desc: '日本最初の禅寺。鎌倉五山第一位の格式。三門の風格は圧巻。'
+      },
+      {
+        lat: 35.3287, lng: 139.5510, name: '明月院', name_en: 'Meigetsu-in', cat: 'temple', emoji: '🌷',
+        photoBg: 'linear-gradient(135deg, #5e35b1 0%, #1976d2 100%)',
+        bestTime: '9:00-16:00', budget: '¥500', stayMin: 25,
+        tags: ['紫陽花', '禅', '丸窓'],
+        desc: '通称「あじさい寺」。本堂の丸窓から見る庭が名物。'
+      },
+    ]
+  },
+
+];
+
+window.YORIMICHI_REGIONS = [
+  { id: 'tokyo',   country: 'JP', name: '東京',           name_en: 'Tokyo',   icon: '🗼', enabled: true,  centerLat: 35.6812, centerLng: 139.7671 },
+  { id: 'kyoto',   country: 'JP', name: '京都',           name_en: 'Kyoto',   icon: '🍵', enabled: true, centerLat: 35.0116, centerLng: 135.7681 },
+  { id: 'osaka',   country: 'JP', name: '大阪',           name_en: 'Osaka',   icon: '🐙', enabled: true, centerLat: 34.6937, centerLng: 135.5023 },
+  { id: 'venezia', country: 'IT', name: 'ヴェネツィア', name_en: 'Venezia', icon: '🛶', enabled: true, centerLat: 45.4408, centerLng: 12.3155 },
+];
+
+window.YORIMICHI_AREAS = [
+  { id: 'kichijoji', name: '吉祥寺',     name_en: 'Kichijoji',  icon: '🌳', enabled: true,  region: 'tokyo' },
+  { id: 'yanesen',   name: '谷根千',     name_en: 'Yanesen',    icon: '🏮', enabled: true,  region: 'tokyo' },
+  { id: 'jimbocho',  name: '神保町',     name_en: 'Jimbocho',   icon: '📚', enabled: true,  region: 'tokyo' },
+  { id: 'asakusa',   name: '浅草',       name_en: 'Asakusa',    icon: '🎎', enabled: true,  region: 'tokyo' },
+  { id: 'meiji',     name: '原宿表参道', name_en: 'Harajuku-Omotesando', icon: '🌸', enabled: true, region: 'tokyo' },
+  { id: 'kamakura',  name: '鎌倉',       name_en: 'Kamakura',   icon: '🏯', enabled: true, region: 'tokyo' },
+  { id: 'shimokita', name: '下北沢',     name_en: 'Shimokitazawa', icon: '🎸', enabled: true, region: 'tokyo' },
+  { id: 'gion',      name: '祇園・東山', name_en: 'Gion-Higashiyama', icon: '🍵', enabled: true, region: 'kyoto' },
+  { id: 'fushimi',   name: '伏見',       name_en: 'Fushimi',       icon: '⛩️', enabled: true, region: 'kyoto' },
+  { id: 'dotombori', name: '道頓堀・心斎橋', name_en: 'Dotombori-Shinsaibashi', icon: '🐙', enabled: true, region: 'osaka' },
+  { id: 'sanmarco',  name: 'サン・マルコ', name_en: 'San Marco', icon: '🛶', enabled: true, region: 'venezia' },
+];

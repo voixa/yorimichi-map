@@ -1,0 +1,23 @@
+{
+  "name": "yorimichi-ios",
+  "version": "0.1.0",
+  "description": "街歩きガチャ — iOS ネイティブ版 (Capacitor wrap)",
+  "private": true,
+  "scripts": {
+    "init:www": "node scripts/init-www.mjs",
+    "sync": "npx cap sync ios",
+    "open": "npx cap open ios",
+    "build": "npm run sync && npm run open"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.4.0",
+    "@capacitor/core": "^8.4.0",
+    "@capacitor/ios": "^8.4.0",
+    "@capacitor/app": "^8.0.0",
+    "@capacitor/browser": "^8.0.0",
+    "@capacitor/geolocation": "^8.0.0",
+    "@capacitor/share": "^8.0.0",
+    "@capacitor/splash-screen": "^8.0.0",
+    "@capacitor/status-bar": "^8.0.0"
+  }
+}

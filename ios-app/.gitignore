@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Capacitor sync 成果物 (ios/App/App/public は www/ のコピーなので不要)
+# ※ www/ 自体は iOS版アプリの実体コードなのでコミット対象
+ios/App/App/public/
+ios/App/capacitor.config.json
+
+# Xcode build outputs
+ios/App/build/
+ios/DerivedData/
+ios/App/Pods/
+ios/App/App.xcodeproj/xcuserdata/
+ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
+xcuserdata/
+*.xcuserstate
+
+# Fastlane / signing (将来用)
+fastlane/report.xml
+fastlane/Preview.html
+*.mobileprovision
+*.p12
+
+# OS
+.DS_Store
+Thumbs.db
