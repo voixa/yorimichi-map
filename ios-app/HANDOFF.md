@@ -35,12 +35,17 @@
 - [x] Info.plist の権限宣言 (NSLocationWhenInUseUsageDescription 等)
 - [x] iPhone専用化 (Portrait のみ・iPad orientation 削除)
 - [x] Capacitor plugins 6個統合 (app/browser/geolocation/share/splash-screen/status-bar)
+- [x] **MacBook Air (Xcode 26.5) で初回ビルド成功** (2026-06-10・iPhone 17 Pro シミュレータで地図/ガチャUI/GPS/課金UI非表示すべて正常)
 
 ### ⏳ 未着手 (Mac側で実行)
 
-- [ ] **Apple Developer Program 登録** (個人名義・¥12,800/年・iPhone Safariから15分)
-- [ ] Apple Developer 承認待ち (24-48時間)
-- [ ] Xcode で初回ビルド・iPhone シミュレータ起動確認
+- [ ] **Apple Developer Program 有料登録 (¥12,800/年) ← 🟡 保留中 (Apple処理待ち)**
+      2026-06-10確認: 購入は申請済み。developer.apple.com/account/enroll で「征二郎 柳下(保留中)=Pending」表示。
+      Apple側処理に最大48h(〜6/12頃)。承認されれば有料Teamが自動で出る。
+      Xcode は `yagiseijiro@icloud.com`(柳下征二郎) でサインイン済み・現状 Personal Team のみ。
+      ※当初HANDOFF記載の Apple ID `seijirooo.y@gmail.com` ではなく **icloud アカウント**を使用。
+      ※48h超えても保留中なら本人確認/決済再試行が必要な可能性 → developer.apple.com/account 確認。
+- [ ] 実機ビルド (USB接続) ※Personal Team でも7日署名で実機インストールは可能
 - [ ] iPhone 実機ビルド (USB接続)
 - [ ] App Store Connect で App レコード作成
 - [ ] App Icon / Splash Screen 制作 (現在は Capacitor デフォルト)
@@ -277,6 +282,8 @@ ios-app/HANDOFF.md を読んで状況把握して。
 | 2026-06-07 | Bundle ID を `jp.in-dx.yorimichi` → `jp.indx.yorimichi` に変更 (Capacitor規約) |
 | 2026-06-09 | Web版とiOS版を完全分離 (`ios-app/` ディレクトリ独立・コード共有なし) |
 | 2026-06-09 | MacBook Air 路線確定 (GitHub Actions/Fastlane Match は不要に) |
+| 2026-06-10 | MacBook Air 移行完了・Xcode 26.5 でシミュレータ初回ビルド成功 (`xcodebuild -scheme App` + `simctl`)。DEVELOPER_DIR 方式 (sudo不要)。地図/ガチャ/GPS/課金非表示すべて確認 |
+| 2026-06-10 | Xcode に Apple ID(`yagiseijiro@icloud.com`)サインイン。有料Developer Program は **保留中(Pending)** と確認(developer.apple.com/account/enroll「征二郎 柳下(保留中)」)。購入申請済み・Apple処理待ち最大48h。現状 Personal Team のみ |
 
 ---
 
