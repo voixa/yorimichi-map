@@ -477,10 +477,11 @@
     </div>
   </div>
 
-  <!-- 🆕 Main tabs: ホーム / 探す / マイ - body直下で常時表示 -->
+  <!-- 🆕 Main tabs: さんぽ / ホーム(中央・主役) / マイ - body直下で常時表示 -->
+  <!-- 🎨 Redesign v2: data-main-tab値(home/discover/me)は維持・並びと表示名のみ変更 -->
   <nav class="main-tabs" role="tablist" aria-label="メインナビゲーション">
-    <button class="main-tab active" data-main-tab="home" role="tab" type="button">🏠 ホーム</button>
-    <button class="main-tab" data-main-tab="discover" role="tab" type="button">🎯 探す</button>
+    <button class="main-tab" data-main-tab="discover" role="tab" type="button">🗺 さんぽ</button>
+    <button class="main-tab active main-tab-hero" data-main-tab="home" role="tab" type="button">🎰 ホーム</button>
     <button class="main-tab" data-main-tab="me" role="tab" type="button">👤 マイ</button>
   </nav>
 
@@ -521,6 +522,68 @@
           <span class="ww-icon" id="ww-icon">⚠️</span>
           <span class="ww-text" id="ww-text">—</span>
         </section>
+
+        <!-- ============================================================
+             🎰 Redesign v2: ホーム ガチャヒーロー（主役）
+             ============================================================ -->
+        <section class="home-hero" id="home-hero">
+          <div class="hh-topbar">
+            <button class="hh-stat hh-streak" id="hh-streak" type="button" aria-label="連続記録">
+              <span class="hh-streak-flame">🔥</span><span id="hh-streak-num">0</span><span class="hh-streak-unit">日</span>
+            </button>
+            <div class="hh-stat hh-coins" id="hh-coins" title="コイン残高">🪙 <span id="hh-coins-num">0</span></div>
+            <div class="hh-stat hh-free" id="hh-free">無料残 <strong id="hh-free-num">3</strong></div>
+          </div>
+
+          <div class="hh-machine-wrap">
+            <div class="hh-mascot" id="hh-mascot" role="presentation">🐥</div>
+            <div class="hh-machine" id="home-gacha-hero" role="presentation">
+              <div class="hh-globe">
+                <span class="hh-cap hh-cap-n"></span>
+                <span class="hh-cap hh-cap-r"></span>
+                <span class="hh-cap hh-cap-sr"></span>
+                <span class="hh-cap hh-cap-lr"></span>
+              </div>
+              <div class="hh-slot"></div>
+              <div class="hh-base"><span class="hh-knob"></span></div>
+            </div>
+          </div>
+
+          <button class="hh-cta" id="home-hero-cta" type="button">
+            <span class="hh-cta-shine" role="presentation"></span>
+            <span class="hh-cta-icon">🎰</span>
+            <span class="hh-cta-text">コースをガチャで引く</span>
+          </button>
+
+          <div class="hh-meta">
+            <span class="hh-prize">引くと → レアコースが<strong>図鑑</strong>に！</span>
+            <button class="hh-odds" id="hh-odds-btn" type="button" aria-label="排出率を見る">
+              N60 · R30 · <span class="hh-odds-sr">SR9</span> · <span class="hh-odds-lr">LR1</span> <span class="hh-odds-more">詳細▸</span>
+            </button>
+          </div>
+
+          <button class="hh-collection" id="hh-collection" type="button" hidden>
+            <span class="hh-col-icon">📚</span>
+            <span class="hh-col-text" id="hh-col-text">—</span>
+            <span class="hh-col-bar"><span class="hh-col-fill" id="hh-col-fill"></span></span>
+          </button>
+        </section>
+
+        <!-- 排出率モーダル（初回ガチャ前にも能動表示・規約4.5.4） -->
+        <div class="modal-backdrop" id="odds-modal" hidden>
+          <div class="modal odds-modal" role="dialog" aria-label="ガチャ排出率" aria-modal="true">
+            <button class="modal-close" id="odds-close" type="button" aria-label="閉じる">✕</button>
+            <h2 class="modal-title">🎰 ガチャ排出率</h2>
+            <p class="modal-sub">引けるコースのレア度と確率です</p>
+            <ul class="odds-list">
+              <li><span class="odds-badge rar-lr">LR</span><span class="odds-name">レジェンド</span><span class="odds-pct">1%</span></li>
+              <li><span class="odds-badge rar-sr">SR</span><span class="odds-name">スーパーレア</span><span class="odds-pct">9%</span></li>
+              <li><span class="odds-badge rar-r">R</span><span class="odds-name">レア</span><span class="odds-pct">30%</span></li>
+              <li><span class="odds-badge rar-n">N</span><span class="odds-name">ノーマル</span><span class="odds-pct">60%</span></li>
+            </ul>
+            <p class="odds-note">※ 引いたコースは図鑑にコレクションされます。歩いて完走するとXP・コインを獲得。</p>
+          </div>
+        </div>
 
         <!-- 📅 今日のサマリーカード（経験者向け・最上部・welcome-card と排他） -->
         <section class="today-summary" id="today-summary" hidden>
@@ -566,7 +629,8 @@
         </section>
 
         <!-- 🆕 R2#1: 主要2カードを2カラム grid でまとめる -->
-        <div class="home-primary-row">
+        <!-- 🎨 Redesign v2: 新ヒーローCTAに統合したため非表示（HTML残置=JS非破壊） -->
+        <div class="home-primary-row" hidden>
           <!-- 🥇 優先度2: クイックスタート（おまかせ・1タップ） -->
           <section class="quickstart-hero" id="quickstart-hero">
             <button class="quickstart-btn" id="quickstart-btn" type="button">
@@ -720,7 +784,8 @@
         </section>
 
         <!-- もっと見る（折りたたみ：補助情報） -->
-        <details class="home-more" id="home-more">
+        <!-- 🎨 Redesign v2: 統計はマイへ集約のため非表示 -->
+        <details class="home-more" id="home-more" hidden>
           <summary class="home-more-summary">
             <span>📈 もっと見る</span>
             <span class="home-more-hint">完走数・人気ランキング・統計</span>

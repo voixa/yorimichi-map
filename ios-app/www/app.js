@@ -7105,6 +7105,52 @@ ${trkPts}
     }
   }
 
+  // 🎰 Redesign v2: ホーム ガチャヒーローの数値更新
+  function renderHomeGachaHero() {
+    try {
+      const INITIAL_FREE = 3;
+      const used = (typeof gacha !== 'undefined' && gacha.freeUsedTotal) || 0;
+      const freeRemain = Math.max(0, INITIAL_FREE - used);
+      const coins = (typeof gacha !== 'undefined' && gacha.coins) || 0;
+      const streak = state.loginStreak || 0;
+      const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+      setTxt('hh-streak-num', streak);
+      setTxt('hh-coins-num', coins);
+      const streakEl = document.getElementById('hh-streak');
+      if (streakEl) streakEl.classList.toggle('hot', streak >= 2);
+
+      // 無料/コイン枯渇時は「歩いて貯める」訴求に切替（行き止まりを作らない）
+      const depleted = freeRemain <= 0 && coins < 2;
+      const freeEl = document.getElementById('hh-free');
+      if (freeEl) {
+        freeEl.innerHTML = freeRemain > 0
+          ? ('無料残 <strong id="hh-free-num">' + freeRemain + '</strong>')
+          : '🚶 歩いて貯める';
+        freeEl.classList.toggle('depleted', depleted);
+      }
+      const cta = document.getElementById('home-hero-cta');
+      if (cta) {
+        const t = cta.querySelector('.hh-cta-text');
+        if (t) t.textContent = depleted ? 'コインを貯めて引く' : 'コースをガチャで引く';
+      }
+
+      // 図鑑コンプ率チラ見せ（discoveredCourses / 全コース）
+      const col = document.getElementById('hh-collection');
+      const colText = document.getElementById('hh-col-text');
+      const colFill = document.getElementById('hh-col-fill');
+      const all = window.YORIMICHI_COURSES || [];
+      const done = (state.discoveredCourses && state.discoveredCourses.size) || 0;
+      if (col && all.length > 0) {
+        const pct = Math.round(done / all.length * 100);
+        if (colText) colText.textContent = '図鑑 ' + done + '/' + all.length + ' コース（' + pct + '%）';
+        if (colFill) colFill.style.width = pct + '%';
+        col.hidden = false;
+      } else if (col) {
+        col.hidden = true;
+      }
+    } catch (e) { console.warn('renderHomeGachaHero failed', e); }
+  }
+
   // ===== Daily tip rotation =====
   const DAILY_TIPS = [
     '🚶 はじめての街は「逆方向の路地」を選ぶと発見が増えます',
@@ -9740,6 +9786,23 @@ ${trkPts}
     const quickBtn = $('#quickstart-btn');
     if (quickBtn) quickBtn.addEventListener('click', quickStart);
 
+    // 🎰 Redesign v2: ホーム ガチャヒーロー 配線
+    const heroCta = $('#home-hero-cta');
+    if (heroCta) heroCta.addEventListener('click', () => { vib(12); quickStart(); });
+    const heroStreak = $('#hh-streak');
+    if (heroStreak) heroStreak.addEventListener('click', () => { try { showWalkLog(); } catch {} });
+    const heroCol = $('#hh-collection');
+    if (heroCol) heroCol.addEventListener('click', () => { try { showCollection(); } catch {} });
+    // 排出率モーダル（4.5.4 能動表示）
+    const oddsBtn = $('#hh-odds-btn');
+    const oddsModal = $('#odds-modal');
+    if (oddsBtn && oddsModal) {
+      oddsBtn.addEventListener('click', () => { oddsModal.hidden = false; });
+      const oc = $('#odds-close');
+      if (oc) oc.addEventListener('click', () => { oddsModal.hidden = true; });
+      oddsModal.addEventListener('click', (e) => { if (e.target === oddsModal) oddsModal.hidden = true; });
+    }
+
     // 初回ウェルカムCTA（quickStartと同じ動作）
     const welcomeBtn = $('#welcome-cta');
     if (welcomeBtn) welcomeBtn.addEventListener('click', quickStart);
@@ -9850,20 +9913,14 @@ ${trkPts}
       } catch {}
       // タブ切替時に該当タブの内容を更新
       if (name === 'home') {
-        try { renderWeatherWarning(); } catch {}
-        try { renderTodaySummary(); } catch {}
-        try { renderLuckyCourse(); } catch {}
-        try { renderHomeQuickActions(); } catch {}
-        try { renderRecentCompletions(); } catch {}
-        try { renderFavoritesReminder(); } catch {}
-        try { renderCommunityBanner(); } catch {}
-        try { renderWelcomeCard(); } catch {}
-        try { renderStreakBadge(); } catch {}
-        try { renderFeaturedCard(); } catch {}
-        try { renderMissions(); } catch {}
-        try { renderStatusBar(); } catch {}
-        try { renderRecommendationBanner(); } catch {}
-        try { renderWeatherBanner(); } catch {}
+        // 🎨 Redesign v2: ホームは「ガチャヒーロー＋毎日開くエサ」に厳選。
+        //   過密だった旧セクション(today-summary/quick-actions/recent/fav/community/
+        //   welcome/featured/missions/status/recommendation/weather-banner)は
+        //   render呼び出しを外して非表示化（HTMLは残置=JSバインド非破壊）。
+        try { renderWeatherWarning(); } catch {}   // 安全情報(猛暑/雷)は残す
+        try { renderStreakBadge(); } catch {}      // 🔥連続=毎日開くエサ(最優先)
+        try { renderLuckyCourse(); } catch {}      // 🍀今日の1コース
+        try { renderHomeGachaHero(); } catch {}    // 🎰 新ヒーロー(Phase B)
       } else if (name === 'me') {
         try { renderMeTab(); } catch {}
       }

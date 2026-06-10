@@ -3,7 +3,7 @@
   "appName": "街歩きガチャ",
   "webDir": "www",
   "ios": {
-    "scheme": "yorimichi",
+    "scheme": "App",
     "contentInset": "always",
     "scrollEnabled": true,
     "limitsNavigationsToAppBoundDomains": false
