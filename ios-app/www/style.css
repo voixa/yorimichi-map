@@ -12808,3 +12808,81 @@ html[data-platform="ios"] .app-header {
 [data-theme="dark"] .home-hero,
 :root:not([data-theme="light"]) .home-hero { background: radial-gradient(120% 90% at 50% -10%, rgba(255,210,63,.12), transparent 60%), var(--surface); }
 
+/* ============================================================
+   🎨 REDESIGN v2 — Phase C/D: マイ刷新 + 共通ボタンのポップ化
+   ============================================================ */
+
+/* 共通プライマリボタンをブランドグラデに（全タブを底上げ） */
+.btn-primary {
+  background: var(--brand-grad) !important;
+  border: none !important;
+  font-weight: 800 !important;
+  box-shadow: var(--pop-shadow) !important;
+  border-radius: var(--radius-lg) !important;
+  transition: transform var(--t-bounce) !important;
+}
+.btn-primary:active { transform: scale(.97) !important; }
+
+/* マイ: 育成キャラ ヒーローヘッダー */
+.me-header {
+  background: var(--brand-grad) !important;
+  color: #fff !important;
+  border-radius: var(--radius-xl) !important;
+  padding: 22px 18px 18px !important;
+  box-shadow: var(--pop-shadow) !important;
+  position: relative; overflow: hidden;
+}
+.me-header::after {
+  content: ""; position: absolute; right: -30px; top: -30px;
+  width: 130px; height: 130px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.25), transparent 70%);
+  pointer-events: none;
+}
+.me-avatar {
+  font-size: 56px !important;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,.2));
+  animation: hh-mascot-bob 2.6s ease-in-out infinite;
+}
+.me-title { color: #fff !important; font-weight: 900 !important; }
+.me-level { color: rgba(255,255,255,.92) !important; font-weight: 800 !important; }
+.me-xp-bar, #me-xp-bar { background: rgba(255,255,255,.3) !important; }
+.me-xp-fill, #me-xp-fill { background: #fff !important; }
+.me-xp-text, #me-xp-text { color: rgba(255,255,255,.92) !important; }
+
+/* マイ: 12ショートカットを統一感あるカードに（パステルのノイズ低減） */
+.me-shortcut {
+  background: var(--surface) !important;
+  border: 1.5px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--shadow-sm) !important;
+  transition: transform var(--t-fast), border-color var(--t-fast) !important;
+}
+.me-shortcut:active { transform: scale(.95) !important; border-color: var(--brand) !important; }
+.me-shortcut .ms-emoji { font-size: 24px !important; }
+
+/* マイ: セクションタイトルを太く */
+.me-section-title { font-weight: 900 !important; font-size: 15px !important; }
+
+/* 進捗バーをブランドグラデに統一 */
+.cp-fill, .mg-fill, .me-xp-fill { background: var(--brand-grad) !important; }
+
+@media (prefers-reduced-motion: reduce) { .me-avatar { animation: none !important; } }
+
+/* マイ: アバターに白ディスク（オレンジ地でのコントラスト確保） */
+.me-avatar {
+  background: rgba(255,255,255,.92) !important;
+  width: 84px !important; height: 84px !important;
+  border-radius: 50% !important;
+  display: flex !important; align-items: center; justify-content: center;
+  margin: 0 auto 8px !important;
+  box-shadow: 0 6px 16px rgba(0,0,0,.18);
+}
+
+/* マイ: ステータスカードを統一トーンに（パステルのバラつき低減） */
+.me-stat {
+  background: var(--surface) !important;
+  border: 1.5px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
