@@ -2939,6 +2939,77 @@
     return route;
   }
 
+  // ============================================================
+  // 🎰 Phase E: ガチャ演出（LR虹コンフェッティ＋縁グロー / スキップ / reduced-motion）
+  //   - 画面全体フラッシュ(legendary-flash)は廃止 → 縁グローに置換（光感受性配慮）
+  //   - 2回目以降は演出短縮＋タップで常時スキップ可
+  //   - prefers-reduced-motion時は紙吹雪→静的「✨LEGENDARY」バッジ fade 1回
+  // ============================================================
+  function _prefersReducedMotion() {
+    try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
+  }
+
+  // 縁グロー（旧 legendary-flash の置換）。中央は透過、画面の縁だけ金→ピンクに発光して減衰。
+  function showLegendaryGlow() {
+    const glow = document.createElement('div');
+    glow.className = 'lr-edge-glow';
+    glow.setAttribute('role', 'presentation');
+    document.body.appendChild(glow);
+    setTimeout(() => glow.remove(), 1500);
+  }
+
+  // 虹コンフェッティ（count上限64＝設計の60-80内）。reduced-motion時は静的バッジ。
+  function launchLRConfetti() {
+    if (_prefersReducedMotion()) {
+      const badge = document.createElement('div');
+      badge.className = 'lr-static-badge';
+      badge.textContent = '✨ LEGENDARY';
+      badge.setAttribute('role', 'presentation');
+      document.body.appendChild(badge);
+      setTimeout(() => badge.remove(), 1700);
+      return;
+    }
+    const layer = document.createElement('div');
+    layer.className = 'lr-confetti-layer';
+    layer.setAttribute('role', 'presentation');
+    const COLORS = ['#ff5e8a', '#ffd23f', '#2ee6c5', '#ff7e3d', '#7c5cff', '#3bd1ff'];
+    const N = 64;
+    for (let i = 0; i < N; i++) {
+      const p = document.createElement('span');
+      p.className = 'lr-confetti-piece';
+      p.style.left = (Math.random() * 100).toFixed(1) + '%';
+      p.style.background = COLORS[i % COLORS.length];
+      p.style.animationDelay = (Math.random() * 350).toFixed(0) + 'ms';
+      p.style.animationDuration = (1000 + Math.random() * 900).toFixed(0) + 'ms';
+      p.style.setProperty('--rot', ((Math.random() < 0.5 ? -1 : 1) * (180 + Math.random() * 540)).toFixed(0) + 'deg');
+      p.style.setProperty('--drift', ((Math.random() - 0.5) * 40).toFixed(0) + 'px');
+      layer.appendChild(p);
+    }
+    document.body.appendChild(layer);
+    // 演出終了後に DOM 除去（will-change を残さない＝設計の性能配慮）
+    setTimeout(() => layer.remove(), 2600);
+  }
+
+  // ── 演出スキップ用の中断可能ディレイ ──
+  let _gachaSkipRequested = false;
+  let _gachaSkipResolvers = [];
+  function gachaDelay(ms) {
+    return new Promise(resolve => {
+      if (_gachaSkipRequested) return resolve();
+      const t = setTimeout(() => {
+        _gachaSkipResolvers = _gachaSkipResolvers.filter(r => r.t !== t);
+        resolve();
+      }, ms);
+      _gachaSkipResolvers.push({ t, resolve });
+    });
+  }
+  function requestGachaSkip() {
+    if (_gachaSkipRequested) return;
+    _gachaSkipRequested = true;
+    _gachaSkipResolvers.forEach(({ t, resolve }) => { clearTimeout(t); resolve(); });
+    _gachaSkipResolvers = [];
+  }
+
   async function turnGachapon() {
     const turnBtn = $('#btn-turn');
     if (turnBtn.disabled) return;
@@ -3019,32 +3090,58 @@
     machine.classList.remove('turning', 'dropping', 'opening');
     void machine.offsetWidth; // reflow
 
+    // 🎰 Phase E: 演出スキップの準備。2回目以降(通算pull>0)は短縮、初回はフル尺。
+    //   reduced-motion時もディレイ自体は短縮し、待たせ疲労を減らす。
+    _gachaSkipRequested = false;
+    _gachaSkipResolvers = [];
+    const fast = (gacha.pulls > 0) || _prefersReducedMotion();
+    const durTurn = fast ? 650 : 1600;
+    const durDrop = fast ? 380 : 800;
+    const durOpen = fast ? 280 : 600;
+    // タップで常時スキップ可（マシン本体タップ）＋「タップでスキップ」ヒント
+    const skipOnTap = () => requestGachaSkip();
+    machine.addEventListener('click', skipOnTap);
+    let skipHint = null;
+    if (!_prefersReducedMotion()) {
+      skipHint = document.createElement('div');
+      skipHint.className = 'gp-skip-hint';
+      skipHint.textContent = '⏭ タップでスキップ';
+      skipHint.setAttribute('role', 'presentation');
+      machine.appendChild(skipHint);
+    }
+
     // Phase 1: turning - click-clack handle sound
     machine.classList.add('turning');
     playSfx('turn');
-    await new Promise(r => setTimeout(r, 1600));
+    await gachaDelay(durTurn);
 
     // Phase 2: drop - thud sound
     machine.classList.remove('turning');
     output.hidden = false;
     machine.classList.add('dropping');
     playSfx('drop');
-    await new Promise(r => setTimeout(r, 800));
+    await gachaDelay(durDrop);
 
-    // LR full-screen flash
+    // 🎰 Phase E: LR縁グロー（旧 legendary-flash 全画面白を置換・光感受性配慮）
     if (route.rarity === 'legendary') {
-      const flash = document.createElement('div');
-      flash.className = 'legendary-flash';
-      document.body.appendChild(flash);
-      setTimeout(() => flash.remove(), 700);
+      showLegendaryGlow();
     }
 
     // Phase 3: opening - capsule splits + reveal sound
     machine.classList.add('opening');
     playSfx('open');
-    await new Promise(r => setTimeout(r, 600));
+    await gachaDelay(durOpen);
     // Then play rarity-specific reveal sound
     playSfx(route.rarity === 'legendary' ? 'legendary' : route.rarity === 'sr' ? 'sr' : route.rarity === 'r' ? 'r' : 'pop');
+
+    // 🎰 Phase E: LR虹コンフェッティ（開封の山場で発火・reduced-motionは静的バッジ）
+    if (route.rarity === 'legendary') {
+      launchLRConfetti();
+    }
+
+    // 演出後始末：スキップ用リスナーとヒントを除去
+    machine.removeEventListener('click', skipOnTap);
+    if (skipHint) skipHint.remove();
 
     // Mark discovered
     if (route.isCurated) {
@@ -3355,12 +3452,10 @@
     if (cap) cap.classList.add('opening');
     playSfx(route.rarity === 'legendary' ? 'legendary' : route.rarity === 'sr' ? 'sr' : 'pop');
     await new Promise(r => setTimeout(r, 700));
-    // LR full-screen flash
+    // 🎰 Phase E: LR縁グロー＋虹コンフェッティ（旧 legendary-flash 全画面白を置換）
     if (route.rarity === 'legendary') {
-      const flash = document.createElement('div');
-      flash.className = 'legendary-flash';
-      document.body.appendChild(flash);
-      setTimeout(() => flash.remove(), 700);
+      showLegendaryGlow();
+      launchLRConfetti();
     }
     if (route.isCurated) {
       state.discoveredCourses.add(route.id);
@@ -9906,9 +10001,13 @@ ${trkPts}
       document.body.dataset.activeTab = name;
       try { localStorage.setItem(MAIN_TAB_KEY, name); } catch {}
       // 🆕 マップサイズ再計算（タブ切替で地図のスペース変わるため）
+      // Phase C: パネル高は transition(--t-base=200ms)でアニメーションするため、
+      //   100ms(遷移途中)だけだと最終サイズで再計算されず地図下部が白く残る。
+      //   遷移完了後(>200ms)にも invalidateSize を呼んでタイルを充填する。
       try {
         if (state.map && name === 'discover') {
           setTimeout(() => state.map.invalidateSize(), 100);
+          setTimeout(() => state.map.invalidateSize(), 320);
         }
       } catch {}
       // タブ切替時に該当タブの内容を更新
