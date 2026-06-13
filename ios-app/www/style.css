@@ -12916,31 +12916,8 @@ html[data-platform="ios"] .app-header {
   100% { box-shadow: inset 0 0 0px 0px rgba(255, 210, 63, 0); }
 }
 
-/* 虹コンフェッティ層（モーダルより前面・操作は透過） */
-.lr-confetti-layer {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none;
-  overflow: hidden;
-}
-.lr-confetti-piece {
-  position: absolute;
-  top: -8%;
-  width: 10px;
-  height: 14px;
-  border-radius: 2px;
-  opacity: 0;
-  will-change: transform, opacity; /* 演出中のみ。要素はJSで2.6s後にDOM除去＝残さない */
-  animation-name: lr-confetti-fall;
-  animation-timing-function: cubic-bezier(0.3, 0.6, 0.4, 1);
-  animation-fill-mode: forwards;
-}
-@keyframes lr-confetti-fall {
-  0%   { opacity: 0; transform: translate3d(0, -12vh, 0) rotate(0deg); }
-  8%   { opacity: 1; }
-  100% { opacity: 0; transform: translate3d(var(--drift, 0px), 110vh, 0) rotate(var(--rot, 360deg)); }
-}
+/* ※ LR/SR の紙吹雪は既存 #confetti / fireConfetti() に一本化（レビュー反映で
+   独自 .lr-confetti-* は撤去）。ここは縁グロー＋スキップヒント＋静的バッジのみ。 */
 
 /* 「タップでスキップ」ヒント（マシン下部・初回フル尺時のみ表示） */
 .gp-skip-hint {
@@ -12989,11 +12966,11 @@ html[data-platform="ios"] .app-header {
   100% { opacity: 0; }
 }
 
-/* 光感受性・前庭配慮：reduced-motion ではコンフェッティを出さず（JS分岐）、
-   縁グローも単発・控えめに短縮。スキップヒントの点滅も無し。 */
+/* 光感受性・前庭配慮：reduced-motion では紙吹雪を出さず（JS側 fireConfetti / 演出分岐）、
+   LR は縁グローでなく静的バッジに分岐。バッジの「静かな1回fade」だけはグローバルの
+   reduced-motion 無効化(*{animation-duration:.001ms})を上書きして本来の尺で見せる
+   （opacity の単発フェードは前庭配慮に反しない）。 */
 @media (prefers-reduced-motion: reduce) {
-  .lr-confetti-layer,
-  .lr-confetti-piece { display: none !important; animation: none !important; }
-  .lr-edge-glow { animation-duration: 0.9s; }
+  .lr-static-badge { animation-duration: 1.7s !important; }
 }
 

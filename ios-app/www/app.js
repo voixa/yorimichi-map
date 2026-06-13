@@ -2958,36 +2958,16 @@
     setTimeout(() => glow.remove(), 1500);
   }
 
-  // 虹コンフェッティ（count上限64＝設計の60-80内）。reduced-motion時は静的バッジ。
-  function launchLRConfetti() {
-    if (_prefersReducedMotion()) {
-      const badge = document.createElement('div');
-      badge.className = 'lr-static-badge';
-      badge.textContent = '✨ LEGENDARY';
-      badge.setAttribute('role', 'presentation');
-      document.body.appendChild(badge);
-      setTimeout(() => badge.remove(), 1700);
-      return;
-    }
-    const layer = document.createElement('div');
-    layer.className = 'lr-confetti-layer';
-    layer.setAttribute('role', 'presentation');
-    const COLORS = ['#ff5e8a', '#ffd23f', '#2ee6c5', '#ff7e3d', '#7c5cff', '#3bd1ff'];
-    const N = 64;
-    for (let i = 0; i < N; i++) {
-      const p = document.createElement('span');
-      p.className = 'lr-confetti-piece';
-      p.style.left = (Math.random() * 100).toFixed(1) + '%';
-      p.style.background = COLORS[i % COLORS.length];
-      p.style.animationDelay = (Math.random() * 350).toFixed(0) + 'ms';
-      p.style.animationDuration = (1000 + Math.random() * 900).toFixed(0) + 'ms';
-      p.style.setProperty('--rot', ((Math.random() < 0.5 ? -1 : 1) * (180 + Math.random() * 540)).toFixed(0) + 'deg');
-      p.style.setProperty('--drift', ((Math.random() - 0.5) * 40).toFixed(0) + 'px');
-      layer.appendChild(p);
-    }
-    document.body.appendChild(layer);
-    // 演出終了後に DOM 除去（will-change を残さない＝設計の性能配慮）
-    setTimeout(() => layer.remove(), 2600);
+  // reduced-motion 用：紙吹雪の代わりに静的「✨LEGENDARY」バッジを1回fade（設計§7）。
+  //   通常時の LR/SR コンフェッティは revealRoute() の fireConfetti に一本化済み
+  //   （レビュー指摘の二重発火を解消）。ここでは縁グロー＋このバッジのみを担う。
+  function showLegendaryBadge() {
+    const badge = document.createElement('div');
+    badge.className = 'lr-static-badge';
+    badge.textContent = '✨ LEGENDARY';
+    badge.setAttribute('role', 'presentation');
+    document.body.appendChild(badge);
+    setTimeout(() => badge.remove(), 1700);
   }
 
   // ── 演出スキップ用の中断可能ディレイ ──
@@ -3095,14 +3075,18 @@
     _gachaSkipRequested = false;
     _gachaSkipResolvers = [];
     const fast = (gacha.pulls > 0) || _prefersReducedMotion();
+    // レビュー反映: 退屈な turn(ワインドアップ)のみ短縮。drop/open は CSS アニメ実尺
+    //   (.gachapon.dropping=0.8s / .opening=0.6s)を下回らせず、落下・開封の山場を
+    //   ブツ切りにしない。fast でも climax は保つ。
     const durTurn = fast ? 650 : 1600;
-    const durDrop = fast ? 380 : 800;
-    const durOpen = fast ? 280 : 600;
-    // タップで常時スキップ可（マシン本体タップ）＋「タップでスキップ」ヒント
+    const durDrop = 800;
+    const durOpen = 600;
+    // タップで常時スキップ可（マシン本体タップ）。ヒントはフル尺(初回)時のみ＝
+    //   短縮尺ではヒントを認知する前に終わるため出さない（レビュー反映）。
     const skipOnTap = () => requestGachaSkip();
     machine.addEventListener('click', skipOnTap);
     let skipHint = null;
-    if (!_prefersReducedMotion()) {
+    if (!fast) {
       skipHint = document.createElement('div');
       skipHint.className = 'gp-skip-hint';
       skipHint.textContent = '⏭ タップでスキップ';
@@ -3110,81 +3094,80 @@
       machine.appendChild(skipHint);
     }
 
-    // Phase 1: turning - click-clack handle sound
-    machine.classList.add('turning');
-    playSfx('turn');
-    await gachaDelay(durTurn);
-
-    // Phase 2: drop - thud sound
-    machine.classList.remove('turning');
-    output.hidden = false;
-    machine.classList.add('dropping');
-    playSfx('drop');
-    await gachaDelay(durDrop);
-
-    // 🎰 Phase E: LR縁グロー（旧 legendary-flash 全画面白を置換・光感受性配慮）
-    if (route.rarity === 'legendary') {
-      showLegendaryGlow();
-    }
-
-    // Phase 3: opening - capsule splits + reveal sound
-    machine.classList.add('opening');
-    playSfx('open');
-    await gachaDelay(durOpen);
-    // Then play rarity-specific reveal sound
-    playSfx(route.rarity === 'legendary' ? 'legendary' : route.rarity === 'sr' ? 'sr' : route.rarity === 'r' ? 'r' : 'pop');
-
-    // 🎰 Phase E: LR虹コンフェッティ（開封の山場で発火・reduced-motionは静的バッジ）
-    if (route.rarity === 'legendary') {
-      launchLRConfetti();
-    }
-
-    // 演出後始末：スキップ用リスナーとヒントを除去
-    machine.removeEventListener('click', skipOnTap);
-    if (skipHint) skipHint.remove();
-
-    // Mark discovered
-    if (route.isCurated) {
-      const wasNew = !state.discoveredCourses.has(route.id);
-      state.discoveredCourses.add(route.id);
-      try { localStorage.setItem('yorimichi-discovered', JSON.stringify([...state.discoveredCourses])); } catch (e) {}
-
-      // Check if this completes the entire collection
-      const allCourses = (window.YORIMICHI_COURSES || []).filter(c => {
-        const enabled = (window.YORIMICHI_AREAS || []).find(a => a.id === c.area)?.enabled;
-        return enabled;
-      });
-      if (wasNew && state.discoveredCourses.size >= allCourses.length) {
-        setTimeout(() => showCompletionCelebration(allCourses.length), 4000);
-      }
-    }
-    gacha.pulls += 1;
-    // Pity counters
-    if (route.rarity === 'legendary') {
-      gacha.pullsSinceLR = 0;
-      gacha.pullsSinceSR = 0;
-    } else if (route.rarity === 'sr') {
-      gacha.pullsSinceSR = 0;
-      gacha.pullsSinceLR += 1;
-    } else {
-      gacha.pullsSinceSR += 1;
-      gacha.pullsSinceLR += 1;
-    }
-    gachaSave();
-
-    // Reveal
-    revealRoute(route);
-    turnBtn.disabled = false;
-    setTimeout(checkNewBadges, 1500);
-    // 招待ボーナス（初ガチャ時のみ）
-    setTimeout(maybeGrantInviteeBonus, 2000);
-    // ミッション「ガチャを1回引く」
-    try { markMissionDone('gacha'); } catch {}
-    // ライブイベント
+    // レビュー反映: 演出途中の例外・スキップ・モーダル早期クローズでも、
+    //   turnBtn のロック解除とリスナー/ヒント除去を必ず行う（try/finally）。
     try {
-      const cid = route?.isCurated ? route.id : null;
-      sendHeartbeat('pull', cid ? { course_id: cid } : {});
-    } catch {}
+      // Phase 1: turning - click-clack handle sound
+      machine.classList.add('turning');
+      playSfx('turn');
+      await gachaDelay(durTurn);
+
+      // Phase 2: drop - thud sound
+      machine.classList.remove('turning');
+      output.hidden = false;
+      machine.classList.add('dropping');
+      playSfx('drop');
+      await gachaDelay(durDrop);
+
+      // 🎰 Phase E: LR 演出（旧 legendary-flash 全画面白を置換・光感受性配慮）。
+      //   通常=縁グロー / reduced-motion=静的バッジ。紙吹雪は revealRoute に一本化。
+      if (route.rarity === 'legendary') {
+        try { _prefersReducedMotion() ? showLegendaryBadge() : showLegendaryGlow(); } catch (e) {}
+      }
+
+      // Phase 3: opening - capsule splits + reveal sound
+      machine.classList.add('opening');
+      playSfx('open');
+      await gachaDelay(durOpen);
+      // Then play rarity-specific reveal sound
+      playSfx(route.rarity === 'legendary' ? 'legendary' : route.rarity === 'sr' ? 'sr' : route.rarity === 'r' ? 'r' : 'pop');
+
+      // Mark discovered
+      if (route.isCurated) {
+        const wasNew = !state.discoveredCourses.has(route.id);
+        state.discoveredCourses.add(route.id);
+        try { localStorage.setItem('yorimichi-discovered', JSON.stringify([...state.discoveredCourses])); } catch (e) {}
+
+        // Check if this completes the entire collection
+        const allCourses = (window.YORIMICHI_COURSES || []).filter(c => {
+          const enabled = (window.YORIMICHI_AREAS || []).find(a => a.id === c.area)?.enabled;
+          return enabled;
+        });
+        if (wasNew && state.discoveredCourses.size >= allCourses.length) {
+          setTimeout(() => showCompletionCelebration(allCourses.length), 4000);
+        }
+      }
+      gacha.pulls += 1;
+      // Pity counters
+      if (route.rarity === 'legendary') {
+        gacha.pullsSinceLR = 0;
+        gacha.pullsSinceSR = 0;
+      } else if (route.rarity === 'sr') {
+        gacha.pullsSinceSR = 0;
+        gacha.pullsSinceLR += 1;
+      } else {
+        gacha.pullsSinceSR += 1;
+        gacha.pullsSinceLR += 1;
+      }
+      gachaSave();
+
+      // Reveal（LR/SR の紙吹雪はこの中の fireConfetti が一手に担う）
+      revealRoute(route);
+      setTimeout(checkNewBadges, 1500);
+      // 招待ボーナス（初ガチャ時のみ）
+      setTimeout(maybeGrantInviteeBonus, 2000);
+      // ミッション「ガチャを1回引く」
+      try { markMissionDone('gacha'); } catch {}
+      // ライブイベント
+      try {
+        const cid = route?.isCurated ? route.id : null;
+        sendHeartbeat('pull', cid ? { course_id: cid } : {});
+      } catch {}
+    } finally {
+      turnBtn.disabled = false;
+      machine.removeEventListener('click', skipOnTap);
+      if (skipHint) skipHint.remove();
+    }
   }
 
   function updateSessionStreak() {
@@ -3452,11 +3435,8 @@
     if (cap) cap.classList.add('opening');
     playSfx(route.rarity === 'legendary' ? 'legendary' : route.rarity === 'sr' ? 'sr' : 'pop');
     await new Promise(r => setTimeout(r, 700));
-    // 🎰 Phase E: LR縁グロー＋虹コンフェッティ（旧 legendary-flash 全画面白を置換）
-    if (route.rarity === 'legendary') {
-      showLegendaryGlow();
-      launchLRConfetti();
-    }
+    // ※ pickCapsule は到達不能（3カプセルUIは gachapon マシンに置換済み・renderCapsules=no-op）。
+    //   LR 演出は turnGachapon / revealRoute に集約。ここでは何もしない。
     if (route.isCurated) {
       state.discoveredCourses.add(route.id);
       try {
@@ -3723,9 +3703,10 @@
       };
     }
 
-    // Confetti for top rarities
+    // Confetti for top rarities（LR/SR の紙吹雪はここに一本化）。
+    //   レビュー反映: LR は設計上限(60-80)に合わせ 120→70 へ抑制。
     if (route.rarity === 'legendary') {
-      fireConfetti(120, 'legendary', { shapes: ['rect', 'circle', 'star'] });
+      fireConfetti(70, 'legendary', { shapes: ['rect', 'circle', 'star'] });
     } else if (route.rarity === 'sr') {
       fireConfetti(60, ['#ff9800', '#ffc107', '#ff5722']);
     }
@@ -3896,6 +3877,9 @@
   };
 
   function fireConfetti(count, colors, opts = {}) {
+    // レビュー反映: 前庭/光感受性配慮。reduced-motion 時は紙吹雪を生成しない
+    //   （全 fireConfetti 呼び出しに一律適用。LR は呼び出し側で静的バッジに分岐）。
+    if (_prefersReducedMotion()) return;
     const container = $('#confetti');
     if (!container) return;
     container.hidden = false;
@@ -9796,6 +9780,10 @@ ${trkPts}
   function setupGachaListeners() {
     $('#gacha-btn').addEventListener('click', showGachaModal);
     $('#gacha-close').addEventListener('click', () => {
+      // レビュー反映: 演出中に閉じたら進行中のディレイを即解決して中断する。
+      //   これをしないと裏で演出が走り続け、閉じた画面に紙吹雪/グローが発火し、
+      //   スキップ用リスナー/ヒントの除去も遅れる。
+      try { requestGachaSkip(); } catch (e) {}
       $('#gacha-modal').hidden = true;
       state.sessionPullCount = 0; // reset on close
     });
