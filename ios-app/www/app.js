@@ -10483,6 +10483,12 @@ ${trkPts}
     }
   }
   function showTrophy(badge) {
+    // UI修正: 称号演出が他モーダル(ガチャ結果カード等)に重ならないよう、
+    //   開いている間は閉じるまで遅延表示する（重なって見える「変」を防ぐ）。
+    if (document.querySelector('.modal-backdrop:not([hidden])')) {
+      setTimeout(() => showTrophy(badge), 1500);
+      return;
+    }
     const burst = $('#trophy-burst');
     $('#trophy-icon').textContent = badge.icon;
     $('#trophy-name').textContent = badge.name;
