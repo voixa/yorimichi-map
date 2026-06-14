@@ -9010,6 +9010,10 @@ body.modal-open .pwa-install-banner {
 /* :has() 対応ブラウザでは直接モーダル可視性で判定 */
 body:has(.modal-backdrop:not([hidden])) .pwa-install-banner,
 body:has(.modal-backdrop:not([hidden])) .main-tabs,
+body:has(.modal-backdrop:not([hidden])) .map-fullscreen-btn,
+body:has(.modal-backdrop:not([hidden])) .map-recenter-btn,
+body:has(.modal-backdrop:not([hidden])) .map-history-btn,
+body:has(.modal-backdrop:not([hidden])) .map-submissions-btn,
 body:has(.photo-viewer) .pwa-install-banner,
 body:has(.photo-viewer) .main-tabs {
   display: none !important;
@@ -11955,7 +11959,13 @@ input[type="search"]::-webkit-search-cancel-button:hover {
     display: none !important;
   }
   /* ホーム/マイタブ時はパネル下部余白をタブバー分だけに */
-  body[data-active-tab="home"] .panel-inner,
+  /* ホーム: 上段チップ(streak/coin等)が Dynamic Island/ステータスバーに潜り込んで
+     「上が切れる」のを防ぐため、上部セーフエリア分を padding-top に加算する。 */
+  body[data-active-tab="home"] .panel-inner {
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 80px !important;
+  }
+  /* マイ: オレンジ・ヒーローはステータスバー裏まで全面に出す意匠なので
+     上部セーフエリアは加えない（加えると上に白帯が出て不格好）。中身側で島を回避。 */
   body[data-active-tab="me"] .panel-inner {
     padding: 14px 16px 80px !important;
   }
@@ -12238,7 +12248,12 @@ body.modal-open {
     width: 48px;
     height: 48px;
     font-size: 22px;
+    padding: 0;
+    overflow: hidden;
   }
+  /* モバイルは48px正方のアイコンボタン。⛶アイコンだけ見せ、ラベル「全画面」は
+     幅に収まらず右端で見切れる(「全画」で切れる)ため非表示にする。 */
+  .map-fullscreen-btn .mfb-label { display: none; }
 }
 
 /* Touch feedback on all primary buttons - subtle scale on press */
