@@ -2080,11 +2080,14 @@
   // GACHA SYSTEM
   // ============================================================
 
+  // G2.5: おでかけ層は「Nコース＝ハズレを引かされる」感を嫌う（レビュー指摘）。
+  //   レア度を"当たりの色味"に言い換える：定番→穴場→隠れ家→限定（全部"行く価値あり"）。
+  //   内部キー(legendary/sr/r/n)・cls・rate・確率は不変。表示名のみ変更。
   const RARITY = {
-    legendary: { name: 'LEGENDARY', stars: '✨✨✨', cls: 'rarity-legendary', rate: 0.01 },
-    sr:        { name: 'SUPER RARE', stars: '🌟🌟', cls: 'rarity-sr', rate: 0.09 },
-    r:         { name: 'RARE', stars: '⭐', cls: 'rarity-r', rate: 0.30 },
-    n:         { name: 'NORMAL', stars: '◎', cls: 'rarity-n', rate: 0.60 },
+    legendary: { name: '限定', stars: '✨✨✨', cls: 'rarity-legendary', rate: 0.01 },
+    sr:        { name: '隠れ家', stars: '🌟🌟', cls: 'rarity-sr', rate: 0.09 },
+    r:         { name: '穴場', stars: '⭐', cls: 'rarity-r', rate: 0.30 },
+    n:         { name: '定番', stars: '◎', cls: 'rarity-n', rate: 0.60 },
   };
 
   // ---------- Themes ----------
@@ -3608,9 +3611,9 @@
       list.appendChild(li);
     });
 
-    // Apply route button
+    // Apply route button（G2.5: 「歩く」強調を弱め、おでかけの"行き先決定"として）
     const addBtn = $('#result-add');
-    addBtn.innerHTML = route.isCurated ? '<span>🚶 このコースで行く</span>' : '<span>🚶 このルートで行く</span>';
+    addBtn.innerHTML = route.isCurated ? '<span>🗺 この行き先に決める</span>' : '<span>🗺 この行き先に決める</span>';
     addBtn.onclick = () => {
       applyRoute(route);
       $('#gacha-modal').hidden = true;
