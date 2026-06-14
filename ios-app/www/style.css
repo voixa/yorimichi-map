@@ -12989,3 +12989,39 @@ html[data-platform="ios"] .app-header {
   .lr-static-badge { animation-duration: 1.7s !important; }
 }
 
+/* ===========================================================
+   🚃 REDESIGN v2 — Phase G3: 圏外（電車で行ける候補＋準備中通知）
+   nearby-banner の末尾カード。.nearby-item と同じ3カラムグリッド・白文字を踏襲。
+   =========================================================== */
+.nearby-coming-soon {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.10);
+  border: 1px dashed rgba(255,255,255,0.45);
+  color: white;
+  width: 100%;
+}
+.nearby-coming-soon .nearby-item-meta {
+  white-space: normal;
+}
+.nearby-notify-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  background: white;
+  color: var(--brand);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.1s ease, opacity 0.15s ease;
+  min-height: 36px;
+}
+.nearby-notify-btn:hover { opacity: 0.9; }
+.nearby-notify-btn:active { transform: scale(0.96); }
+

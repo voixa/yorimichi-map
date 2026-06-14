@@ -910,6 +910,25 @@
     });
   }
 
+  // G3: 圏外（どの提供都市圏にもいない）判定。最寄り都市圏センターまでの距離で見る。
+  //   userLoc 未指定なら現在地を取得。位置不明・取得失敗時は out:null（=不明扱い）。
+  const OUT_OF_AREA_KM = 40;
+  async function isUserOutOfArea(userLoc) {
+    let loc = userLoc;
+    if (!loc) {
+      try { loc = await getCurrentLocation(); }
+      catch { return { out: null, nearestRegion: null, km: null }; }
+    }
+    const regions = (window.YORIMICHI_REGIONS || []).filter(r => r.enabled && r.centerLat != null);
+    if (regions.length === 0) return { out: null, nearestRegion: null, km: null };
+    let best = null;
+    for (const r of regions) {
+      const km = haversineKm(loc, { lat: r.centerLat, lng: r.centerLng });
+      if (!best || km < best.km) best = { km, region: r };
+    }
+    return { out: best.km > OUT_OF_AREA_KM, nearestRegion: best.region, km: best.km };
+  }
+
   async function reverseGeocode(point) {
     try {
       const url = new URL('https://nominatim.openstreetmap.org/reverse');
@@ -8515,6 +8534,12 @@ ${trkPts}
     const courses = (window.YORIMICHI_COURSES || []);
     if (courses.length === 0) { banner.hidden = true; return; }
 
+    // G3: 圏外（最寄り都市圏まで40km超）なら 5km 制約を外し、全コースを「電車で行ける候補」に開放
+    const area = await isUserOutOfArea(userLoc);
+    const outOfArea = area.out === true;
+    const titleEl = banner.querySelector('.nearby-title');
+    const iconEl = banner.querySelector('.nearby-icon');
+
     // 現在天気を考慮して屋内/屋外スコアを微調整
     let weatherCode = null;
     try {
@@ -8524,7 +8549,7 @@ ${trkPts}
     const indoorPreferred = isIndoorPreferredWeather(weatherCode);
     const INDOOR_CATS = new Set(['cafe', 'shop', 'museum', 'art', 'bakery']);
 
-    const ranked = courses
+    const scored = courses
       .map(c => {
         const startLat = c.stops?.[0]?.lat;
         const startLng = c.stops?.[0]?.lng;
@@ -8535,7 +8560,11 @@ ${trkPts}
         const indoorRatio = stops.length > 0 ? stops.filter(s => INDOOR_CATS.has(s.cat)).length / stops.length : 0;
         return { course: c, km, indoorRatio };
       })
-      .filter(x => x && x.km <= 5)
+      .filter(Boolean);
+
+    // 圏内=5km以内 / 圏外=全コース開放
+    const pool = outOfArea ? scored : scored.filter(x => x.km <= 5);
+    const ranked = pool
       .sort((a, b) => {
         // 未完走優先
         const aDone = state.completedCourses.has(a.course.id) ? 1 : 0;
@@ -8547,22 +8576,34 @@ ${trkPts}
         }
         return a.km - b.km;
       })
-      .slice(0, 3);
+      .slice(0, outOfArea ? 4 : 3);
 
-    if (ranked.length === 0) { banner.hidden = true; return; }
+    // 圏外は候補ゼロでも「準備中」カードを出したいので、圏内のときだけ早期return
+    if (ranked.length === 0 && !outOfArea) { banner.hidden = true; return; }
 
-    // 天気アイコン付きヘッダー
+    // ヘッダー：圏内/圏外でタイトル・アイコン・メタを出し分け
+    if (titleEl) titleEl.textContent = outOfArea ? '電車で行ける今日のおでかけ' : 'ここから歩けるコース';
+    if (iconEl) iconEl.textContent = outOfArea ? '🚃' : '📍';
     if (meta) {
-      let metaText = `${ranked.length}件 / 5km圏内`;
-      if (indoorPreferred) {
-        metaText = `☔ 雨向き ・ ${metaText}`;
-      } else if (weatherCode === 0) {
-        metaText = `☀️ 快晴 ・ ${metaText}`;
+      if (outOfArea) {
+        const rn = area.nearestRegion;
+        meta.textContent = rn ? `最寄りは ${rn.icon || ''}${rn.name}` : `${ranked.length}件`;
+      } else {
+        let metaText = `${ranked.length}件 / 5km圏内`;
+        if (indoorPreferred) {
+          metaText = `☔ 雨向き ・ ${metaText}`;
+        } else if (weatherCode === 0) {
+          metaText = `☀️ 快晴 ・ ${metaText}`;
+        }
+        meta.textContent = metaText;
       }
-      meta.textContent = metaText;
     }
     list.innerHTML = ranked.map(({ course, km, indoorRatio }) => {
-      const distLabel = km < 1 ? `${Math.round(km * 1000)}m` : `${km.toFixed(1)}km`;
+      // 圏外は距離が大きいので粗く（約N0km）、圏内は従来どおり
+      const distLabel = km < 1 ? `${Math.round(km * 1000)}m`
+        : km < 10 ? `${km.toFixed(1)}km`
+        : `約${Math.round(km / 10) * 10}km`;
+      const distIcon = outOfArea ? '🚃' : '📏';
       const done = state.completedCourses.has(course.id);
       const thumb = buildCourseThumbSvg(course, { w: 60, h: 40, lightStroke: true });
       // 雨の日は屋内多めバッジを表示
@@ -8577,10 +8618,29 @@ ${trkPts}
             <span class="nearby-item-meta">${course.areaIcon || ''} ${escapeHtml(tField(course, 'areaName'))} ・ 約${course.estimatedMin || '?'}分</span>
           </span>
           <span class="nearby-item-thumb">${thumb}</span>
-          <span class="nearby-item-dist">📏 ${distLabel}</span>
+          <span class="nearby-item-dist">${distIcon} ${distLabel}</span>
         </button>
       `;
     }).join('');
+
+    // 圏外：末尾に「あなたの街は準備中（通知登録）」カードを追加し、離脱の行き止まりを防ぐ
+    if (outOfArea) {
+      list.insertAdjacentHTML('beforeend', `
+        <div class="nearby-coming-soon" id="nearby-coming-soon">
+          <span class="nearby-item-emoji">📮</span>
+          <span class="nearby-item-body">
+            <span class="nearby-item-name">あなたの街は準備中</span>
+            <span class="nearby-item-meta">新しいエリアが追加されたら最速でお知らせします</span>
+          </span>
+          <button class="nearby-notify-btn" id="coming-soon-notify" type="button">🔔 通知を受け取る</button>
+        </div>
+      `);
+      const csBtn = $('#coming-soon-notify');
+      if (csBtn) csBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        registerComingSoonInterest(userLoc);
+      });
+    }
 
     list.querySelectorAll('.nearby-item').forEach(el => {
       el.addEventListener('click', () => {
@@ -8591,6 +8651,31 @@ ${trkPts}
     });
 
     banner.hidden = false;
+  }
+
+  // G3: 圏外ユーザーが「新エリアできたら通知」を登録。通知許可＋関心地点を保存。
+  async function registerComingSoonInterest(userLoc) {
+    let perm = ('Notification' in window) ? Notification.permission : 'denied';
+    if (perm === 'default') {
+      try { perm = await Notification.requestPermission(); } catch { perm = 'denied'; }
+    }
+    // 関心地点は許可有無に関わらず記録（将来エリア追加時のターゲティング用）
+    try {
+      localStorage.setItem('yorimichi-coming-soon-area', JSON.stringify({
+        lat: userLoc?.lat, lng: userLoc?.lng, at: Date.now(),
+      }));
+    } catch {}
+    if (perm === 'granted') {
+      try {
+        const pref = getNotifyPref();
+        pref.enabled = true;
+        setNotifyPref(pref);
+        updateNotifyUI();
+      } catch {}
+      showToast('🔔 登録しました。新エリア追加時に最速でお知らせします', 'success', 3500);
+    } else {
+      showToast('登録しました。通知をオンにすると追加時にお知らせできます', 'info', 4000);
+    }
   }
 
   async function renderWeatherBanner() {
