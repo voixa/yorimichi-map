@@ -12630,6 +12630,8 @@ body, .modal, .panel {
 
 html[data-platform="ios"] .shop-grid,
 html[data-platform="ios"] #shop-modal,
+html[data-platform="ios"] #shop-btn,
+html[data-platform="ios"] #shop-btn-2,
 html[data-platform="ios"] #buy-coins-cta,
 html[data-platform="ios"] #buy-coins-modal-cta,
 html[data-platform="ios"] .premium-cta-card,

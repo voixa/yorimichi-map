@@ -32,7 +32,7 @@
 	<string>Main</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 		<string>location-services</string>
 		<string>gps</string>
 	</array>
@@ -45,9 +45,11 @@
 	<key>UIStatusBarStyle</key>
 	<string>UIStatusBarStyleDefault</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>散歩中の現在地を取得し、スポットへの到着判定 (50m以内) と地図表示に使います。位置情報はサーバーに送信されません。</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>散歩中の現在地を取得し、スポットへの到着判定 (50m以内) と地図表示に使います。位置情報はサーバーに送信されません。</string>
+	<string>散歩中の現在地を取得し、スポットへの到着判定 (50m以内)・地図・ルート表示に使います。地図やコース解説の生成に必要な範囲でのみ利用し、広告や追跡には使いません。</string>
+	<key>NSCameraUsageDescription</key>
+	<string>スポットでの写真撮影と、AIによる写真の説明生成に使います。</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>スポットの写真を選んで投稿・記録するために使います。</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>完走証明書を写真ライブラリに保存します。</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
