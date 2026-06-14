@@ -7218,7 +7218,7 @@ ${trkPts}
       const cta = document.getElementById('home-hero-cta');
       if (cta) {
         const t = cta.querySelector('.hh-cta-text');
-        if (t) t.textContent = depleted ? 'コインを貯めて引く' : 'コースをガチャで引く';
+        if (t) t.textContent = depleted ? 'コインを貯めて引く' : '今日のおでかけを引く';
       }
 
       // 図鑑コンプ率チラ見せ（discoveredCourses / 全コース）
@@ -9940,7 +9940,7 @@ ${trkPts}
       const desc = $('#mode-desc');
       if (!label || !sub) return;
       // CTAラベルは常に「ガチャを引く」で統一、modeによって sub だけ変える
-      label.textContent = '🎰 ガチャを引く';
+      label.textContent = '🎰 今日のおでかけを引く';
       // 🆕 R6#1 + R7#1: ガチャ料金/無料残回数を sub に明示（単行コンパクト）
       const gacha = state.gacha || {};
       const usedTotal = gacha.freeUsedTotal || 0;
