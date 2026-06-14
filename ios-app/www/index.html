@@ -696,11 +696,11 @@
             <div class="cb-tk-desc">この hashtag で TikTok に投稿すると、人気のスポットは公式コースに採用されます</div>
           </div>
           <div class="cb-actions">
-            <button class="cb-action" id="cb-submit-btn" type="button">
+            <button class="cb-action" id="cb-submit-btn" type="button" hidden>
               <span class="cb-action-icon">📍</span>
               <span class="cb-action-label">スポットを投稿</span>
             </button>
-            <button class="cb-action" id="cb-my-btn" type="button">
+            <button class="cb-action" id="cb-my-btn" type="button" hidden>
               <span class="cb-action-icon">📋</span>
               <span class="cb-action-label">あなたの投稿</span>
             </button>
@@ -849,17 +849,17 @@
           </button>
         </section>
 
-        <!-- Mode tabs + 説明 -->
-        <div class="mode-tabs three v2" role="tablist" aria-label="モード">
+        <!-- Mode tabs + 説明（G1: course単独化のためタブ行は非表示。courseが既定固定） -->
+        <div class="mode-tabs three v2" role="tablist" aria-label="モード" hidden>
           <button class="mode-tab active" id="tab-course" role="tab" aria-selected="true" type="button">
             <span class="mode-tab-icon">📖</span>
             <span class="mode-tab-label">おすすめ</span>
           </button>
-          <button class="mode-tab" id="tab-route" role="tab" aria-selected="false" type="button">
+          <button class="mode-tab" id="tab-route" role="tab" aria-selected="false" type="button" hidden>
             <span class="mode-tab-icon">🎯</span>
             <span class="mode-tab-label">行き先指定</span>
           </button>
-          <button class="mode-tab" id="tab-stroll" role="tab" aria-selected="false" type="button">
+          <button class="mode-tab" id="tab-stroll" role="tab" aria-selected="false" type="button" hidden>
             <span class="mode-tab-icon">🌿</span>
             <span class="mode-tab-label">ぶらぶら</span>
           </button>
@@ -979,7 +979,7 @@
         </details>
 
         <!-- Free mode wrapper (hidden in course mode) -->
-        <div class="free-mode-block" id="free-mode-block">
+        <div class="free-mode-block" id="free-mode-block" hidden>
 
         <!-- Address inputs -->
         <section class="addr-section" aria-label="出発地と目的地">
@@ -1221,7 +1221,7 @@
               <span class="ms-emoji">📜</span>
               <span class="ms-label">散歩履歴<br><small style="color:var(--text-muted);font-weight:500;">過去の歩き</small></span>
             </button>
-            <button class="me-shortcut" id="ms-album" type="button">
+            <button class="me-shortcut" id="ms-album" type="button" hidden>
               <span class="ms-emoji">📷</span>
               <span class="ms-label">写真アルバム<br><small style="color:var(--text-muted);font-weight:500;">撮影した写真</small></span>
             </button>
@@ -1233,31 +1233,31 @@
               <span class="ms-emoji">⚙️</span>
               <span class="ms-label">設定<br><small style="color:var(--text-muted);font-weight:500;">🌓 テーマ・🌐 言語・🗺 地図</small></span>
             </button>
-            <button class="me-shortcut" id="ms-my-courses" type="button">
+            <button class="me-shortcut" id="ms-my-courses" type="button" hidden>
               <span class="ms-emoji">✏️</span>
               <span class="ms-label">マイコース<br><small style="color:var(--text-muted);font-weight:500;">自作コース</small></span>
             </button>
-            <button class="me-shortcut" id="ms-coin-history" type="button">
+            <button class="me-shortcut" id="ms-coin-history" type="button" hidden>
               <span class="ms-emoji">🪙</span>
               <span class="ms-label">コイン履歴<br><small style="color:var(--text-muted);font-weight:500;">入出金記録</small></span>
             </button>
-            <button class="me-shortcut" id="ms-journal" type="button">
+            <button class="me-shortcut" id="ms-journal" type="button" hidden>
               <span class="ms-emoji">📔</span>
               <span class="ms-label">散歩日記<br><small style="color:var(--text-muted);font-weight:500;">過去の感想</small></span>
             </button>
-            <button class="me-shortcut" id="ms-spot-submit" type="button">
+            <button class="me-shortcut" id="ms-spot-submit" type="button" hidden>
               <span class="ms-emoji">📍</span>
               <span class="ms-label">スポット投稿<br><small style="color:var(--text-muted);font-weight:500;">あなたの推し</small></span>
             </button>
-            <button class="me-shortcut" id="ms-my-submissions" type="button">
+            <button class="me-shortcut" id="ms-my-submissions" type="button" hidden>
               <span class="ms-emoji">📋</span>
               <span class="ms-label">投稿一覧<br><small style="color:var(--text-muted);font-weight:500;">過去の投稿</small></span>
             </button>
-            <button class="me-shortcut" id="ms-couple" type="button">
+            <button class="me-shortcut" id="ms-couple" type="button" hidden>
               <span class="ms-emoji">💑</span>
               <span class="ms-label">2人で歩く<br><small style="color:var(--text-muted);font-weight:500;">QRで共有</small></span>
             </button>
-            <button class="me-shortcut" id="ms-help" type="button">
+            <button class="me-shortcut" id="ms-help" type="button" hidden>
               <span class="ms-emoji">❓</span>
               <span class="ms-label">ヘルプ<br><small style="color:var(--text-muted);font-weight:500;">FAQ・お問い合わせ</small></span>
             </button>
@@ -1924,7 +1924,7 @@
     <div class="walk-hud-actions">
       <button class="walk-hud-btn" id="walk-hud-voice" type="button" aria-label="音声ナビ切替">🔊</button>
       <button class="walk-hud-btn" id="walk-hud-photo" type="button" aria-label="写真を撮る">📸</button>
-      <button class="walk-hud-btn" id="walk-hud-spotsubmit" type="button" aria-label="今ここをスポット投稿" title="今ここを投稿">📍</button>
+      <button class="walk-hud-btn" id="walk-hud-spotsubmit" type="button" aria-label="今ここをスポット投稿" title="今ここを投稿" hidden>📍</button>
       <button class="walk-hud-btn" id="walk-hud-share" type="button" aria-label="このコースをシェア">📤</button>
       <button class="walk-hud-btn" id="walk-hud-checkin" type="button" aria-label="手動チェックイン">✓</button>
       <button class="walk-hud-btn" id="walk-hud-skip" type="button" aria-label="このスポットをスキップ">⏭</button>

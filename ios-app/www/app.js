@@ -1629,7 +1629,7 @@
 
   function saveStateToHash() {
     const h = {
-      m: state.mode,
+      m: 'course', // G1: route/stroll 封印のため常に course（残存hashで空白固定させない）
       t: state.travel,
       b: state.budgetMin,
       c: [...state.activeCategories].join(','),
@@ -1646,7 +1646,8 @@
     const hash = location.hash.slice(1);
     if (!hash) return false;
     const p = new URLSearchParams(hash);
-    if (p.has('m')) state.mode = p.get('m');
+    // G1: route/stroll 封印。hash の m は無視し course 固定（setMode でも矯正）。
+    state.mode = 'course';
     if (p.has('t')) state.travel = p.get('t');
     if (p.has('b')) state.budgetMin = parseInt(p.get('b'), 10) || 15;
     if (p.has('c')) state.activeCategories = new Set(p.get('c').split(',').filter(Boolean));
@@ -1687,6 +1688,10 @@
   // ---------- Mode tabs ----------
 
   function setMode(mode) {
+    // G1: コア集約。route/stroll モードは初見動線から封印し course 単独に矯正する
+    //   （UI は index.html で hidden 化。ここはディープリンク/残存hash/プログラム呼び
+    //    出し経由の復活も塞ぐ。将来復活させる時はこの1行を外す）。
+    if (mode !== 'course') mode = 'course';
     const previousMode = state.mode;
     state.mode = mode;
 
