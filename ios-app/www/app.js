@@ -7151,17 +7151,8 @@ ${trkPts}
       badge.hidden = true;
       return;
     }
-    // 🆕 R16#2: 次のバッジマイルストーンまでの残日数を表示してモチベUP
-    const milestones = [3, 7, 14, 30, 60, 100];
-    const nextMs = milestones.find(m => m > streak);
-    let suffix;
-    if (nextMs) {
-      const remain = nextMs - streak;
-      suffix = ` ・ あと${remain}日で${nextMs}日連続🏅`;
-    } else {
-      suffix = ' ・ がんばってる！';
-    }
-    text.textContent = `連続${streak}日${suffix}`;
+    // G4: 圧を控えめに — 「あとN日で」の義務的カウントダウンはやめ、今のペースをそっと肯定するだけ。
+    text.textContent = `連続${streak}日 ・ いい調子🌿`;
     badge.hidden = false;
     // 🆕 R21#2: クリックで散歩履歴を開く（1度だけ bind）
     if (!badge.dataset.boundClick) {
@@ -9503,10 +9494,12 @@ ${trkPts}
       if (discovered.has(c.id)) discoveredCount[r] = (discoveredCount[r] || 0) + 1;
     });
     const totalDiscovered = discovered.size;
+    const totalCompleted = state.completedCourses.size; // G4: 実際に歩いた=「制覇」
     const totalCourses = allCourses.length;
 
     stats.innerHTML = `
       <div class="col-stat"><div class="col-stat-label">発見</div><div class="col-stat-val">${totalDiscovered}/${totalCourses}</div></div>
+      <div class="col-stat col-stat-conquered"><div class="col-stat-label">🏆 制覇</div><div class="col-stat-val">${totalCompleted}/${totalCourses}</div></div>
       <div class="col-stat rarity-legendary"><div class="col-stat-label">✨ LR</div><div class="col-stat-val" style="color: var(--rarity-color)">${discoveredCount.legendary}/${counts.legendary}</div></div>
       <div class="col-stat rarity-sr"><div class="col-stat-label">🌟 SR</div><div class="col-stat-val" style="color: var(--rarity-color)">${discoveredCount.sr}/${counts.sr}</div></div>
       <div class="col-stat rarity-r"><div class="col-stat-label">⭐ R</div><div class="col-stat-val" style="color: var(--rarity-color)">${discoveredCount.r}/${counts.r}</div></div>
@@ -9564,7 +9557,7 @@ ${trkPts}
       const card = document.createElement('div');
       card.className = 'col-card col-route-card ' + rarity.cls +
         (isDiscovered ? '' : ' undiscovered') +
-        (isCompleted ? ' completed' : '');
+        ((isCompleted && isDiscovered) ? ' completed' : ''); // 制覇は発見済みのみ（未発見に金枠が付く不整合を防ぐ）
       const wc = state.walkCounts?.[c.id] || 0;
       const cLv = getCourseLevel(wc);
       if (isDiscovered) {
@@ -9573,7 +9566,7 @@ ${trkPts}
             <span class="c-stars">${rarity.stars}</span>
             <span class="c-route-theme">${c.areaIcon || '🗺'} ${escapeHtml(tField(c, 'areaName'))}</span>
           </div>
-          <div class="c-route-title">${escapeHtml(tField(c, 'name'))}${cLv ? ` <span class="lv-pill">${cLv.emoji} ${cLv.lv}</span>` : ''}</div>
+          <div class="c-route-title">${escapeHtml(tField(c, 'name'))}${(cLv && wc >= 3) ? ` <span class="lv-pill">${cLv.emoji} ${cLv.lv}</span>` : ''}</div>
           <div class="c-route-meta">📍${(c.stops || []).length}スポット ・ 約${c.estimatedMin || 60}分${wc > 0 ? ` ・ 🏅×${wc}` : ''}</div>
           <div class="c-route-emojis">${emojis}</div>
         `;
@@ -10723,8 +10716,9 @@ ${trkPts}
     if (state.loginStreak < 1) return;
     // Find biggest reward applicable
     let reward = null;
+    let isMilestone = false;
     for (const r of STREAK_REWARDS) {
-      if (state.loginStreak === r.day) { reward = r; break; }
+      if (state.loginStreak === r.day) { reward = r; isMilestone = true; break; }
     }
     // Default small reward for any return visit on 2+ day
     if (!reward && state.loginStreak >= 2) reward = { day: state.loginStreak, coins: 3, msg: `連続${state.loginStreak}日目！🪙3（1連分）` };
@@ -10732,6 +10726,18 @@ ${trkPts}
       // Day 1 - just claim with no popup
       state.coinClaimedDate = today;
       try { localStorage.setItem('yorimichi-coin-claimed', today); } catch (e) {}
+      return;
+    }
+
+    // G4: 圧を控えめに — 全画面モーダルはマイルストーン日(2/3/5/7/14/30)だけ。
+    //   通常の連続日は毎日せき立てず、静かにトーストで受け取る。
+    if (!isMilestone) {
+      gacha.coins += reward.coins;
+      gachaSave();
+      gachaUpdateUI();
+      state.coinClaimedDate = today;
+      try { localStorage.setItem('yorimichi-coin-claimed', today); } catch (e) {}
+      showToast(`🪙 デイリーボーナス +${reward.coins}`, 'success', 2800);
       return;
     }
 
