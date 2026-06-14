@@ -252,6 +252,7 @@
     budgetMin: 15,
     activeCategories: new Set(['cafe', 'park']),
     activeArea: null,
+    gachaArea: null, // G2: ガチャ専用のエリア指定。discoverの activeArea と分離し相互汚染を防ぐ
     activeTags: new Set(),
     origin: null,
     dest: null,
@@ -1859,12 +1860,15 @@
     });
   }
 
-  function getCourseCandidates() {
+  function getCourseCandidates(areaOverride) {
     let all = window.YORIMICHI_COURSES || [];
     // Only enabled areas
     const enabledIds = new Set((window.YORIMICHI_AREAS || []).filter(a => a.enabled).map(a => a.id));
     all = all.filter(c => enabledIds.has(c.area));
-    if (state.activeArea) all = all.filter(c => c.area === state.activeArea);
+    // G2: 引数が渡されたらそのエリアで絞る(ガチャは state.gachaArea を渡す)。
+    //   未指定(discover)は従来どおり state.activeArea。null を渡せば全エリア。
+    const areaFilter = (areaOverride !== undefined) ? areaOverride : state.activeArea;
+    if (areaFilter) all = all.filter(c => c.area === areaFilter);
     if (state.activeTags.size > 0) {
       const want = state.activeTags;
       all = all.filter(c => {
@@ -2809,7 +2813,7 @@
   }
 
   function pickOneCourse() {
-    let pool = [...getCourseCandidates()];
+    let pool = [...getCourseCandidates(state.gachaArea)];
     if (quickMode === 'undiscovered' || $('#pool-undiscovered-only')?.checked) {
       const undisc = pool.filter(c => !state.discoveredCourses.has(c.id));
       if (undisc.length >= 1) pool = undisc;
@@ -3196,13 +3200,13 @@
     // Reset session counter when opening modal fresh
     if (!state.sessionPullCount) state.sessionPullCount = 0;
     if (state.mode === 'course') {
-      const pool = getCourseCandidates();
+      const pool = getCourseCandidates(state.gachaArea);
       if (pool.length === 0) {
         showToast('このエリアのコースはまだありません', 'error');
         return;
       }
-      const areaLabel = state.activeArea
-        ? (window.YORIMICHI_AREAS.find(a => a.id === state.activeArea)?.name || '')
+      const areaLabel = state.gachaArea
+        ? (window.YORIMICHI_AREAS.find(a => a.id === state.gachaArea)?.name || '')
         : 'すべてのエリア';
       $('#gacha-context').textContent = `🗺 ${areaLabel} (${pool.length}コース)`;
     } else {
@@ -3260,7 +3264,7 @@
   function regeneratePlans() {
     state.currentPlans = [];
     if (state.mode === 'course') {
-      let pool = [...getCourseCandidates()];
+      let pool = [...getCourseCandidates(state.gachaArea)];
       // Apply "undiscovered only" filter if checked
       if ($('#pool-undiscovered-only')?.checked) {
         const undisc = pool.filter(c => !state.discoveredCourses.has(c.id));
@@ -3365,7 +3369,7 @@
       return;
     }
 
-    let pool = getCourseCandidates();
+    let pool = getCourseCandidates(state.gachaArea);
     let undiscoveredFilter = false;
     if ($('#pool-undiscovered-only')?.checked || quickMode === 'undiscovered') {
       pool = pool.filter(c => !state.discoveredCourses.has(c.id));
@@ -7170,8 +7174,9 @@ ${trkPts}
       if (state.mode !== 'course' && typeof setMode === 'function') {
         setMode('course');
       }
-      // 全エリアON / 未発見優先
+      // 全エリアON / 未発見優先（ホーム一発引きは無条件＝ガチャ専用エリアもクリア）
       state.activeArea = null;
+      state.gachaArea = null;
       state.activeTags = state.activeTags || new Set();
       state.activeTags.clear();
       state.filterDuration = 'all';
@@ -14041,8 +14046,8 @@ ${hashtag}`;
       const el = document.getElementById('gacha-settings-badges');
       if (!el) return;
       const parts = [];
-      if (state.activeArea) {
-        const a = (window.YORIMICHI_AREAS || []).find(x => x.id === state.activeArea);
+      if (state.gachaArea) {
+        const a = (window.YORIMICHI_AREAS || []).find(x => x.id === state.gachaArea);
         if (a) parts.push(`${a.icon || '📍'}`);
       }
       if (gachaMaxMin > 0) parts.push(`⏱${gachaMaxMin}分`);
@@ -14062,14 +14067,14 @@ ${hashtag}`;
       const existing = wrap.querySelector('button[data-area=""]');
       wrap.innerHTML = '';
       const allBtn = document.createElement('button');
-      allBtn.className = 'area-chip' + (state.activeArea ? '' : ' active');
+      allBtn.className = 'area-chip' + (state.gachaArea ? '' : ' active');
       allBtn.dataset.area = '';
       allBtn.type = 'button';
       allBtn.textContent = '🌐 全エリア';
       wrap.appendChild(allBtn);
       areas.forEach(area => {
         const btn = document.createElement('button');
-        btn.className = 'area-chip' + (state.activeArea === area.id ? ' active' : '');
+        btn.className = 'area-chip' + (state.gachaArea === area.id ? ' active' : '');
         btn.dataset.area = area.id;
         btn.type = 'button';
         btn.textContent = `${area.icon || '📍'} ${tField(area, 'name')}`;
@@ -14079,10 +14084,22 @@ ${hashtag}`;
         chip.addEventListener('click', () => {
           wrap.querySelectorAll('.area-chip').forEach(c => c.classList.remove('active'));
           chip.classList.add('active');
-          state.activeArea = chip.dataset.area || null;
-          try { buildAreaFilter && buildAreaFilter(); } catch {}
+          // G2: ガチャ専用エリアに保存。discover の activeArea / エリアフィルタは触らない
+          //   （buildAreaFilter 同期を外し相互汚染を断つ）。
+          state.gachaArea = chip.dataset.area || null;
           try { renderPoolPreview && renderPoolPreview(); } catch {}
           updateGachaSettingsBadges();
+          // G2: ヘッダーの「すべてのエリア (Nコース)」も選択に追従させる
+          try {
+            const ctx = document.getElementById('gacha-context');
+            if (ctx) {
+              const n = getCourseCandidates(state.gachaArea).length;
+              const label = state.gachaArea
+                ? (window.YORIMICHI_AREAS.find(a => a.id === state.gachaArea)?.name || '')
+                : 'すべてのエリア';
+              ctx.textContent = `🗺 ${label} (${n}コース)`;
+            }
+          } catch {}
         });
       });
     }

@@ -1388,11 +1388,11 @@
         </div>
         <div class="quick-modes-desc" id="quick-modes-desc">🌍 全部: 21コースから運命の1本</div>
 
-        <!-- 🎯 ガチャ詳細設定（折りたたみ） -->
-        <details class="gacha-settings" id="gacha-settings">
+        <!-- 🎯 ガチャ詳細設定（G2: おでかけの主役。既定で展開・エリア+時間だけ） -->
+        <details class="gacha-settings" id="gacha-settings" open>
           <summary class="gacha-settings-summary">
-            <span class="gss-title">🎯 こだわり設定</span>
-            <span class="gacha-settings-hint">エリア・時間・テーマ</span>
+            <span class="gss-title">🎯 エリア・時間で絞る</span>
+            <span class="gacha-settings-hint">任意</span>
             <span class="gacha-settings-badges" id="gacha-settings-badges"></span>
             <span class="gacha-settings-arrow">▾</span>
           </summary>
@@ -1418,8 +1418,8 @@
               </div>
             </div>
 
-            <!-- 気分セレクター -->
-            <div class="mood-section" id="mood-section">
+            <!-- 気分セレクター（G2: 「エリアと時間だけ」方針のため初見では非表示） -->
+            <div class="mood-section" id="mood-section" hidden>
               <div class="mood-label">今の気分は？（任意）</div>
               <div class="mood-chips">
                 <button class="mood-chip active" data-mood="" type="button">🎲 おまかせ</button>
