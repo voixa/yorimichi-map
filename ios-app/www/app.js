@@ -6982,23 +6982,25 @@ ${trkPts}
     const overlay = document.createElement('div');
     overlay.id = 'streak-save-modal';
     overlay.className = 'modal-backdrop';
+    // G4: 圧を控えめに — 「切れる！救済しないと！」のパニックをやめ、温かい「おかえり」に。
+    //   連続記録の継続はあくまで任意。断っても罪悪感が残らない言い回しにする。
     overlay.innerHTML = `
       <div class="modal" style="max-width: 380px; text-align: center;">
-        <div style="font-size: 56px; margin-bottom: 8px;">🔥</div>
-        <h2 class="modal-title">連続${brokenStreak}日記録が切れそう…</h2>
+        <div style="font-size: 56px; margin-bottom: 8px;">👋</div>
+        <h2 class="modal-title">おかえりなさい！</h2>
         <p style="font-size: 14px; color: var(--text-muted); line-height: 1.7; margin-bottom: 20px;">
-          ${daysSince}日空いてしまいました。<br>
-          <strong>${STREAK_SAVE_COST}🪙 で救済</strong>すれば連続記録を継続できます！
+          また歩きにきてくれて嬉しいです。<br>
+          前回までの<strong>連続${brokenStreak}日</strong>、よかったら続けられます。
         </p>
         <div style="background: var(--surface-2); border-radius: 12px; padding: 12px; margin-bottom: 16px;">
-          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">救済すると</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">続けると</div>
           <div style="font-weight: 800; color: var(--brand);">連続${brokenStreak + 1}日目に到達</div>
         </div>
         <button class="btn-primary" id="streak-save-yes" type="button" style="width:100%; margin-bottom:8px;">
-          🪙 ${STREAK_SAVE_COST}コインで救済する
+          🪙 連続記録を続ける（${STREAK_SAVE_COST}🪙）
         </button>
         <button class="btn-secondary" id="streak-save-no" type="button" style="width:100%;">
-          リセットしてやり直す
+          また今日から積み上げる
         </button>
       </div>
     `;
@@ -7020,7 +7022,7 @@ ${trkPts}
       // saveCompletion / 永続化
       try { localStorage.setItem('yorimichi-last-login', state.lastLoginDate); } catch {}
       try { localStorage.setItem('yorimichi-login-streak', String(state.loginStreak)); } catch {}
-      showToast(`🔥 連続${state.loginStreak}日記録を救済しました！`, 'success', 4000);
+      showToast(`🔥 連続${state.loginStreak}日、続けました！`, 'success', 4000);
       overlay.remove();
     };
     overlay.querySelector('#streak-save-no').onclick = () => {
