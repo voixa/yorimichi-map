@@ -29,12 +29,13 @@
 | ✅ | App Store メタデータ草案 (JA/EN) | `app-store/metadata.md` |
 | ✅ | IAP 商品仕様 (ID/価格/名称/説明) | `app-store/iap-products.md` |
 | ✅ | App Privacy ニュートリションラベル回答 | `app-store/app-privacy.md` |
+| ✅ | **提出アンケート全回答＋審査メモ(JA/EN)** | `app-store/submission-answers.md`（ふたりのこと方式） |
 | ✅ | プライバシーポリシー (ホスティング用) | `app-store/privacy-policy.md` (要 in-dx.jp 公開) |
 | ✅ | 利用規約 (ToS) 草案 | `app-store/terms-of-service.md` (or Apple標準EULA) |
 | ✅ | 年齢レーティング回答方針 | ルートボックス=はい/ギャンブル模擬=いいえ/コンテスト=いいえ → 推定12〜16+ |
-| ⬜ | スクリーンショット 6.9" 1320×2868 ×5〜8 | iPhone 17 Pro Max シミュレータで撮影 |
+| ✅ | **スクリーンショット 6.9" 1320×2868 ×5(キャプション付)** | `screenshots/appstore-6.9/` 生成済・`make_appstore_screenshots.py` |
 | ⬜ | (任意) App Preview 動画 15-30s | |
-| ⬜ | サポートURL ページ公開 | yorimichi.in-dx.jp/support 等 |
+| ⬜ | サポート/プライバシー/規約URL を公開 | yorimichi.in-dx.jp に文面を配置（文面=docs/app-store/） |
 
 ## C. 🔒 承認後しかできない (App Store Connect)
 
