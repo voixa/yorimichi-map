@@ -49,3 +49,6 @@ _ai_test*.json
 _test_payload.json
 
 # ios-app/ (Capacitor iOS) 配下は ios-app/.gitignore で管理する
+
+# screenshot generation venv
+.venv-shots/
