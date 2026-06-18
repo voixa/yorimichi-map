@@ -380,6 +380,32 @@ def live_stats():
     })
 
 
+@app.route("/api/public-count", methods=["GET"])
+def public_count():
+    """累計利用者数（sei-hub 集約用）。カウント専用キーで保護・読み取りのみ。
+    保存済みユーザー（yorimichi_user_state の件数）を Firestore 集約で返す。"""
+    expected = os.environ.get("PUBLIC_COUNT_KEY")
+    key = request.args.get("key") or request.headers.get("x-stats-key")
+    if not expected or key != expected:
+        return jsonify({"error": "unauthorized"}), 401
+    if not firestore_client:
+        return jsonify({"total": 0}), 200
+    total = None
+    try:
+        agg = firestore_client.collection(USER_STATE_COLLECTION).count()
+        res = agg.get()
+        total = int(res[0][0].value)
+    except Exception:
+        try:
+            total = sum(1 for _ in firestore_client.collection(USER_STATE_COLLECTION).stream())
+        except Exception:
+            return jsonify({"error": "count_failed"}), 500
+    resp = jsonify({"total": total})
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    resp.headers["Cache-Control"] = "s-maxage=300, stale-while-revalidate=600"
+    return resp, 200
+
+
 # ----- 公開プロフィール（オプトイン・スナップショット） -----
 PUBLIC_PROFILE_COLLECTION = "yorimichi_public_profiles"
 import secrets as _secrets
