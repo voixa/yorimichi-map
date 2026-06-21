@@ -1,0 +1,10 @@
+.git
+node_modules
+ios-app
+.venv-shots
+docs
+tests
+scripts
+**/*.xcarchive
+**/build
+.github

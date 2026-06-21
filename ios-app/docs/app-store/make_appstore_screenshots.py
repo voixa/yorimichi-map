@@ -13,7 +13,7 @@ SRC = os.path.expanduser("~/projects/yorimichi-map/ios-app/docs/app-store/screen
 OUT = os.path.join(SRC, "appstore-6.9")
 os.makedirs(OUT, exist_ok=True)
 
-W, H = 1320, 2868
+W, H = 1284, 2778
 HEADLINE_FONT = "/System/Library/Fonts/ヒラギノ角ゴシック W8.ttc"
 SUB_FONT = "/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc"
 
