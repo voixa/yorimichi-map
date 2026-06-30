@@ -1028,12 +1028,174 @@ window.YORIMICHI_COURSES = [
     ]
   },
 
+  // ============== 金沢エリア ==============
+
+  {
+    id: 'kanazawa_kenrokuen',
+    name: '金沢 王道・兼六園と城下町',
+    name_en: 'Kanazawa Classic: Kenrokuen & the Castle Town',
+    area: 'kanazawa',
+    areaName: '金沢',
+    areaName_en: 'Kanazawa',
+    areaIcon: '🏯',
+    themeIcon: '🍵',
+    rarity: 'r',
+    description: '加賀百万石の城下町を一日で味わう定番ルート。鼓門から市場の食、日本三名園の兼六園、金箔きらめく茶屋街まで、金沢のいいとこ取り。',
+    description_en: 'The classic route through the castle town of the Kaga domain — from the Tsuzumi Gate to the market, the famed Kenrokuen Garden, and the gold-leaf teahouse districts.',
+    travelMode: 'walk',
+    estimatedMin: 90,
+    budget: '¥2,000-4,000',
+    tags: ['定番', '初めての金沢', '庭園'],
+    origin: { lat: 36.5780, lng: 136.6486, name: '金沢駅 鼓門', name_en: 'Kanazawa Sta. Tsuzumi Gate', shortLabel: '金沢駅 鼓門' },
+    dest:   { lat: 36.5720, lng: 136.6665, name: 'ひがし茶屋街', name_en: 'Higashi Chaya District', shortLabel: 'ひがし茶屋街' },
+    stops: [
+      {
+        lat: 36.5780, lng: 136.6486, name: '金沢駅 鼓門', name_en: 'Tsuzumi Gate', cat: 'viewpoint', emoji: '🥁',
+        photoBg: 'linear-gradient(135deg, #8d6e63 0%, #4e342e 100%)',
+        bestTime: '終日', budget: '無料', stayMin: 15,
+        tags: ['フォトスポット', '玄関口'],
+        desc: '能楽の鼓をモチーフにした巨大な門。「世界で最も美しい駅」に選ばれた金沢の顔。'
+      },
+      {
+        lat: 36.5713, lng: 136.6560, name: '近江町市場', name_en: 'Omicho Market', cat: 'food', emoji: '🦀',
+        photoBg: 'linear-gradient(135deg, #ff7043 0%, #d84315 100%)',
+        bestTime: '9:00-17:00', budget: '¥1,000-3,000', stayMin: 30,
+        tags: ['海鮮丼', '食べ歩き', '市場'],
+        desc: '「金沢市民の台所」。のどぐろ・甘えび・カニ。海鮮丼や立ち食い寿司で北陸の海の幸を。'
+      },
+      {
+        lat: 36.5650, lng: 136.6592, name: '金沢城公園', name_en: 'Kanazawa Castle Park', cat: 'park', emoji: '🏯',
+        photoBg: 'linear-gradient(135deg, #66bb6a 0%, #2e7d32 100%)',
+        bestTime: '7:00-18:00', budget: '無料', stayMin: 30,
+        tags: ['城', '石垣', '広大'],
+        desc: '加賀藩前田家の居城跡。白い海鼠塀と五十間長屋。兼六園とは石川橋で繋がる。'
+      },
+      {
+        lat: 36.5622, lng: 136.6626, name: '兼六園', name_en: 'Kenrokuen Garden', cat: 'park', emoji: '🌳',
+        photoBg: 'linear-gradient(135deg, #43a047 0%, #1b5e20 100%)',
+        bestTime: '7:00-18:00', budget: '¥320', stayMin: 50,
+        tags: ['日本三名園', '庭園', '徽軫灯籠'],
+        desc: '日本三名園のひとつ。ことじ灯籠と霞ヶ池が象徴。四季それぞれに表情を変える池泉回遊式庭園。'
+      },
+      {
+        lat: 36.5720, lng: 136.6665, name: 'ひがし茶屋街', name_en: 'Higashi Chaya District', cat: 'viewpoint', emoji: '🏮',
+        photoBg: 'linear-gradient(135deg, #ffb300 0%, #e65100 100%)',
+        bestTime: '9:00-18:00', budget: '¥500-2,000', stayMin: 40,
+        tags: ['金箔', '町家', '和スイーツ'],
+        desc: '紅殻格子の茶屋が並ぶ重伝建。金箔ソフトや金箔貼り体験、町家カフェで一服。'
+      },
+    ]
+  },
+
+  {
+    id: 'kanazawa_art',
+    name: '金沢 アートと武家屋敷の路地',
+    name_en: 'Kanazawa Art & the Samurai Lanes',
+    area: 'kanazawa',
+    areaName: '金沢',
+    areaName_en: 'Kanazawa',
+    areaIcon: '🏯',
+    themeIcon: '🎨',
+    rarity: 'sr',
+    description: '現代アートと江戸の風情を行き来する通なコース。スイミング・プールで有名な21世紀美術館から、用水沿いの武家屋敷、静かな主計町の茶屋街へ。',
+    description_en: 'A connoisseur loop between contemporary art and Edo-era atmosphere — from the famous Swimming Pool at the 21st Century Museum to the samurai residences and the quiet Kazuemachi teahouses.',
+    travelMode: 'walk',
+    estimatedMin: 70,
+    budget: '¥1,500-3,000',
+    tags: ['アート', '穴場', '路地裏'],
+    origin: { lat: 36.5608, lng: 136.6580, name: '金沢21世紀美術館', name_en: '21st Century Museum', shortLabel: '21世紀美術館' },
+    dest:   { lat: 36.5703, lng: 136.6618, name: '主計町茶屋街', name_en: 'Kazuemachi Chaya District', shortLabel: '主計町茶屋街' },
+    stops: [
+      {
+        lat: 36.5608, lng: 136.6580, name: '金沢21世紀美術館', name_en: '21st Century Museum of Contemporary Art', cat: 'museum', emoji: '🏛',
+        photoBg: 'linear-gradient(135deg, #29b6f6 0%, #0277bd 100%)',
+        bestTime: '10:00-18:00', budget: '無料-¥500', stayMin: 50,
+        tags: ['現代アート', 'プール', '円形'],
+        desc: 'レアンドロの「スイミング・プール」が名物の円形美術館。交流ゾーンは無料で体験型作品が多数。'
+      },
+      {
+        lat: 36.5668, lng: 136.6512, name: '長町武家屋敷跡', name_en: 'Nagamachi Samurai District', cat: 'viewpoint', emoji: '🏯',
+        photoBg: 'linear-gradient(135deg, #8d6e63 0%, #3e2723 100%)',
+        bestTime: '9:00-17:00', budget: '無料-¥550', stayMin: 30,
+        tags: ['土塀', '用水', '武家'],
+        desc: '土塀と石畳が残る加賀藩士の屋敷町。大野庄用水のせせらぎと野村家庭園が見どころ。'
+      },
+      {
+        lat: 36.5713, lng: 136.6560, name: '近江町市場', name_en: 'Omicho Market', cat: 'food', emoji: '🍣',
+        photoBg: 'linear-gradient(135deg, #ff7043 0%, #d84315 100%)',
+        bestTime: '9:00-17:00', budget: '¥1,000-2,500', stayMin: 25,
+        tags: ['海鮮', '食べ歩き'],
+        desc: '小腹がすいたら市場でひと休み。カニ面コロッケや海鮮串をつまんで茶屋街へ。'
+      },
+      {
+        lat: 36.5703, lng: 136.6618, name: '主計町茶屋街', name_en: 'Kazuemachi Chaya District', cat: 'viewpoint', emoji: '🏮',
+        photoBg: 'linear-gradient(135deg, #ab47bc 0%, #4a148c 100%)',
+        bestTime: '15:00-20:00', budget: '¥500-2,000', stayMin: 30,
+        tags: ['夜景', '浅野川', '静か'],
+        desc: '浅野川沿いの落ち着いた茶屋街。夕暮れに灯がともる「あかり坂」「暗がり坂」が風情たっぷり。'
+      },
+    ]
+  },
+
+  // ============== 嵐山エリア（京都） ==============
+
+  {
+    id: 'arashiyama_bamboo',
+    name: '嵐山 竹林と渡月橋',
+    name_en: 'Arashiyama: Bamboo Grove & Togetsukyo Bridge',
+    area: 'arashiyama',
+    areaName: '嵐山',
+    areaName_en: 'Arashiyama',
+    areaIcon: '🎋',
+    themeIcon: '🎋',
+    rarity: 'sr',
+    description: '京都・嵐山の絶景を凝縮。朝の竹林の小径を抜け、縁結びの野宮神社、世界遺産・天龍寺の庭、そして桂川にかかる渡月橋へ。',
+    description_en: 'The highlights of Arashiyama in one walk — the bamboo grove at dawn, the Nonomiya love shrine, the World Heritage Tenryu-ji garden, and the Togetsukyo Bridge over the Katsura River.',
+    travelMode: 'walk',
+    estimatedMin: 80,
+    budget: '¥1,500-3,000',
+    tags: ['世界遺産', '絶景', '写真映え'],
+    origin: { lat: 35.0170, lng: 135.6717, name: '竹林の小径 入口', name_en: 'Bamboo Grove Entrance', shortLabel: '竹林の小径' },
+    dest:   { lat: 35.0128, lng: 135.6776, name: '渡月橋', name_en: 'Togetsukyo Bridge', shortLabel: '渡月橋' },
+    stops: [
+      {
+        lat: 35.0170, lng: 135.6717, name: '竹林の小径', name_en: 'Bamboo Grove', cat: 'viewpoint', emoji: '🎋',
+        photoBg: 'linear-gradient(135deg, #66bb6a 0%, #1b5e20 100%)',
+        bestTime: '7:00-9:00', budget: '無料', stayMin: 25,
+        tags: ['竹林', '写真映え', '早朝が狙い目'],
+        desc: '見上げるほどの竹が連なる嵐山の代名詞。人が少ない早朝が圧倒的に美しい。'
+      },
+      {
+        lat: 35.0177, lng: 135.6731, name: '野宮神社', name_en: 'Nonomiya Shrine', cat: 'shrine', emoji: '⛩',
+        photoBg: 'linear-gradient(135deg, #ef5350 0%, #b71c1c 100%)',
+        bestTime: '9:00-17:00', budget: '無料', stayMin: 15,
+        tags: ['縁結び', '黒木鳥居', '源氏物語'],
+        desc: '竹林の中に佇む縁結びの社。皮付きのまま使う「黒木鳥居」は日本最古の様式。'
+      },
+      {
+        lat: 35.0156, lng: 135.6738, name: '天龍寺', name_en: 'Tenryu-ji Temple', cat: 'temple', emoji: '🏯',
+        photoBg: 'linear-gradient(135deg, #26a69a 0%, #00695c 100%)',
+        bestTime: '8:30-17:00', budget: '¥500-800', stayMin: 35,
+        tags: ['世界遺産', '曹源池庭園', '借景'],
+        desc: '世界遺産。嵐山・亀山を借景にした曹源池庭園は夢窓疎石の傑作。'
+      },
+      {
+        lat: 35.0128, lng: 135.6776, name: '渡月橋', name_en: 'Togetsukyo Bridge', cat: 'viewpoint', emoji: '🌉',
+        photoBg: 'linear-gradient(135deg, #42a5f5 0%, #1565c0 100%)',
+        bestTime: '随時', budget: '無料', stayMin: 20,
+        tags: ['桂川', 'シンボル', '紅葉'],
+        desc: '嵐山のシンボル。背後の山並みと桂川の流れ。春の桜・秋の紅葉が格別。'
+      },
+    ]
+  },
+
 ];
 
 window.YORIMICHI_REGIONS = [
   { id: 'tokyo',   country: 'JP', name: '東京',           name_en: 'Tokyo',   icon: '🗼', enabled: true,  centerLat: 35.6812, centerLng: 139.7671 },
   { id: 'kyoto',   country: 'JP', name: '京都',           name_en: 'Kyoto',   icon: '🍵', enabled: true, centerLat: 35.0116, centerLng: 135.7681 },
   { id: 'osaka',   country: 'JP', name: '大阪',           name_en: 'Osaka',   icon: '🐙', enabled: true, centerLat: 34.6937, centerLng: 135.5023 },
+  { id: 'kanazawa', country: 'JP', name: '金沢',          name_en: 'Kanazawa', icon: '🏯', enabled: true, centerLat: 36.5613, centerLng: 136.6562 },
   { id: 'venezia', country: 'IT', name: 'ヴェネツィア', name_en: 'Venezia', icon: '🛶', enabled: true, centerLat: 45.4408, centerLng: 12.3155 },
 ];
 
@@ -1047,6 +1209,8 @@ window.YORIMICHI_AREAS = [
   { id: 'shimokita', name: '下北沢',     name_en: 'Shimokitazawa', icon: '🎸', enabled: true, region: 'tokyo' },
   { id: 'gion',      name: '祇園・東山', name_en: 'Gion-Higashiyama', icon: '🍵', enabled: true, region: 'kyoto' },
   { id: 'fushimi',   name: '伏見',       name_en: 'Fushimi',       icon: '⛩️', enabled: true, region: 'kyoto' },
+  { id: 'arashiyama', name: '嵐山',      name_en: 'Arashiyama',    icon: '🎋', enabled: true, region: 'kyoto' },
   { id: 'dotombori', name: '道頓堀・心斎橋', name_en: 'Dotombori-Shinsaibashi', icon: '🐙', enabled: true, region: 'osaka' },
+  { id: 'kanazawa',  name: '金沢',       name_en: 'Kanazawa',      icon: '🏯', enabled: true, region: 'kanazawa' },
   { id: 'sanmarco',  name: 'サン・マルコ', name_en: 'San Marco', icon: '🛶', enabled: true, region: 'venezia' },
 ];

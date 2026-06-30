@@ -740,7 +740,8 @@
       <div class="ai-spot-guide" id="ai-spot-guide" hidden style="display:none !important"></div>
       <div class="actions">
         <button class="add-btn" id="detail-fly">📍 地図でズーム</button>
-        <a class="add-btn wiki-btn" id="detail-nav" target="_blank" rel="noopener">📱 ナビ起動</a>
+        <a class="add-btn wiki-btn" id="detail-nav-apple" target="_blank" rel="noopener">🗺️ マップ</a>
+        <a class="add-btn wiki-btn" id="detail-nav" target="_blank" rel="noopener">📱 Googleマップ</a>
       </div>
       ${state.activeWalk && !isVisited ? `<button class="add-btn" id="detail-checkin" style="background:#16a34a;margin-top:8px;width:100%">✓ チェックイン</button>` : ''}
       <button class="detail-report-btn" id="detail-report" type="button">🚨 このスポットを報告</button>
@@ -761,11 +762,16 @@
     $('#detail-fly').onclick = () => {
       state.map.flyTo([stop.lat, stop.lng], 17, { duration: 0.6 });
     };
-    // Navigation link to single stop
+    // Navigation link to single stop（Apple Maps=native を優先導線に・規約4対応／Googleも併記）
+    const mode = state.travel === 'walk' ? 'walking' : state.travel === 'bike' ? 'bicycling' : 'driving';
     const navBtn = $('#detail-nav');
     if (navBtn) {
-      const mode = state.travel === 'walk' ? 'walking' : state.travel === 'bike' ? 'bicycling' : 'driving';
       navBtn.href = `https://www.google.com/maps/dir/?api=1&destination=${stop.lat},${stop.lng}&travelmode=${mode}`;
+    }
+    const navApple = $('#detail-nav-apple');
+    if (navApple) {
+      const flg = state.travel === 'walk' ? 'w' : state.travel === 'drive' ? 'd' : 'w';
+      navApple.href = `https://maps.apple.com/?daddr=${stop.lat},${stop.lng}&dirflg=${flg}`;
     }
     const checkinBtn = $('#detail-checkin');
     if (checkinBtn) {
@@ -1374,7 +1380,28 @@
       totals.parentElement.insertBefore(navBtn, totals.nextSibling);
     }
     navBtn.href = buildGoogleMapsUrl();
-    navBtn.innerHTML = '<span>📱</span><span>Googleマップで開いてナビ</span>';
+    navBtn.innerHTML = '<span>📱</span><span>Googleマップで開く</span>';
+
+    // Apple Maps (native) で開く — 規約4対応。Googleの前に挿入して標準マップを優先導線に
+    let navApple = $('#nav-apple');
+    if (!navApple) {
+      navApple = document.createElement('a');
+      navApple.id = 'nav-apple';
+      navApple.className = 'btn-navigate';
+      navApple.target = '_blank';
+      navApple.rel = 'noopener';
+      totals.parentElement.insertBefore(navApple, totals.nextSibling);
+    }
+    navApple.href = buildAppleMapsUrl();
+    navApple.innerHTML = '<span>🗺️</span><span>マップで開く</span>';
+  }
+
+  function buildAppleMapsUrl() {
+    const o = state.origin, d = state.dest || state.origin;
+    const flg = state.travel === 'walk' ? 'w' : state.travel === 'drive' ? 'd' : 'w';
+    let url = `https://maps.apple.com/?daddr=${d.lat},${d.lng}&dirflg=${flg}`;
+    if (o && o.lat != null) url += `&saddr=${o.lat},${o.lng}`;
+    return url;
   }
 
   function buildGoogleMapsUrl() {
@@ -2525,7 +2552,8 @@
       : `🪙 ${gacha.coins}コイン`;
     const coins = $('#gacha-coins');
     if (coins) coins.textContent = `🪙 ${gacha.coins}`;
-    if ($('#modal-free-counter')) $('#modal-free-counter').textContent = freeRemain > 0 ? `${usedTotal}/${INITIAL_FREE}` : '使用済';
+    // 他のUI（無料残/お試し残/残りN回）と「残数」表記を統一（使用数だと混乱するため）
+    if ($('#modal-free-counter')) $('#modal-free-counter').textContent = freeRemain > 0 ? `あと${freeRemain}回` : '使用済';
     if ($('#modal-coins')) $('#modal-coins').textContent = String(gacha.coins);
     if ($('#free-remaining')) $('#free-remaining').textContent = String(freeRemain);
 
@@ -3169,6 +3197,7 @@
         }
       }
       gacha.pulls += 1;
+      window.YA && YA.trackGachaPulled();
       // Pity counters
       if (route.rarity === 'legendary') {
         gacha.pullsSinceLR = 0;
@@ -3475,6 +3504,7 @@
       } catch (e) {}
     }
     gacha.pulls += 1;
+    window.YA && YA.trackGachaPulled();
     gachaSave();
     revealRoute(route);
   }
@@ -3945,6 +3975,8 @@
     $('#shop-modal').hidden = false;
     // 🆕 R19#1-fix: バックエンドの stripe_mode が test の時だけテストバナー表示
     refreshShopTestBanner();
+    // 🍎 iOS: StoreKitの表示価格を反映 + 復元ボタン + Stripe文言除去
+    refreshIapShop();
   }
   function hideShop() {
     $('#shop-modal').hidden = true;
@@ -3980,10 +4012,156 @@
     return userId;
   }
 
-  // 🍎 iOS版: Apple App Store 規約 4.5.4 / 3.1.1 により Stripe 経由の課金は禁止
-  // StoreKit 2 (IAP) 実装までは購入導線を閉じる (UI も style.css 側で非表示)
-  async function startStripeCheckout(_packId) {
-    showToast('💎 アプリ版のコイン購入は近日対応予定です', 'info', 3000);
+  // ============================================================
+  // 🍎 アプリ内課金（RevenueCat / @revenuecat/purchases-capacitor）— 消耗型コイン
+  // ------------------------------------------------------------
+  // Apple規約 3.1.1: アプリ内購入は必ずIAP経由（Stripeは使わない＝Web版のみ）。
+  // RevenueCat がレシートをサーバ検証し、StoreKitトランザクションを自動でfinishする。
+  // 消耗型はentitlementに残らないため、付与はクライアント側で行う（txIdで二重付与防止）。
+  // fumuと同じ標準スタック（[[Knowledge/app-architecture-standard]]）。
+  // ⚠️ 稼働には RC_IOS_API_KEY（RevenueCat公開キー appl_...）の設定が必要。
+  //    未設定なら自動 no-op（購入導線は「近日対応」表示）。
+  // ============================================================
+  const IAP_PACKS = {
+    pack_starter: { productId: 'jp.indx.yorimichi.coins.15',  coins: 15  },
+    pack_25:      { productId: 'jp.indx.yorimichi.coins.90',  coins: 90  },
+    pack_60:      { productId: 'jp.indx.yorimichi.coins.210', coins: 210 },
+    pack_big:     { productId: 'jp.indx.yorimichi.coins.700', coins: 700 },
+  };
+  const IAP_PRODUCT_TO_COINS = Object.fromEntries(
+    Object.values(IAP_PACKS).map(p => [p.productId, p.coins])
+  );
+  // ← RevenueCat ダッシュボードの「Public app-specific API key」(appl_...) を設定
+  const RC_IOS_API_KEY = 'appl_AdusslcuzjBoCqXeyvzslQtOAFc';
+  const Purchases = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Purchases)
+    ? window.Capacitor.Plugins.Purchases : null;
+  const iapAvailable = () => !!(Purchases && RC_IOS_API_KEY);
+
+  let _rcConfigured = false;
+  async function ensureRC() {
+    if (!iapAvailable()) return null;
+    if (!_rcConfigured) {
+      try { await Purchases.configure({ apiKey: RC_IOS_API_KEY }); _rcConfigured = true; }
+      catch (e) { console.error('RC configure failed', e); return null; }
+    }
+    return Purchases;
+  }
+
+  // 二重付与防止（消耗型 transactionId 冪等）
+  const IAP_CONSUMED_KEY = 'yorimichi-iap-consumed-tx';
+  function iapConsumed(txId) {
+    if (!txId) return false;
+    try { return JSON.parse(localStorage.getItem(IAP_CONSUMED_KEY) || '[]').includes(txId); } catch { return false; }
+  }
+  function iapAddConsumed(txId) {
+    if (!txId) return;
+    let l = [];
+    try { l = JSON.parse(localStorage.getItem(IAP_CONSUMED_KEY) || '[]'); } catch {}
+    if (l.includes(txId)) return;
+    l.push(txId);
+    if (l.length > 200) l = l.slice(-200);
+    try { localStorage.setItem(IAP_CONSUMED_KEY, JSON.stringify(l)); } catch {}
+  }
+
+  // 購入成功 → コイン付与（RevenueCatが検証＆finish済み）
+  function grantCoinsForProduct(productId, txId) {
+    const coins = IAP_PRODUCT_TO_COINS[productId];
+    if (!coins) return false;
+    if (txId && iapConsumed(txId)) return false; // 既に付与済み
+    gacha.coins += coins;
+    gachaSave();
+    if (txId) iapAddConsumed(txId);
+    gachaUpdateUI();
+    showCoinPurchaseSuccess(coins);
+    return true;
+  }
+
+  function isUserCancelledRC(e) {
+    return !!(e && (e.userCancelled === true || e.code === 'PURCHASE_CANCELLED' || /cancel/i.test(e.message || '')));
+  }
+
+  // shop-item クリック → RevenueCatで購入
+  let _iapPurchasing = false;
+  async function startStripeCheckout(packId) {
+    const pack = IAP_PACKS[packId];
+    const P = await ensureRC();
+    if (!P || !pack) {
+      showToast('💎 アプリ版のコイン購入は近日対応予定です', 'info', 3000);
+      return;
+    }
+    if (_iapPurchasing) return; // 二重タップ防止
+    _iapPurchasing = true;
+    try {
+      const { products } = await P.getProducts({ productIdentifiers: [pack.productId] });
+      const product = products && products[0];
+      if (!product) { showToast('❌ 商品を取得できませんでした', 'error', 3000); return; }
+      const result = await P.purchaseStoreProduct({ product });
+      // txId: result.transaction優先 → 無ければ非サブスク取引履歴から該当を拾う
+      let txId = result && result.transaction && result.transaction.transactionIdentifier;
+      if (!txId) {
+        const ns = (result && result.customerInfo && result.customerInfo.nonSubscriptionTransactions) || [];
+        const match = ns.filter(t => t.productIdentifier === pack.productId).pop();
+        txId = match && (match.transactionIdentifier || match.transactionId);
+      }
+      grantCoinsForProduct(pack.productId, txId);
+    } catch (e) {
+      if (isUserCancelledRC(e)) return; // キャンセルは無音
+      console.error('IAP purchase failed', e);
+      showToast('❌ 購入に失敗しました。時間をおいてお試しください', 'error', 3000);
+    } finally {
+      _iapPurchasing = false;
+    }
+  }
+
+  // ショップ表示時: RevenueCatの表示価格を反映（ハードコード¥を使わない=規約準拠）+ 復元ボタン
+  let _iapPricesLoaded = false;
+  async function refreshIapShop() {
+    // 規約準拠: Stripe/外部決済・サブスク文言を必ず消す（取得の成否に依存しない）
+    const note = document.querySelector('#shop-modal .shop-note');
+    if (note) note.innerHTML = '※ 1ガチャ = 2コイン / 初回3回まで無料体験<br>※ コインはアプリ内でのみ使用できます';
+    const P = await ensureRC();
+    if (!P) return;
+    ensureRestoreButton();
+    if (_iapPricesLoaded) return;
+    try {
+      const ids = Object.values(IAP_PACKS).map(p => p.productId);
+      const { products } = await P.getProducts({ productIdentifiers: ids });
+      const priceById = Object.fromEntries((products || []).map(p => [p.identifier, p.priceString]));
+      document.querySelectorAll('.shop-item[data-pack]').forEach(item => {
+        const pack = IAP_PACKS[item.dataset.pack];
+        const priceEl = item.querySelector('.shop-price');
+        if (pack && priceEl && priceById[pack.productId]) priceEl.textContent = priceById[pack.productId];
+      });
+      if (products && products.length) _iapPricesLoaded = true;
+    } catch (e) { console.error('getProducts failed', e); }
+  }
+
+  // 復元ボタン（規約 3.1.1）。消耗型では再付与しないが、導線として用意。
+  function ensureRestoreButton() {
+    const modal = document.querySelector('#shop-modal .shop-modal');
+    if (!modal || document.getElementById('iap-restore-btn')) return;
+    const btn = document.createElement('button');
+    btn.id = 'iap-restore-btn';
+    btn.type = 'button';
+    btn.textContent = '🔄 購入を復元';
+    btn.style.cssText = 'display:block;margin:10px auto 0;background:none;border:none;color:var(--text-muted,#9aa);font-size:13px;text-decoration:underline;cursor:pointer;';
+    btn.addEventListener('click', restorePurchases);
+    const note = modal.querySelector('.shop-note');
+    if (note && note.parentNode) note.parentNode.insertBefore(btn, note);
+    else modal.appendChild(btn);
+  }
+
+  async function restorePurchases() {
+    const P = await ensureRC();
+    if (!P) return;
+    try {
+      showToast('🔄 購入を復元しています…', 'info', 2000);
+      await P.restorePurchases();
+      showToast('復元が完了しました', 'info', 2500);
+    } catch (e) {
+      console.error('restore failed', e);
+      showToast('復元に失敗しました', 'error', 3000);
+    }
   }
 
   // ---------- GPX export ----------
@@ -4585,7 +4763,7 @@ ${trkPts}
   const WHATS_NEW_ITEMS = [
     { icon: '⏱', title: 'ガチャに時間チップ', desc: '「30分以内」「1時間以内」など使える時間に合わせて引ける' },
     { icon: '😌', title: '気分セレクター', desc: 'まったり／アクティブ／グルメ／絶景／夜散歩' },
-    { icon: '📂', title: '全コース一覧', desc: 'ガチャに頼らず全21コースを一覧から選べる検索付き' },
+    { icon: '📂', title: '全コース一覧', desc: 'ガチャに頼らず全コースを一覧から選べる検索付き' },
     { icon: '📷', title: 'アナログ風アルバム', desc: 'ポラロイド + スクラップブック風表示' },
     { icon: '🎨', title: 'コラージュPNG生成', desc: '思い出を1枚にまとめてSNSへ' },
     { icon: '📍', title: 'スポット投稿（写真+AI説明文）', desc: 'あなたのお気に入りを共有' },
@@ -8946,6 +9124,7 @@ ${trkPts}
     $$('.rating-star').forEach(s => s.classList.remove('active'));
     $('#rating-submit').disabled = true;
     modal.hidden = false;
+    window.YA && YA.trackReviewPromptShown({ course_id: course.id });
   }
   function setupRatingListeners() {
     let selectedRating = 0;
@@ -8980,6 +9159,7 @@ ${trkPts}
           keepalive: true,
         });
       } catch (e) { console.warn('rating send failed', e); }
+      window.YA && YA.trackRatingSubmitted({ rating: selectedRating, has_comment: !!comment });
       // 重複送信防止
       try {
         const rated = JSON.parse(localStorage.getItem('yorimichi-rated-courses') || '{}');
@@ -9906,6 +10086,9 @@ ${trkPts}
     // 評価モーダル
     setupRatingListeners();
 
+    // 🍎 IAP（RevenueCat）を起動時に初期化（キー未設定なら no-op）
+    try { ensureRC(); } catch (e) {}
+
     // 中断ウォークの自動リカバリ（24時間以内に拡張、賢い再開UI）
     try {
       const raw = localStorage.getItem(ACTIVE_WALK_KEY);
@@ -9946,15 +10129,14 @@ ${trkPts}
     // 今日のTip
     try { renderDailyTip(); } catch {}
     try { setupDailyTipButton(); } catch {}
-    try { renderFeaturedCard(); } catch {}
-    try { renderTodaySummary(); } catch {}
-    try { renderLuckyCourse(); } catch {}
-    try { renderHomeQuickActions(); } catch {}
-    try { renderCommunityBanner(); } catch {}
-    try { renderRecentCompletions(); } catch {}
-    try { renderWeatherWarning(); } catch {}
-    try { renderFavoritesReminder(); } catch {}
-    try { renderStatusBar(); } catch {}
+    try { renderFeaturedCard(); } catch {}       // ✨ 今日のおすすめ＝唯一のレコメンドに集約
+    // 🎨 ホーム簡素化(2026-07-01): 経験者で最大20セクションに膨らむ過密を解消。
+    //   重複/二次セクションは render 呼び出しを外して非表示化（HTMLは残置＝JSバインド非破壊・設計§8）。
+    //   除外: today-summary(status-barと重複) / lucky-course(featuredと重複) /
+    //         home-quick-actions(ヒーローCTAと重複) / community-banner(TikTok販促) /
+    //         recent-completions(履歴はマイへ) / fav-reminder。
+    try { renderWeatherWarning(); } catch {}     // 安全情報(猛暑/雷)は残す
+    try { renderStatusBar(); } catch {}          // 天気/Tip を1行に集約
     // 📍 GPS取得後に近場コースを推薦（非同期、失敗しても無視）
     setTimeout(() => { renderNearbyBanner().catch(() => {}); }, 1500);
 
@@ -9986,19 +10168,8 @@ ${trkPts}
     // ✨ 新機能ツアー（経験者向け・初回ユーザー以外）
     try { maybeShowWhatsNew(); } catch {}
 
-    // 🎓 Step 1: 初回ユーザーへの最初のコーチマーク
-    setTimeout(() => {
-      if (isFirstRunUser()) {
-        const target = $('#welcome-cta')?.offsetParent ? '#welcome-cta' : '#quickstart-btn';
-        showCoach({
-          target,
-          message: '👇 まずはここから！1タップでガチャを引いて散歩を始められます',
-          hintKey: 'coach-step1-quickstart',
-          arrow: 'up',
-          autoDismissMs: 12000,
-        });
-      }
-    }, 2500);
+    // 🎓 Step 1: 初回ユーザーへの最初のコーチマーク（オンボ表示中は出さない＝×で閉じた後に出す）
+    setTimeout(() => { showStep1Coach(); }, 2500);
 
     // モードヘルプ
     const modeHelpBtn = $('#mode-help-btn');
@@ -10046,7 +10217,7 @@ ${trkPts}
       if (state.mode === 'course') {
         sub.textContent = costText;
         // 🆕 R14#3: モード説明を短縮（タブ名と重複しない最小限の補足のみ）
-        if (desc) desc.textContent = '💡 キュレーション21コースから1本';
+        if (desc) desc.textContent = '💡 キュレーション' + enabledCourseCount() + 'コースから1本';
       } else if (state.mode === 'route') {
         sub.textContent = costText;
         if (desc) desc.textContent = '💡 出発地→目的地で AI 生成';
@@ -10099,7 +10270,7 @@ ${trkPts}
         //   render呼び出しを外して非表示化（HTMLは残置=JSバインド非破壊）。
         try { renderWeatherWarning(); } catch {}   // 安全情報(猛暑/雷)は残す
         try { renderStreakBadge(); } catch {}      // 🔥連続=毎日開くエサ(最優先)
-        try { renderLuckyCourse(); } catch {}      // 🍀今日の1コース
+        // 🎨 簡素化(2026-07-01): lucky-course は featured と重複するため render を外す
         try { renderHomeGachaHero(); } catch {}    // 🎰 新ヒーロー(Phase B)
       } else if (name === 'me') {
         try { renderMeTab(); } catch {}
@@ -10871,6 +11042,21 @@ ${trkPts}
   // ============================================================
   // Onboarding
   // ============================================================
+  // 🎓 初回ユーザーへのヒーローCTAコーチ（オンボ表示中は出さない＝重なり防止）
+  function showStep1Coach() {
+    if (!isFirstRunUser()) return;
+    const ob = document.querySelector('#onboard-modal');
+    if (ob && !ob.hidden) return; // オンボのモーダルと重ねない
+    const target = $('#home-hero-cta')?.offsetParent ? '#home-hero-cta'
+      : ($('#welcome-cta')?.offsetParent ? '#welcome-cta' : '#quickstart-btn');
+    showCoach({
+      target,
+      message: '👇 まずはここから！1タップでガチャを引いて散歩を始められます',
+      hintKey: 'coach-step1-quickstart',
+      arrow: 'up',
+      autoDismissMs: 12000,
+    });
+  }
   function maybeShowOnboarding() {
     let seen = false;
     try { seen = localStorage.getItem('yorimichi-onboarded') === '1'; } catch (e) {}
@@ -10901,6 +11087,8 @@ ${trkPts}
     $('#onboard-close').addEventListener('click', () => {
       try { localStorage.setItem('yorimichi-onboarded', '1'); } catch (e) {}
       $('#onboard-modal').hidden = true;
+      // オンボをスキップ→ホームに戻るのでヒーローCTAを案内（重なり解消後に出す）
+      setTimeout(() => { showStep1Coach(); }, 700);
     });
   }
 
@@ -11584,14 +11772,19 @@ ${trkPts}
           top = rect.bottom + 12;
           left = rect.left;
       }
-      // 画面端で切れないよう調整
+      // 画面端で切れないよう調整（横は端、縦はビューポート内にクランプ）
       const viewW = window.innerWidth;
+      const viewH = window.innerHeight;
       if (left + bubW > viewW - 8) left = viewW - bubW - 8;
       if (left < 8) left = 8;
-      bubble.style.top = `${top + window.scrollY}px`;
+      top = Math.max(8, Math.min(top, viewH - bubH - 8));
+      // .coach-bubble は position:fixed＝ビューポート基準なので scrollY は加えない
+      bubble.style.top = `${top}px`;
       bubble.style.left = `${left}px`;
     };
     requestAnimationFrame(positionBubble);
+    // レイアウト確定後に再配置（モーダル閉じ直後などの stale 位置を補正）
+    setTimeout(positionBubble, 250);
 
     // 閉じるボタン
     bubble.querySelector('.coach-bubble-close').addEventListener('click', clearCoach);
@@ -11612,6 +11805,14 @@ ${trkPts}
   /** 初回ユーザーかどうか（完走0かつガチャ2回未満） */
   function isFirstRunUser() {
     return state.completedCourses.size === 0 && (gacha.pulls || 0) < 2;
+  }
+  // 有効エリアのコース総数（コピーの「Nコース」表示を出し分けに連動・ハードコード回避）
+  function enabledCourseCount() {
+    const areas = window.YORIMICHI_AREAS || [];
+    return (window.YORIMICHI_COURSES || []).filter(c => {
+      const a = areas.find(x => x.id === c.area);
+      return !a || a.enabled;
+    }).length;
   }
 
   // ===== Photo capture during walks =====
@@ -12141,6 +12342,7 @@ ${trkPts}
     const visited = state.completedStops[courseId];
     if (visited.has(idx)) return;
     visited.add(idx);
+    window.YA && YA.trackCheckin();
     saveCompletion();
     // ミッション「1スポット完走」
     try { markMissionDone('walk'); } catch {}
@@ -12198,6 +12400,7 @@ ${trkPts}
     if (!state.activeWalk) return;
     const courseId = state.activeWalk.courseId;
     state.completedCourses.add(courseId);
+    window.YA && YA.trackCourseCompleted({ course_id: courseId });
     state.walkCounts[courseId] = (state.walkCounts[courseId] || 0) + 1;
     // Record in history
     const today = getResetDate();
@@ -13794,17 +13997,11 @@ ${hashtag}`;
       });
     }
 
-    // GPS explainer
-    $('#gps-explain-close').addEventListener('click', () => $('#gps-explain').hidden = true);
+    // GPS explainer（規約5.1.1: 説明の後は必ず許可ダイアログへ進む。離脱/中立でない文言の回避ボタンは置かない）
     $('#gps-allow').addEventListener('click', () => {
       try { localStorage.setItem('yorimichi-gps-explained', '1'); } catch (e) {}
       $('#gps-explain').hidden = true;
-      beginWalk(true);
-    });
-    $('#gps-manual').addEventListener('click', () => {
-      try { localStorage.setItem('yorimichi-gps-explained', '1'); } catch (e) {}
-      $('#gps-explain').hidden = true;
-      beginWalk(false);
+      beginWalk(true); // 続ける→システム許可ダイアログ。拒否時は実行時に手動チェックインへ自動フォールバック
     });
 
     // Language toggle
@@ -14124,7 +14321,7 @@ ${hashtag}`;
         $('#capsule-hint').textContent = labels[quickMode];
         // 🆕 R9#1: フィルター意味をchipの下に表示
         const descLabels = {
-          'all': '🌍 全部: 21コースから運命の1本',
+          'all': '🌍 全部: ' + enabledCourseCount() + 'コースから運命の1本',
           'undiscovered': '🔍 未発見: まだ歩いていないコースのみ',
           'rare-up': '✨ レアUP: SUPER RARE の確率が2倍に'
         };

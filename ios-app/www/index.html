@@ -601,20 +601,15 @@
           <button class="today-summary-share" id="today-summary-share" type="button" hidden>📸 今日の振り返りカードを保存</button>
         </section>
 
-        <!-- 🆕 初回ユーザー向けウェルカムカード（完走0回時のみ） -->
-        <section class="welcome-card" id="welcome-card" hidden>
-          <div class="welcome-emoji">🥚</div>
-          <h2 class="welcome-title">街歩きの旅、はじめませんか？</h2>
-          <p class="welcome-sub">あなたの街にある、まだ知らないコースをガチャで引いてみましょう</p>
+        <!-- 🆕 初回ユーザー向けウェルカム説明（完走0回時のみ・主CTAは上のヒーロー） -->
+        <section class="welcome-card welcome-card-slim" id="welcome-card" hidden>
+          <h2 class="welcome-title">かんたん3ステップ</h2>
           <div class="welcome-steps">
             <div class="welcome-step">1️⃣ ガチャを引く</div>
             <div class="welcome-step">2️⃣ コースを歩く</div>
             <div class="welcome-step">3️⃣ 証明書をシェア</div>
           </div>
-          <button class="btn-primary welcome-cta" id="welcome-cta" type="button">
-            🎰 はじめてのガチャを引く
-          </button>
-          <p class="welcome-fine">ボタン1つで全自動 ・ 無料 ・ 登録不要</p>
+          <p class="welcome-fine">⬆️ 上のボタンをタップするだけ ・ 無料 ・ 登録不要</p>
         </section>
 
         <!-- 🥇 優先度1: 中断ウォーク（あれば最優先） -->
@@ -1382,11 +1377,11 @@
 
         <!-- Quick gacha modes (course mode のみ表示) -->
         <div class="quick-modes" id="quick-modes-course">
-          <button class="quick-mode active" data-quickmode="all" type="button" title="21コース全てを抽選対象">🌍 全部</button>
+          <button class="quick-mode active" data-quickmode="all" type="button" title="全コースを抽選対象">🌍 全部</button>
           <button class="quick-mode" data-quickmode="undiscovered" type="button" title="まだ完走していないコースのみを抽選">🔍 未発見</button>
           <button class="quick-mode" data-quickmode="rare-up" type="button" title="SUPER RARE 確率2倍">✨ レアUP</button>
         </div>
-        <div class="quick-modes-desc" id="quick-modes-desc">🌍 全部: 21コースから運命の1本</div>
+        <div class="quick-modes-desc" id="quick-modes-desc">🌍 全部: 全コースから運命の1本</div>
 
         <!-- 🎯 ガチャ詳細設定（G2: おでかけの主役。既定で展開・エリア+時間だけ） -->
         <details class="gacha-settings" id="gacha-settings" open>
@@ -1965,7 +1960,7 @@
         <div class="onboard-icon">🗺️</div>
         <h2 class="modal-title">3つの遊び方</h2>
         <ul class="onboard-list">
-          <li>📖 <strong>おすすめ</strong>：吉祥寺・谷根千・神保町・浅草の<strong>キュレーション済み21コース</strong>から</li>
+          <li>📖 <strong>おすすめ</strong>：東京・京都・金沢など<strong>キュレーション済みコース</strong>から</li>
           <li>🎯 <strong>行き先指定</strong>：出発地→目的地を入れるとAIがランダムに街歩きコースを生成</li>
           <li>🌿 <strong>ぶらぶら</strong>：出発地のみ入れて気の向くまま</li>
         </ul>
@@ -2083,19 +2078,16 @@
   <!-- ============ GPS Permission Explainer ============ -->
   <div class="modal-backdrop" id="gps-explain" hidden>
     <div class="modal gps-explain-modal" role="dialog" aria-label="GPS利用について" aria-modal="true">
-      <button class="modal-close" id="gps-explain-close" type="button" aria-label="閉じる">✕</button>
       <div class="onboard-icon">📍</div>
       <h2 class="modal-title">位置情報の利用について</h2>
       <ul class="gps-bullets">
         <li>✅ <strong>用途</strong>：スポット到着の自動チェックインのみ</li>
         <li>✅ <strong>送信先</strong>：どこにも送らず、端末内だけで処理</li>
         <li>✅ <strong>保存先</strong>：このブラウザの localStorage のみ</li>
-        <li>⚠ 拒否しても手動チェックインボタンで遊べます</li>
       </ul>
-      <p class="gps-note">「許可」を押すとブラウザの確認ダイアログが出ます。</p>
+      <p class="gps-note">「続ける」を押すと、位置情報の利用許可ダイアログが表示されます。</p>
       <div class="gps-actions">
-        <button class="btn-primary" id="gps-allow" type="button">📍 GPSを許可して開始</button>
-        <button class="btn-secondary" id="gps-manual" type="button">手動チェックインで遊ぶ</button>
+        <button class="btn-primary" id="gps-allow" type="button">続ける</button>
       </div>
     </div>
   </div>
@@ -2195,6 +2187,8 @@
     crossorigin=""
     defer></script>
   <!-- Data files: defer = HTML parsing非ブロック・順序保証 -->
+  <!-- analytics.js は app.js より前（window.YA.* を先に定義・キー未設定なら no-op）-->
+  <script src="analytics.js" defer></script>
   <script src="photos.js" defer></script>
   <script src="courses.js" defer></script>
   <script src="app.js" defer></script>
