@@ -13094,3 +13094,111 @@ html[data-platform="ios"] .app-header {
 .nearby-notify-btn:hover { opacity: 0.9; }
 .nearby-notify-btn:active { transform: scale(0.96); }
 
+/* ============================================================
+   🗾 収集マップ（日本地図図鑑）— flip対応トークンのみ・新規!important無し
+   ============================================================ */
+.collection-region-map {
+  margin: 4px 0 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 12px 12px 14px;
+}
+.cjm-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 8px; margin-bottom: 6px; flex-wrap: wrap;
+}
+.cjm-title { font-weight: 800; font-size: 14px; color: var(--text); }
+.cjm-progress { font-size: 12px; color: var(--text-muted); }
+.cjm-progress strong { color: var(--brand-dark); font-size: 13px; }
+[data-theme="dark"] .cjm-progress strong { color: var(--brand); }
+.cjm-stage {
+  position: relative;
+  width: min(230px, 72%);
+  margin: 4px auto 2px;
+}
+.cjm-svg { width: 100%; height: auto; display: block; }
+.cjm-land { fill: var(--brand-soft); stroke: var(--brand); stroke-width: 2.5; stroke-linejoin: round; }
+.cjm-stage::before {
+  content: ''; position: absolute; inset: -6px;
+  border-radius: 18px;
+  background: var(--surface-2);
+  z-index: 0;
+}
+.cjm-svg { position: relative; z-index: 1; }
+.cjm-pins { z-index: 2; }
+.cjm-pins { position: absolute; inset: 0; }
+.cjm-pin {
+  position: absolute;
+  width: 44px; height: 44px;
+  transform: translate(-50%, -50%);
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; border: 0; padding: 0; margin: 0;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.cjm-dot {
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  transition: transform 0.12s ease;
+}
+/* 未発見（実都市・コースはあるが未着手） */
+.cjm-pin-undiscovered .cjm-dot {
+  width: 16px; height: 16px; font-size: 0;
+  background: transparent; border: 2px dashed var(--text-muted); opacity: 0.7;
+}
+/* 準備中（コース未実装） */
+.cjm-pin-soon .cjm-dot {
+  width: 13px; height: 13px; font-size: 0;
+  background: var(--surface); border: 2px dashed var(--border); opacity: 0.55;
+}
+/* 発見（1本以上引いた） */
+.cjm-pin-discovered .cjm-dot {
+  width: 30px; height: 30px; font-size: 15px;
+  background: var(--brand-grad); color: #fff;
+  box-shadow: 0 2px 7px rgba(255, 110, 40, 0.45);
+}
+/* 制覇（全コース完走）＝金＋発光 */
+.cjm-pin-conquered .cjm-dot {
+  width: 32px; height: 32px; font-size: 16px;
+  background: linear-gradient(135deg, #ffe08a 0%, #f0a500 100%);
+  color: #6b4700;
+  box-shadow: 0 0 12px rgba(240, 165, 0, 0.6), 0 2px 6px rgba(0,0,0,0.2);
+}
+.cjm-pin.selected .cjm-dot { transform: scale(1.18); outline: 3px solid var(--brand); outline-offset: 2px; }
+.cjm-pin:active .cjm-dot { transform: scale(0.92); }
+.cjm-badge {
+  position: absolute; right: 2px; bottom: 2px;
+  min-width: 16px; height: 15px; padding: 0 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 800; line-height: 1;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px;
+}
+.cjm-hint {
+  font-size: 11.5px; color: var(--text-muted);
+  text-align: center; margin-top: 6px; line-height: 1.5;
+}
+.cjm-hint strong { color: var(--text); }
+.cjm-clear {
+  background: var(--brand-soft); border: 1px solid var(--brand);
+  color: var(--brand-dark); font-size: 11px; font-weight: 700;
+  border-radius: 100px; padding: 2px 10px; margin-left: 4px; cursor: pointer;
+}
+[data-theme="dark"] .cjm-clear { color: var(--brand); }
+@media (prefers-reduced-motion: reduce) {
+  .cjm-dot { transition: none; }
+}
+
+/* 結果カード「🗾 日本地図で見る」導線 */
+.result-mapview-link {
+  display: block; width: 100%; margin: 8px 0 0;
+  background: transparent; border: 1px dashed var(--border);
+  color: var(--brand-dark); font-family: inherit;
+  font-size: 13px; font-weight: 700;
+  border-radius: 12px; padding: 10px; cursor: pointer;
+  transition: background 0.15s;
+}
+[data-theme="dark"] .result-mapview-link { color: var(--brand); }
+.result-mapview-link:hover { background: var(--brand-soft); }
+.result-mapview-link:active { transform: scale(0.98); }
+

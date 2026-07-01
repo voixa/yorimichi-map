@@ -1514,6 +1514,7 @@
               <span id="result-fav-icon">🤍</span>
             </button>
           </div>
+          <button class="result-mapview-link" id="result-mapview" type="button">🗾 日本地図で集まり具合を見る</button>
           <div class="result-share-row">
             <div class="result-share-label">📤 引いたコースをシェア</div>
             <div class="result-share-buttons">
@@ -1614,6 +1615,11 @@
       <button class="modal-close" id="collection-close" type="button" aria-label="閉じる">✕</button>
       <h2 class="modal-title">📖 コース図鑑</h2>
       <p class="modal-sub">ガチャで引いたコースが図鑑に追加されていきます</p>
+
+      <!-- 🗾 収集マップ（イラスト日本列島＋都市ピン）— JSが renderRegionMap() で描画 -->
+      <div class="collection-region-map" id="collection-region-map" data-country="JP">
+        <!-- populated by JS: progress header + SVG + pin overlay -->
+      </div>
 
       <div class="col-search-row">
         <input type="search" id="col-search" class="col-search" placeholder="🔍 コース名・スポット名で検索..." aria-label="検索" />

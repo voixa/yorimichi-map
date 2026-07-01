@@ -3704,6 +3704,22 @@
     againBtn.innerHTML = sessionTotal >= 3
       ? `<span>もう一回（${sessionTotal}連続）</span>`
       : '<span>もう一回回す</span>';
+
+    // 🗾 日本地図で見る（引いた都市にフォーカスして図鑑を開く）
+    const mapviewBtn = $('#result-mapview');
+    if (mapviewBtn) {
+      mapviewBtn.onclick = () => {
+        let rid = null;
+        if (route.isCurated && route.courseId) {
+          const course = (window.YORIMICHI_COURSES || []).find(c => c.id === route.courseId);
+          if (course) rid = regionOfCourse(course);
+        }
+        collectionRegionFilter = rid;
+        const back = mapviewBtn.closest('.modal-backdrop');
+        if (back) back.hidden = true;
+        showCollection();
+      };
+    }
     againBtn.onclick = () => {
       const machine = $('#gachapon');
       if (machine) {
@@ -9655,9 +9671,48 @@ ${trkPts}
   let collectionFilter = 'all';
   let collectionSearch = '';
   let collectionSort = 'rarity';
+  let collectionRegionFilter = null; // 🗾 null=全国 / regionId でその都市に絞る（日本地図ピンtap）
+
+  // 🗾 コース→リージョン索引（起動時1回・region状態算出用）
+  let _coursesByRegion = null;
+  function coursesByRegion() {
+    if (_coursesByRegion) return _coursesByRegion;
+    _coursesByRegion = {};
+    const areas = window.YORIMICHI_AREAS || [];
+    (window.YORIMICHI_COURSES || []).forEach(c => {
+      const area = areas.find(a => a.id === c.area);
+      const region = area ? area.region : null;
+      if (!region) return;
+      (_coursesByRegion[region] = _coursesByRegion[region] || []).push(c);
+    });
+    return _coursesByRegion;
+  }
+  function regionOfCourse(c) {
+    const area = (window.YORIMICHI_AREAS || []).find(a => a.id === c.area);
+    return area ? area.region : null;
+  }
+  // リージョンの収集状態を算出（未着手/発見/制覇＋発見数・完走数）
+  function getRegionCollectState(regionId) {
+    const list = coursesByRegion()[regionId] || [];
+    const total = list.length;
+    const discovered = list.filter(c => state.discoveredCourses.has(c.id)).length;
+    const completed = list.filter(c => state.completedCourses.has(c.id)).length;
+    let status = 'undiscovered';
+    if (total > 0 && completed >= total) status = 'conquered';
+    else if (discovered > 0) status = 'discovered';
+    return { total, discovered, completed, status };
+  }
+  // 緯度経度→地図コンテナ内の%座標（0-100）。日本本土bbox。resize安全（getBoundingClientRect不使用）
+  function latLngToPct(lat, lng) {
+    const B = { minLng: 128.5, maxLng: 146.5, minLat: 30.5, maxLat: 46.2 };
+    const x = (lng - B.minLng) / (B.maxLng - B.minLng) * 100;
+    const y = (B.maxLat - lat) / (B.maxLat - B.minLat) * 100;
+    return { x: Math.max(2, Math.min(98, x)), y: Math.max(2, Math.min(98, y)) };
+  }
 
   function showCollection() {
     $('#collection-modal').hidden = false;
+    try { renderRegionMap(); } catch (e) { console.warn('renderRegionMap failed', e); }
     renderCollection(collectionFilter);
   }
 
@@ -9692,6 +9747,11 @@ ${trkPts}
     grid.style.gridTemplateColumns = '1fr';
 
     let filtered = filter === 'all' ? allCourses : allCourses.filter(c => (c.rarity || 'r') === filter);
+
+    // 🗾 日本地図ピンでの都市フィルタ
+    if (collectionRegionFilter) {
+      filtered = filtered.filter(c => regionOfCourse(c) === collectionRegionFilter);
+    }
 
     // Apply search (kana-normalized)
     if (collectionSearch) {
@@ -9769,6 +9829,82 @@ ${trkPts}
       }
       grid.appendChild(card);
     });
+  }
+
+  // 🗾 収集マップ（イラスト日本列島＋都市ピン）— 図鑑の主役ビュー
+  // 近接ピンの手動オフセット（%・京都/大阪など）
+  const CJM_PIN_OFFSET = { osaka: { dx: -2.5, dy: 2.2 }, kyoto: { dx: 1.5, dy: -1.2 } };
+  function renderRegionMap() {
+    const host = document.getElementById('collection-region-map');
+    if (!host) return;
+    const regions = (window.YORIMICHI_REGIONS || []).filter(r => r.country === 'JP');
+    const active = regions.filter(r => !r.comingSoon);
+    const discoveredCities = active.filter(r => getRegionCollectState(r.id).discovered > 0).length;
+    const conquered = active.filter(r => getRegionCollectState(r.id).status === 'conquered').length;
+
+    // イラスト風・簡略な日本列島（本州/北海道/九州/四国）。viewBox 300x400。
+    const svg = `<svg class="cjm-svg" viewBox="0 0 300 400" role="presentation" preserveAspectRatio="xMidYMid meet">
+      <path class="cjm-land" d="M58,308 Q95,285 120,270 Q150,255 175,225 Q200,190 216,150 Q222,141 226,151 Q224,177 205,216 Q180,258 152,283 Q120,301 80,320 Q61,326 55,315 Z"/>
+      <path class="cjm-land" d="M198,121 Q203,84 230,71 Q259,61 263,95 Q263,121 235,129 Q209,133 198,121 Z"/>
+      <path class="cjm-land" d="M30,331 Q21,314 35,304 Q53,300 57,321 Q59,347 44,361 Q29,369 25,352 Q25,340 30,331 Z"/>
+      <path class="cjm-land" d="M77,305 Q95,299 107,308 Q111,319 96,323 Q81,323 77,314 Z"/>
+    </svg>`;
+
+    const pins = regions.map(r => {
+      const off = CJM_PIN_OFFSET[r.id] || { dx: 0, dy: 0 };
+      const p = latLngToPct(r.centerLat, r.centerLng);
+      const left = p.x + off.dx, top = p.y + off.dy;
+      if (r.comingSoon) {
+        return `<button class="cjm-pin cjm-pin-soon" style="left:${left}%;top:${top}%" data-region="${r.id}" data-soon="1" type="button" aria-label="${escapeHtml(r.name)}（準備中）"><span class="cjm-dot"></span></button>`;
+      }
+      const st = getRegionCollectState(r.id);
+      const sel = (collectionRegionFilter === r.id) ? ' selected' : '';
+      const badge = st.total > 0 ? `<span class="cjm-badge">${st.completed}/${st.total}</span>` : '';
+      return `<button class="cjm-pin cjm-pin-${st.status}${sel}" style="left:${left}%;top:${top}%" data-region="${r.id}" type="button" aria-label="${escapeHtml(r.name)}｜発見${st.discovered}・制覇${st.completed}/${st.total}"><span class="cjm-dot">${r.icon || '📍'}</span>${badge}</button>`;
+    }).join('');
+
+    host.innerHTML = `
+      <div class="cjm-head">
+        <span class="cjm-title">🗾 収集マップ</span>
+        <span class="cjm-progress">発見 <strong>${discoveredCities}</strong>/${active.length} 都市 ・ 🏅 制覇 <strong>${conquered}</strong></span>
+      </div>
+      <div class="cjm-stage">
+        ${svg}
+        <div class="cjm-pins">${pins}</div>
+      </div>
+      <div class="cjm-hint" id="cjm-hint">ピンをタップでその都市に絞り込み。金ピン＝全コース制覇！</div>`;
+
+    // ピンtap（委譲）
+    const pinWrap = host.querySelector('.cjm-pins');
+    if (pinWrap && !pinWrap._bound) {
+      pinWrap._bound = true;
+      pinWrap.addEventListener('click', (e) => {
+        const btn = e.target.closest('.cjm-pin');
+        if (!btn) return;
+        const rid = btn.dataset.region;
+        if (btn.dataset.soon) {
+          const r = (window.YORIMICHI_REGIONS || []).find(x => x.id === rid);
+          showToast(`🚧 ${r ? r.name : 'この都市'}は準備中です。お楽しみに！`, 'info', 2200);
+          return;
+        }
+        vib(8);
+        collectionRegionFilter = (collectionRegionFilter === rid) ? null : rid;
+        renderRegionMap();
+        renderCollection(collectionFilter);
+        const hint = document.getElementById('cjm-hint');
+        if (hint) {
+          if (collectionRegionFilter) {
+            const r = (window.YORIMICHI_REGIONS || []).find(x => x.id === rid);
+            const st = getRegionCollectState(rid);
+            hint.innerHTML = `📍 <strong>${escapeHtml(r ? r.name : '')}</strong>・${st.total}コース（発見${st.discovered}・制覇${st.completed}）　<button class="cjm-clear" id="cjm-clear" type="button">全国に戻す</button>`;
+            const clr = document.getElementById('cjm-clear');
+            if (clr) clr.addEventListener('click', () => { collectionRegionFilter = null; renderRegionMap(); renderCollection(collectionFilter); });
+          } else {
+            hint.textContent = 'ピンをタップでその都市に絞り込み。金ピン＝全コース制覇！';
+          }
+        }
+      });
+    }
   }
 
   // Course Lv: based on completion count

@@ -1196,6 +1196,14 @@ window.YORIMICHI_REGIONS = [
   { id: 'kyoto',   country: 'JP', name: '京都',           name_en: 'Kyoto',   icon: '🍵', enabled: true, centerLat: 35.0116, centerLng: 135.7681 },
   { id: 'osaka',   country: 'JP', name: '大阪',           name_en: 'Osaka',   icon: '🐙', enabled: true, centerLat: 34.6937, centerLng: 135.5023 },
   { id: 'kanazawa', country: 'JP', name: '金沢',          name_en: 'Kanazawa', icon: '🏯', enabled: true, centerLat: 36.5613, centerLng: 136.6562 },
+  // 🗾 準備中の都市（コース未実装・日本地図図鑑に「準備中」ピンとして表示＝全国に分散）
+  { id: 'sapporo',  country: 'JP', name: '札幌',   name_en: 'Sapporo',   icon: '❄️', enabled: false, comingSoon: true, centerLat: 43.0687, centerLng: 141.3508 },
+  { id: 'sendai',   country: 'JP', name: '仙台',   name_en: 'Sendai',    icon: '🌾', enabled: false, comingSoon: true, centerLat: 38.2682, centerLng: 140.8694 },
+  { id: 'nagano',   country: 'JP', name: '長野',   name_en: 'Nagano',    icon: '⛰️', enabled: false, comingSoon: true, centerLat: 36.6485, centerLng: 138.1948 },
+  { id: 'nagoya',   country: 'JP', name: '名古屋', name_en: 'Nagoya',    icon: '🏯', enabled: false, comingSoon: true, centerLat: 35.1815, centerLng: 136.9066 },
+  { id: 'hiroshima',country: 'JP', name: '広島',   name_en: 'Hiroshima', icon: '⛩️', enabled: false, comingSoon: true, centerLat: 34.3853, centerLng: 132.4553 },
+  { id: 'takamatsu',country: 'JP', name: '高松',   name_en: 'Takamatsu', icon: '🍜', enabled: false, comingSoon: true, centerLat: 34.3401, centerLng: 134.0434 },
+  { id: 'fukuoka',  country: 'JP', name: '福岡',   name_en: 'Fukuoka',   icon: '🍢', enabled: false, comingSoon: true, centerLat: 33.5904, centerLng: 130.4017 },
   { id: 'venezia', country: 'IT', name: 'ヴェネツィア', name_en: 'Venezia', icon: '🛶', enabled: true, centerLat: 45.4408, centerLng: 12.3155 },
 ];
 
