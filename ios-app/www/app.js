@@ -9834,6 +9834,13 @@ ${trkPts}
   // 🗾 収集マップ（イラスト日本列島＋都市ピン）— 図鑑の主役ビュー
   // 近接ピンの手動オフセット（%・京都/大阪など）
   const CJM_PIN_OFFSET = { osaka: { dx: -2.5, dy: 2.2 }, kyoto: { dx: 1.5, dy: -1.2 } };
+  // イラスト日本列島のパス（viewBox 300x400）— 地図描画とシェア画像で共用
+  const CJM_ISLAND_PATHS = [
+    'M58,308 Q95,285 120,270 Q150,255 175,225 Q200,190 216,150 Q222,141 226,151 Q224,177 205,216 Q180,258 152,283 Q120,301 80,320 Q61,326 55,315 Z',
+    'M198,121 Q203,84 230,71 Q259,61 263,95 Q263,121 235,129 Q209,133 198,121 Z',
+    'M30,331 Q21,314 35,304 Q53,300 57,321 Q59,347 44,361 Q29,369 25,352 Q25,340 30,331 Z',
+    'M77,305 Q95,299 107,308 Q111,319 96,323 Q81,323 77,314 Z',
+  ];
   function renderRegionMap() {
     const host = document.getElementById('collection-region-map');
     if (!host) return;
@@ -9843,12 +9850,7 @@ ${trkPts}
     const conquered = active.filter(r => getRegionCollectState(r.id).status === 'conquered').length;
 
     // イラスト風・簡略な日本列島（本州/北海道/九州/四国）。viewBox 300x400。
-    const svg = `<svg class="cjm-svg" viewBox="0 0 300 400" role="presentation" preserveAspectRatio="xMidYMid meet">
-      <path class="cjm-land" d="M58,308 Q95,285 120,270 Q150,255 175,225 Q200,190 216,150 Q222,141 226,151 Q224,177 205,216 Q180,258 152,283 Q120,301 80,320 Q61,326 55,315 Z"/>
-      <path class="cjm-land" d="M198,121 Q203,84 230,71 Q259,61 263,95 Q263,121 235,129 Q209,133 198,121 Z"/>
-      <path class="cjm-land" d="M30,331 Q21,314 35,304 Q53,300 57,321 Q59,347 44,361 Q29,369 25,352 Q25,340 30,331 Z"/>
-      <path class="cjm-land" d="M77,305 Q95,299 107,308 Q111,319 96,323 Q81,323 77,314 Z"/>
-    </svg>`;
+    const svg = `<svg class="cjm-svg" viewBox="0 0 300 400" role="presentation" preserveAspectRatio="xMidYMid meet">${CJM_ISLAND_PATHS.map(d => `<path class="cjm-land" d="${d}"/>`).join('')}</svg>`;
 
     const pins = regions.map(r => {
       const off = CJM_PIN_OFFSET[r.id] || { dx: 0, dy: 0 };
@@ -9867,12 +9869,17 @@ ${trkPts}
       <div class="cjm-head">
         <span class="cjm-title">🗾 収集マップ</span>
         <span class="cjm-progress">発見 <strong>${discoveredCities}</strong>/${active.length} 都市 ・ 🏅 制覇 <strong>${conquered}</strong></span>
+        <button class="cjm-share" id="cjm-share" type="button" aria-label="収集マップをシェア">📤 シェア</button>
       </div>
       <div class="cjm-stage">
         ${svg}
         <div class="cjm-pins">${pins}</div>
       </div>
       <div class="cjm-hint" id="cjm-hint">ピンをタップでその都市に絞り込み。金ピン＝全コース制覇！</div>`;
+
+    // 📤 収集マップをシェア（SVG＋ピン＋進捗を画像化）
+    const shareBtn = document.getElementById('cjm-share');
+    if (shareBtn) shareBtn.onclick = () => { shareCollectionMap().catch(() => {}); };
 
     // ピンtap（委譲）
     const pinWrap = host.querySelector('.cjm-pins');
@@ -9904,6 +9911,100 @@ ${trkPts}
           }
         }
       });
+    }
+  }
+
+  // 📤 収集マップ（日本地図＋ピン＋進捗）を画像化してシェア
+  async function shareCollectionMap() {
+    try {
+      const regions = (window.YORIMICHI_REGIONS || []).filter(r => r.country === 'JP');
+      const active = regions.filter(r => !r.comingSoon);
+      const discoveredCities = active.filter(r => getRegionCollectState(r.id).discovered > 0).length;
+      const conquered = active.filter(r => getRegionCollectState(r.id).status === 'conquered').length;
+
+      const W = 1080, H = 1440;
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext('2d');
+
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, '#fff6ee'); bg.addColorStop(1, '#ffe9d6');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#e55a17';
+      ctx.font = '900 58px sans-serif';
+      ctx.fillText('🗾 日本さんぽ収集マップ', W / 2, 108);
+      ctx.fillStyle = '#6b4a2a';
+      ctx.font = 'bold 40px sans-serif';
+      ctx.fillText(`発見 ${discoveredCities} / ${active.length} 都市 ・ 🏅 制覇 ${conquered} 都市`, W / 2, 172);
+
+      const mapX = 120, mapY = 226, mapW = 840, mapH = 1120; // 300:400 aspect
+      const islandSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400">${CJM_ISLAND_PATHS.map(d => `<path d="${d}" fill="#fff1e8" stroke="#ff7e3d" stroke-width="2.5" stroke-linejoin="round"/>`).join('')}</svg>`;
+      const svgImg = await loadImage('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(islandSvg));
+      if (svgImg) ctx.drawImage(svgImg, mapX, mapY, mapW, mapH);
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      regions.forEach(r => {
+        const off = CJM_PIN_OFFSET[r.id] || { dx: 0, dy: 0 };
+        const p = latLngToPct(r.centerLat, r.centerLng);
+        const cx = mapX + (p.x + off.dx) / 100 * mapW;
+        const cy = mapY + (p.y + off.dy) / 100 * mapH;
+        if (r.comingSoon) {
+          ctx.beginPath(); ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(120,110,100,0.35)'; ctx.fill();
+          return;
+        }
+        const st = getRegionCollectState(r.id);
+        let radius = 34, fill = null;
+        if (st.status === 'conquered') { fill = '#f0a500'; radius = 40; }
+        else if (st.status === 'discovered') { fill = '#ff7e3d'; }
+        else { radius = 22; }
+        if (st.status === 'conquered') { ctx.save(); ctx.shadowColor = 'rgba(240,165,0,0.7)'; ctx.shadowBlur = 26; }
+        ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+        else { ctx.strokeStyle = 'rgba(120,110,100,0.7)'; ctx.lineWidth = 4; ctx.setLineDash([6, 5]); ctx.stroke(); ctx.setLineDash([]); }
+        if (st.status === 'conquered') ctx.restore();
+        ctx.font = `${Math.round(radius * 0.95)}px sans-serif`;
+        ctx.fillStyle = '#fff';
+        ctx.fillText(r.icon || '📍', cx, cy + 2);
+        if (st.total > 0) {
+          const bx = cx + radius - 2, by = cy + radius - 2;
+          ctx.font = 'bold 22px sans-serif';
+          const label = `${st.completed}/${st.total}`;
+          const bw = ctx.measureText(label).width + 14;
+          ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#e0d6c8'; ctx.lineWidth = 2;
+          roundRect(ctx, bx - bw / 2, by - 13, bw, 26, 9); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#3a2a18'; ctx.fillText(label, bx, by + 1);
+        }
+      });
+
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle = '#b07a45';
+      ctx.font = 'bold 34px sans-serif';
+      ctx.fillText('👣 街歩きガチャ ・ yorimichi.in-dx.jp', W / 2, H - 44);
+
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/png', 0.92));
+      const fileName = 'yorimichi-collection-map.png';
+      try {
+        if (navigator.canShare && navigator.share) {
+          const file = new File([blob], fileName, { type: 'image/png' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: '日本さんぽ収集マップ', text: `街歩きガチャで ${discoveredCities} 都市を発見・${conquered} 都市制覇！🗾` });
+            showToast('📤 シェアしました', 'success', 2500);
+            return;
+          }
+        }
+      } catch (e) { if (e && e.name === 'AbortError') return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = fileName;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      showToast('💾 収集マップを保存しました', 'success', 3000);
+    } catch (e) {
+      console.error('shareCollectionMap failed', e);
+      showToast('マップ画像の生成に失敗しました', 'error', 2500);
     }
   }
 
