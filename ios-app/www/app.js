@@ -9904,15 +9904,39 @@ ${trkPts}
           if (collectionRegionFilter) {
             const r = (window.YORIMICHI_REGIONS || []).find(x => x.id === rid);
             const st = getRegionCollectState(rid);
-            hint.innerHTML = `📍 <strong>${escapeHtml(r ? r.name : '')}</strong>・${st.total}コース（発見${st.discovered}・制覇${st.completed}）　<button class="cjm-clear" id="cjm-clear" type="button">全国に戻す</button>`;
+            hint.innerHTML = `📍 <strong>${escapeHtml(r ? r.name : '')}</strong>・${st.total}コース（発見${st.discovered}・制覇${st.completed}）<span class="cjm-hint-actions"><button class="cjm-walk" id="cjm-walk" type="button">🗺 さんぽ地図で歩く</button><button class="cjm-clear" id="cjm-clear" type="button">全国に戻す</button></span>`;
             const clr = document.getElementById('cjm-clear');
             if (clr) clr.addEventListener('click', () => { collectionRegionFilter = null; renderRegionMap(); renderCollection(collectionFilter); });
+            const walk = document.getElementById('cjm-walk');
+            if (walk) walk.addEventListener('click', () => jumpToDiscoverForRegion(rid));
           } else {
             hint.textContent = 'ピンをタップでその都市に絞り込み。金ピン＝全コース制覇！';
           }
         }
       });
     }
+  }
+
+  // 図鑑の都市ピン → さんぽ(実Leaflet地図)へジャンプしてその都市にセンタリング（地図×図鑑の接続）
+  function jumpToDiscoverForRegion(regionId) {
+    const region = (window.YORIMICHI_REGIONS || []).find(r => r.id === regionId);
+    if (!region || region.centerLat == null) return;
+    const cm = document.getElementById('collection-modal'); if (cm) cm.hidden = true;
+    // setMainTab は別スコープなので さんぽタブのボタンを実クリックして切替（パネル展開ロジックも通す）
+    const discoverTab = document.querySelector('.main-tab[data-main-tab="discover"]');
+    if (discoverTab) discoverTab.click();
+    try {
+      // その都市圏のエリアが1つだけなら絞り込み、複数（東京など）なら全表示
+      const areas = (window.YORIMICHI_AREAS || []).filter(a => a.region === regionId && a.enabled);
+      state.activeArea = (areas.length === 1) ? areas[0].id : null;
+      buildAreaSelector();
+    } catch (e) {}
+    state.previewVisible = true;
+    setTimeout(() => {
+      try { if (state.map) { state.map.invalidateSize(); state.map.setView([region.centerLat, region.centerLng], 13); } } catch (e) {}
+      try { renderCoursePreview(); } catch (e) {}
+    }, 160);
+    try { showToast(`🗺 ${region.name}のコースを地図に表示`, 'info', 2200); } catch (e) {}
   }
 
   // 📤 収集マップ（日本地図＋ピン＋進捗）を画像化してシェア
