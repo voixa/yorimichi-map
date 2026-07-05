@@ -9947,24 +9947,55 @@ ${trkPts}
       const discoveredCities = active.filter(r => getRegionCollectState(r.id).discovered > 0).length;
       const conquered = active.filter(r => getRegionCollectState(r.id).status === 'conquered').length;
 
+      // コース単位の制覇率（＝自慢したくなる主指標）
+      const totalCourses = (window.YORIMICHI_COURSES || []).length
+        || active.reduce((s, r) => s + getRegionCollectState(r.id).total, 0);
+      const completedCourses = state.completedCourses ? state.completedCourses.size : 0;
+      const pct = totalCourses > 0 ? Math.round(completedCourses / totalCourses * 100) : 0;
+      const isEmpty = discoveredCities === 0 && conquered === 0;
+      // 称号（制覇都市数ベース・初回でも"始めた"を称える）
+      const rank = isEmpty ? 'さんぽ、はじめました'
+        : conquered >= 5 ? '日本さんぽ王'
+        : conquered >= 3 ? 'さんぽ達人'
+        : conquered >= 1 ? 'まちさんぽびと'
+        : discoveredCities >= 3 ? '見習いさんぽびと'
+        : 'さんぽ見習い';
+
       const W = 1080, H = 1440;
       const canvas = document.createElement('canvas');
       canvas.width = W; canvas.height = H;
       const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('canvas 2d context unavailable');
 
       const bg = ctx.createLinearGradient(0, 0, 0, H);
       bg.addColorStop(0, '#fff6ee'); bg.addColorStop(1, '#ffe9d6');
       ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
 
+      // タイトル
       ctx.textAlign = 'center';
       ctx.fillStyle = '#e55a17';
-      ctx.font = '900 58px sans-serif';
-      ctx.fillText('🗾 日本さんぽ収集マップ', W / 2, 108);
-      ctx.fillStyle = '#6b4a2a';
-      ctx.font = 'bold 40px sans-serif';
-      ctx.fillText(`発見 ${discoveredCities} / ${active.length} 都市 ・ 🏅 制覇 ${conquered} 都市`, W / 2, 172);
+      ctx.font = '900 56px sans-serif';
+      ctx.fillText('🗾 日本さんぽ収集マップ', W / 2, 92);
 
-      const mapX = 120, mapY = 226, mapW = 840, mapH = 1120; // 300:400 aspect
+      // 称号ピル
+      ctx.font = 'bold 34px sans-serif';
+      const rankLabel = '称号 ・ ' + rank;
+      const rpw = ctx.measureText(rankLabel).width + 60;
+      ctx.fillStyle = '#ff7e3d';
+      roundRect(ctx, (W - rpw) / 2, 118, rpw, 58, 29); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle';
+      ctx.fillText(rankLabel, W / 2, 148);
+      ctx.textBaseline = 'alphabetic';
+
+      // 制覇率（大）＋内訳
+      ctx.fillStyle = '#e55a17';
+      ctx.font = '900 76px sans-serif';
+      ctx.fillText(`制覇率 ${pct}%`, W / 2, 258);
+      ctx.fillStyle = '#6b4a2a';
+      ctx.font = 'bold 36px sans-serif';
+      ctx.fillText(`発見 ${discoveredCities}/${active.length} 都市 ・ 🏅 制覇 ${conquered} 都市`, W / 2, 310);
+
+      const mapX = 135, mapY = 330, mapW = 810, mapH = 1080; // 300:400 aspect
       const islandSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400">${CJM_ISLAND_PATHS.map(d => `<path d="${d}" fill="#fff1e8" stroke="#ff7e3d" stroke-width="2.5" stroke-linejoin="round"/>`).join('')}</svg>`;
       const svgImg = await loadImage('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(islandSvg));
       if (svgImg) ctx.drawImage(svgImg, mapX, mapY, mapW, mapH);
@@ -10005,12 +10036,51 @@ ${trkPts}
         }
       });
 
+      // 初期ユーザー（未発見）は"始めた"を前向きに見せる＝地味な灰マップでも映える
+      if (isEmpty) {
+        ctx.save();
+        ctx.textAlign = 'center';
+        const by = mapY + mapH / 2;
+        ctx.font = '900 44px sans-serif';
+        const msg = 'さあ、日本を集めよう！';
+        const mw = ctx.measureText(msg).width + 64;
+        ctx.fillStyle = 'rgba(229,90,23,0.92)';
+        roundRect(ctx, (W - mw) / 2, by - 42, mw, 84, 42); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle';
+        ctx.fillText(msg, W / 2, by);
+        ctx.restore();
+      }
+
+      // 招待QR（右下の海エリアにオーバーレイ＝見た人がスキャンで即インストール＝バイラルループを閉じる）
+      const APP_URL = 'https://apps.apple.com/app/id6782575046';
+      const qrImg = await loadImage('https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=6&data=' + encodeURIComponent(APP_URL), true);
+      const cardW = 210, cardH = 262;
+      const cardX = mapX + mapW - cardW - 6, cardY = mapY + mapH - cardH - 10;
+      ctx.save();
+      ctx.shadowColor = 'rgba(140,90,40,0.28)'; ctx.shadowBlur = 22; ctx.shadowOffsetY = 6;
+      ctx.fillStyle = '#ffffff';
+      roundRect(ctx, cardX, cardY, cardW, cardH, 20); ctx.fill();
+      ctx.restore();
       ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      if (qrImg) {
+        ctx.drawImage(qrImg, cardX + 15, cardY + 15, 180, 180);
+      } else {
+        ctx.fillStyle = '#e55a17'; ctx.font = 'bold 30px sans-serif';
+        ctx.fillText('QR', cardX + cardW / 2, cardY + 110);
+      }
+      ctx.fillStyle = '#e55a17'; ctx.font = '900 30px sans-serif';
+      ctx.fillText('▶ 無料で遊ぶ', cardX + cardW / 2, cardY + 224);
+      ctx.fillStyle = '#8a6a45'; ctx.font = '20px sans-serif';
+      ctx.fillText('スキャンで開始', cardX + cardW / 2, cardY + 250);
+
+      // ブランド（左下）
+      ctx.textAlign = 'left';
       ctx.fillStyle = '#b07a45';
-      ctx.font = 'bold 34px sans-serif';
-      ctx.fillText('👣 街歩きガチャ ・ yorimichi.in-dx.jp', W / 2, H - 44);
+      ctx.font = 'bold 30px sans-serif';
+      ctx.fillText('👣 街歩きガチャ', 66, H - 42);
 
       const blob = await new Promise(res => canvas.toBlob(res, 'image/png', 0.92));
+      if (!blob) throw new Error('toBlob returned null');
       const fileName = 'yorimichi-collection-map.png';
       try {
         if (navigator.canShare && navigator.share) {
@@ -12732,7 +12802,7 @@ ${trkPts}
   // Note: api.qrserver.com (フリー・APIキー不要・QR生成専門)
   async function loadQRImage(text, size = 280) {
     const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=4&data=${encodeURIComponent(text)}`;
-    return loadImage(url);
+    return loadImage(url, true); // crossOrigin: canvas エクスポート（toBlob）で汚染しないように
   }
 
   // ===== Instagram縦長シェア画像 (1080x1920) =====
@@ -12989,9 +13059,12 @@ ${trkPts}
   }
 
   // 写真を Image にロード
-  function loadImage(src) {
+  function loadImage(src, crossOrigin) {
     return new Promise((resolve) => {
       const img = new Image();
+      // crossOrigin=true: canvas を汚染させずに toBlob/toDataURL でエクスポート可能にする
+      // （api.qrserver.com は Access-Control-Allow-Origin:* を返すので anonymous で読める）
+      if (crossOrigin) img.crossOrigin = 'anonymous';
       img.onload = () => resolve(img);
       img.onerror = () => resolve(null);
       img.src = src;

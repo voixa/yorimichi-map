@@ -10,15 +10,13 @@ KID = "XZ54R7ZQ99"
 ISS = "70cefba7-13f2-453a-907b-cb645079e635"
 P8 = os.path.expanduser("~/.appstoreconnect/private_keys/AuthKey_XZ54R7ZQ99.p8")
 APP_ID = "6782575046"
-VERSION = "1.0.1"
-BUILD_NO = "4"
+VERSION = "1.0.2"
+BUILD_NO = "5"
 BASE = "https://api.appstoreconnect.apple.com"
 
 WHATS_NEW = (
-    "日本地図の「収集マップ」を追加しました！\n"
-    "引いた街が日本地図にピンとして集まり、全コースを歩くと金ピンに。マップはそのままシェアできます。\n"
-    "・金沢／京都（嵐山）のおでかけコースを追加\n"
-    "・画面デザインを一新して見やすく、動作も改善しました。"
+    "細かな不具合を修正し、動作の安定性を改善しました。\n"
+    "これからも、寄り道がもっと楽しくなるよう改善を続けます。"
 )
 
 def token():

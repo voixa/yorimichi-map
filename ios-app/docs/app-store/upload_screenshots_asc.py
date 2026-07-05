@@ -35,9 +35,14 @@ def patch(path, body):
     if r.status_code >= 300: print("PATCH FAIL", path, r.status_code, r.text); r.raise_for_status()
     return r.json() if r.text else {}
 
-# 1. editable iOS version
-vers = get(f"/v1/apps/{APP_ID}/appStoreVersions", **{"filter[platform]": "IOS"})
+# 1. editable iOS version — target 1.0.2 explicitly (avoid grabbing the live 1.0.1)
+TARGET_VERSION = "1.0.2"
+vers = get(f"/v1/apps/{APP_ID}/appStoreVersions",
+           **{"filter[platform]": "IOS", "filter[versionString]": TARGET_VERSION})
+if not vers["data"]:
+    raise SystemExit(f"version {TARGET_VERSION} not found — create it first")
 ver = vers["data"][0]
+assert ver["attributes"]["appStoreState"] != "READY_FOR_SALE", "target is live; not editable"
 ver_id = ver["id"]
 print("version", ver["attributes"]["versionString"], ver["attributes"]["appStoreState"], ver_id)
 
